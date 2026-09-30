@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --color-eggshell-canvas: #fdfcfb;
+  --color-cloud-surface: #f7f7f7;
+  --color-paper-beige: #f0f0ea;
+  --color-whiteboard-gray: #eeeded;
+  --color-linen-border: #e4ded3;
+  --color-graphite: #2e2e2e;
+  --color-charcoal-copy: #454545;
+  --color-quiet-gray: #6a6972;
+  --color-disabled-ash: #a8a8a8;
+  --color-research-blue: #207dff;
+  --font-jakarta-sans: var(--font-jakarta-sans-next), system-ui, sans-serif;
+  --font-sans: var(--font-jakarta-sans-next), system-ui, sans-serif;
+  --font-ui-monospace: ui-monospace, SFMono-Regular, monospace;
+  --radius-md: 6px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+}
+
+:root {
+  --background: #fdfcfb;
+  --foreground: #2e2e2e;
+  --card: #fdfcfb;
+  --card-foreground: #2e2e2e;
+  --popover: #fdfcfb;
+  --popover-foreground: #2e2e2e;
+  --primary: #2e2e2e;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f7f7;
+  --secondary-foreground: #2e2e2e;
+  --muted: #f0f0ea;
+  --muted-foreground: #6a6972;
+  --accent: #f0f0ea;
+  --accent-foreground: #2e2e2e;
+  --destructive: #b42318;
+  --border: #e4ded3;
+  --input: #e4ded3;
+  --ring: #207dff;
+  --radius: 0.375rem;
+  --sidebar: #fdfcfb;
+  --sidebar-foreground: #2e2e2e;
+  --sidebar-primary: #2e2e2e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0f0ea;
+  --sidebar-accent-foreground: #2e2e2e;
+  --sidebar-border: #e4ded3;
+  --sidebar-ring: #207dff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-lg: 8px;
+}
+
+* {
+  border-color: var(--border);
+}
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta-sans-next), system-ui, sans-serif;
+}
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}

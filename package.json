@@ -1,0 +1,36 @@
+{
+  "name": "resik-app",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run start:dev --workspace=@app/api",
+    "dev:client": "npm run dev --workspace=@app/web",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "npm run build --workspace=@app/api",
+    "build:client": "npm run build --workspace=@app/web",
+    "lint": "npm run lint:server && npm run lint:client",
+    "lint:server": "npm run lint --workspace=@app/api",
+    "lint:client": "npm run lint --workspace=@app/web",
+    "typecheck": "npm run typecheck:server && npm run typecheck:client",
+    "typecheck:server": "npm run typecheck --workspace=@app/api",
+    "typecheck:client": "npm run typecheck --workspace=@app/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prisma:generate": "npm run prisma:generate --workspace=@app/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@app/api",
+    "prisma:deploy": "npm run prisma:deploy --workspace=@app/api",
+    "prisma:studio": "npm run prisma:studio --workspace=@app/api",
+    "prisma:validate": "npm run prisma:validate --workspace=@app/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  }
+}

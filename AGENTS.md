@@ -1,0 +1,25 @@
+# Engineering guide
+
+## Project overview
+
+This npm-only monorepo contains `apps/api` (NestJS, TypeScript, Prisma, PostgreSQL, Axios, class-validator) and `apps/web` (Next.js App Router, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Axios). There are no shared packages until real cross-application requirements justify one. The backend follows Clean Architecture. Frontend visuals follow [apps/web/DESIGN.md](apps/web/DESIGN.md).
+
+## Root commands
+
+Use root commands for normal work: `npm run dev` (both), `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run format:check`, `npm run prisma:generate`, `npm run prisma:migrate`, `npm run prisma:deploy`, and `npm run prisma:studio`. Prefer these over changing into a workspace. Use npm only: never pnpm, Yarn, or Bun.
+
+## Architecture
+
+Dependencies point inward: presentation and infrastructure depend on application/domain abstractions; application may depend on domain; domain depends on neither application nor frameworks. Domain and application must not import Prisma, Axios, NestJS HTTP concepts, Express request/response objects, or database details. Prisma remains in infrastructure. Infrastructure implements ports owned by inner layers. Controllers stay thin: receive validated input, call application behavior, and present output. No business rules or queries in controllers.
+
+Backend placement: `src/domain` for pure entities, value objects, repository contracts, and domain errors; `src/application` for use cases, ports, and application DTOs; `src/infrastructure` for Prisma, configuration, and external HTTP adapters; `src/presentation` for controllers, HTTP DTOs, presenters, and filters. Create types and abstractions when a real feature needs them. Wire Nest dependency injection at module composition boundaries. Use class-validator and class-transformer only at transport boundaries, with the global ValidationPipe. Translate infrastructure errors before exposing them to clients. Read environment configuration through `@nestjs/config`; never hardcode credentials or service URLs. The prepared Prisma module is intentionally unwired until a real repository needs it, so an empty project boots without a database.
+
+## Frontend conventions
+
+App Router owns routing and layouts. Server Components are the default; add `use client` only for browser APIs, event handlers, React state, or client data libraries. The QueryClient provider is a small client boundary. Use the centralized Axios instance in `src/lib/api-client.ts` from future `services/`. `components/ui` contains official shadcn primitives; check those before building a custom primitive. `components` holds reusable application components, `hooks` reusable hooks, `providers` global React providers, and `types` frontend contracts when needed. Keep backend DTOs separate until sharing is justified.
+
+Follow `apps/web/DESIGN.md` for every visual decision. Reuse its palette, typography, spacing, radius, and surface tokens; do not introduce arbitrary colors or spacing. Build accessible forms and keyboard controls. Prefer Skeleton for structured loading, plain recovery actions for errors, and concise empty states.
+
+## Quality and agent behavior
+
+Inspect existing code before changing it. Keep TypeScript strict, lint and format passing, names meaningful, modules small, and `any` rare and justified. Avoid dead code, fake examples, speculative abstractions, unnecessary dependencies, and unrequested product behavior. Respect Clean Architecture, reuse existing ports and shadcn components, keep Prisma and Axios out of inner layers, preserve Server Components, and update documentation when architecture changes. Do not silently violate established conventions.
