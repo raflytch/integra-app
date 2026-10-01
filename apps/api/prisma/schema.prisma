@@ -1,3 +1,14 @@
+// INTEGRA MVP database schema (source: docs/ERD_INTEGRA_MVP.pdf).
+//
+// Conventions:
+// - Models are singular PascalCase mapped to plural snake_case tables (@@map).
+// - Fields are camelCase mapped to snake_case columns (@map).
+// - IDs are UUIDv7 (time-ordered) to keep B-tree inserts sequential.
+// - Timestamps are `timestamptz`; calendar-only values use `date`.
+// - Money is `numeric(14, 2)` in rupiah. Convert to number only in repositories.
+// - Constraints Prisma cannot express (CHECK, partial unique) live in the
+//   migration SQL and are listed under "DB constraints" on each model.
+
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -8,4 +19,326 @@ datasource db {
   provider = "postgresql"
 }
 
-// Add models only when a real application requirement exists.
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+/// Access level of an internal user.
+enum UserRole {
+  /// Reviews claims in the queue and records decisions.
+  VERIFIER
+  /// Oversees verifiers and handles escalated claims.
+  SUPERVISOR
+
+  @@map("user_role")
+}
+
+/// Hospital class as defined by the Ministry of Health (A is the most complete).
+enum FacilityType {
+  A
+  B
+  C
+  D
+
+  @@map("facility_type")
+}
+
+enum Gender {
+  M
+  F
+
+  @@map("gender")
+}
+
+/// Lifecycle of a claim in the verification queue.
+enum ClaimStatus {
+  /// Awaiting a verifier decision.
+  PENDING
+  APPROVED
+  CLARIFICATION_REQUESTED
+  ESCALATED
+
+  @@map("claim_status")
+}
+
+/// Fraud pattern deliberately planted in synthetic data. Ground truth for
+/// evaluating the detectors; never expose it to verifiers.
+enum InjectedCase {
+  /// Diagnosis or severity coded higher than the documents support.
+  UPCODING
+  /// Exam or procedure billed without supporting clinical evidence.
+  EXAM_MANIPULATION
+  /// Documents copied from another claim with minimal changes.
+  CLONING
+
+  @@map("injected_case")
+}
+
+enum DocumentType {
+  MEDICAL_RESUME
+  EXAM_NOTE
+  DAILY_NOTE
+  PRESCRIPTION
+  PROCEDURE
+
+  @@map("document_type")
+}
+
+/// Kind of clinical evidence a diagnosis is expected to leave in documents.
+enum EvidenceType {
+  MEDICATION
+  PROCEDURE
+  FINDING
+  VITAL_SIGN
+
+  @@map("evidence_type")
+}
+
+/// Detector that produced a finding.
+enum TestType {
+  /// "Uji Ada": required evidence for a diagnosis is present.
+  EXISTENCE
+  /// "Uji Konsisten": documents within a claim agree with each other.
+  CONSISTENCY
+  /// "Uji Bukan Salinan": documents are not cloned from another claim.
+  SIMILARITY
+
+  @@map("test_type")
+}
+
+enum DecisionAction {
+  APPROVE
+  REQUEST_CLARIFICATION
+  ESCALATE
+
+  @@map("decision_action")
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+/// Internal user who signs in with email + TOTP.
+model User {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  name          String
+  /// Stored lowercase; normalize before every read and write.
+  email         String   @unique
+  role          UserRole
+  /// TOTP secret encrypted by SecretCipher (`v1.iv.tag.ciphertext`). Never plaintext.
+  totpSecretEnc String   @map("totp_secret_enc")
+  /// Last accepted TOTP time step, for replay protection. Fits in int4 until year 4000.
+  totpLastStep  Int?     @map("totp_last_step")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  decisions Decision[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Claim data (seeded)
+// ---------------------------------------------------------------------------
+
+/// Healthcare facility that submits claims.
+model Facility {
+  id   String       @id @default(uuid(7)) @db.Uuid
+  /// Facility registration code.
+  code String       @unique
+  name String
+  type FacilityType
+  city String
+
+  claims Claim[]
+
+  @@map("facilities")
+}
+
+model Patient {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  medicalRecordNo String   @unique @map("medical_record_no")
+  name            String
+  gender          Gender
+  birthDate       DateTime @map("birth_date") @db.Date
+
+  claims Claim[]
+
+  @@map("patients")
+}
+
+/// One inpatient episode billed under an INA-CBG package.
+///
+/// DB constraints:
+/// - CHECK (discharged_at >= admitted_at)
+/// - CHECK (severity_level BETWEEN 1 AND 3)
+/// - CHECK (priority_score >= 0)
+model Claim {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  claimNo       String         @unique @map("claim_no")
+  facilityId    String         @map("facility_id") @db.Uuid
+  patientId     String         @map("patient_id") @db.Uuid
+  admittedAt    DateTime       @map("admitted_at") @db.Date
+  dischargedAt  DateTime       @map("discharged_at") @db.Date
+  /// INA-CBG group code, e.g. "I-4-10-II".
+  inacbgCode    String         @map("inacbg_code")
+  /// INA-CBG severity level (1 = mild, 3 = severe).
+  severityLevel Int            @map("severity_level") @db.SmallInt
+  /// Billed amount in rupiah.
+  tariffAmount  Decimal        @map("tariff_amount") @db.Decimal(14, 2)
+  /// Estimated overbilling in rupiah. Zero until analysis runs.
+  potentialGap  Decimal        @default(0) @map("potential_gap") @db.Decimal(14, 2)
+  /// Queue ordering score; higher is reviewed first. Zero until analysis runs.
+  priorityScore Float          @default(0) @map("priority_score")
+  status        ClaimStatus    @default(PENDING)
+  /// Evaluation ground truth for synthetic data. Keep out of API responses.
+  injectedCase  InjectedCase[] @default([]) @map("injected_case")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  facility        Facility           @relation(fields: [facilityId], references: [id])
+  patient         Patient            @relation(fields: [patientId], references: [id])
+  diagnoses       ClaimDiagnosis[]
+  documents       ClinicalDocument[]
+  findings        Finding[]          @relation("FindingClaim")
+  /// Findings on other claims that point at this one (cloning source).
+  relatedFindings Finding[]          @relation("FindingRelatedClaim")
+  decisions       Decision[]
+
+  /// Verification queue: WHERE status = ? ORDER BY priority_score DESC.
+  @@index([status, priorityScore(sort: Desc)])
+  @@index([facilityId])
+  @@index([patientId])
+  @@map("claims")
+}
+
+/// ICD-10 diagnosis coded on a claim.
+///
+/// DB constraints:
+/// - UNIQUE (claim_id) WHERE is_primary: at most one primary diagnosis per claim.
+model ClaimDiagnosis {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  claimId   String  @map("claim_id") @db.Uuid
+  icd10Code String  @map("icd10_code")
+  name      String
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  claim    Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  findings Finding[]
+
+  @@unique([claimId, icd10Code])
+  @@map("claim_diagnoses")
+}
+
+/// Free-text clinical document attached to a claim.
+model ClinicalDocument {
+  id         String       @id @default(uuid(7)) @db.Uuid
+  claimId    String       @map("claim_id") @db.Uuid
+  type       DocumentType
+  /// When the document was written, not when it was imported.
+  recordedAt DateTime     @map("recorded_at") @db.Timestamptz(3)
+  content    String
+  /// Evidence extracted by the LLM (M-03). Null until extraction succeeds.
+  /// Shape is owned by the extraction Zod schema; validate on read.
+  extracted  Json?
+
+  claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  findings        Finding[] @relation("FindingDocument")
+  relatedFindings Finding[] @relation("FindingRelatedDocument")
+
+  @@index([claimId, recordedAt])
+  @@map("clinical_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Reference data
+// ---------------------------------------------------------------------------
+
+/// Evidence a diagnosis is expected to leave in documents, per clinical guideline.
+model EvidenceRule {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  icd10Code    String       @map("icd10_code")
+  evidenceType EvidenceType @map("evidence_type")
+  /// Expected evidence, e.g. "ceftriaxone" or "chest X-ray".
+  expected     String
+  /// Guideline citation, e.g. "PNPK Pneumonia 2023, p. 12".
+  guidelineRef String       @map("guideline_ref")
+
+  @@unique([icd10Code, evidenceType, expected])
+  @@map("evidence_rules")
+}
+
+// ---------------------------------------------------------------------------
+// Analysis output
+// ---------------------------------------------------------------------------
+
+/// Result of one detector on a claim. Detectors rewrite their own findings on
+/// every run, so rows are disposable.
+///
+/// Which optional references are set depends on testType:
+/// - EXISTENCE:   diagnosisId (and documentId when evidence was located)
+/// - CONSISTENCY: documentId + relatedDocumentId
+/// - SIMILARITY:  relatedClaimId, documentId + relatedDocumentId, similarity
+///
+/// DB constraints:
+/// - CHECK (strength BETWEEN 0 AND 1)
+/// - CHECK (similarity IS NULL OR similarity BETWEEN 0 AND 1)
+model Finding {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  claimId           String   @map("claim_id") @db.Uuid
+  testType          TestType @map("test_type")
+  /// Detector confidence, 0..1.
+  strength          Float
+  /// Human-readable explanation shown to the verifier.
+  summary           String
+  /// Array of document quotes backing the finding: [{ documentId, quote }].
+  citations         Json     @default("[]")
+  documentId        String?  @map("document_id") @db.Uuid
+  relatedDocumentId String?  @map("related_document_id") @db.Uuid
+  diagnosisId       String?  @map("diagnosis_id") @db.Uuid
+  /// SIMILARITY only: the claim this one appears to be cloned from.
+  relatedClaimId    String?  @map("related_claim_id") @db.Uuid
+  /// SIMILARITY only: text similarity score, 0..1.
+  similarity        Float?
+  /// Estimated overbilling attributed to this finding, in rupiah.
+  tariffGap         Decimal? @map("tariff_gap") @db.Decimal(14, 2)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  claim           Claim             @relation("FindingClaim", fields: [claimId], references: [id], onDelete: Cascade)
+  relatedClaim    Claim?            @relation("FindingRelatedClaim", fields: [relatedClaimId], references: [id], onDelete: Cascade)
+  document        ClinicalDocument? @relation("FindingDocument", fields: [documentId], references: [id], onDelete: SetNull)
+  relatedDocument ClinicalDocument? @relation("FindingRelatedDocument", fields: [relatedDocumentId], references: [id], onDelete: SetNull)
+  diagnosis       ClaimDiagnosis?   @relation(fields: [diagnosisId], references: [id], onDelete: SetNull)
+
+  /// Upsert key for SIMILARITY. PostgreSQL treats NULLs as distinct, so this
+  /// does not dedupe EXISTENCE/CONSISTENCY rows (relatedClaimId is null);
+  /// those detectors delete-then-insert inside one transaction instead.
+  @@unique([claimId, relatedClaimId, testType])
+  @@index([claimId, testType])
+  @@index([relatedClaimId])
+  @@map("findings")
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+/// Verifier decision on a claim. Append-only audit trail: never update or
+/// delete; the latest row per claim is the current decision.
+model Decision {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  claimId    String         @map("claim_id") @db.Uuid
+  verifierId String         @map("verifier_id") @db.Uuid
+  action     DecisionAction
+  /// Mandatory justification written by the verifier.
+  reason     String
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  /// Restrict: deleting a claim must not silently erase its audit trail.
+  claim    Claim @relation(fields: [claimId], references: [id], onDelete: Restrict)
+  verifier User  @relation(fields: [verifierId], references: [id], onDelete: Restrict)
+
+  @@index([claimId, createdAt(sort: Desc)])
+  @@index([verifierId])
+  @@map("decisions")
+}

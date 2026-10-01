@@ -24,7 +24,8 @@
     "prisma:migrate": "npm run prisma:migrate --workspace=@app/api",
     "prisma:deploy": "npm run prisma:deploy --workspace=@app/api",
     "prisma:studio": "npm run prisma:studio --workspace=@app/api",
-    "prisma:validate": "npm run prisma:validate --workspace=@app/api"
+    "prisma:validate": "npm run prisma:validate --workspace=@app/api",
+    "llm:smoke": "npm run llm:smoke --workspace=@app/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
