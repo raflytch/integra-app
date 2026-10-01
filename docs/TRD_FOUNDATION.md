@@ -14,17 +14,17 @@ Hasil akhir foundation: `npm run build` lulus, migrasi berhasil di database koso
 ## 1. Dependency
 
 ```bash
-npm install --workspace=@app/api @anthropic-ai/sdk zod otplib cookie-parser
+npm install --workspace=@app/api openai zod otplib cookie-parser
 npm install --workspace=@app/api -D @types/cookie-parser tsx
 ```
 
-| Paket               | Dipakai untuk                                              |
-| ------------------- | ---------------------------------------------------------- |
-| `@anthropic-ai/sdk` | Adapter LLM (Claude) di infrastructure                     |
-| `zod`               | Skema output terstruktur LLM dan validasi env              |
-| `otplib` (v13)      | Generate dan verifikasi TOTP, termasuk anti-replay bawaan  |
-| `cookie-parser`     | Membaca cookie sesi (dipakai M-11)                         |
-| `tsx`               | Menjalankan script TypeScript (smoke test LLM, nanti seed) |
+| Paket           | Dipakai untuk                                                                |
+| --------------- | ---------------------------------------------------------------------------- |
+| `openai`        | Client LLM, diarahkan ke API DeepSeek yang kompatibel OpenAI lewat `baseURL` |
+| `zod`           | Validasi output JSON dari LLM, JSON Schema untuk prompt, dan validasi env    |
+| `otplib` (v13)  | Generate dan verifikasi TOTP, termasuk anti-replay bawaan                    |
+| `cookie-parser` | Membaca cookie sesi (dipakai M-11)                                           |
+| `tsx`           | Menjalankan script TypeScript (smoke test LLM, nanti seed)                   |
 
 `@nestjs/jwt` dan `@nestjs/throttler` baru dipasang di M-11 bersama endpoint auth.
 
@@ -52,7 +52,7 @@ apps/api/
     │   ├── config/env.schema.ts
     │   ├── database/prisma/            (sudah ada)
     │   ├── llm/
-    │   │   ├── anthropic-llm.client.ts
+    │   │   ├── openai-llm.client.ts
     │   │   ├── semaphore.ts
     │   │   └── llm.module.ts
     │   └── security/
@@ -65,7 +65,7 @@ apps/api/
     └── main.ts
 ```
 
-Aturan dependency mengikuti `AGENTS.md`: port dan error didefinisikan di `application`, implementasinya di `infrastructure`, dan wiring di module Nest. Use case tidak pernah meng-import `@anthropic-ai/sdk`, `otplib`, atau Prisma.
+Aturan dependency mengikuti `AGENTS.md`: port dan error didefinisikan di `application`, implementasinya di `infrastructure`, dan wiring di module Nest. Use case tidak pernah meng-import `openai`, `otplib`, atau Prisma.
 
 ---
 
@@ -73,22 +73,22 @@ Aturan dependency mengikuti `AGENTS.md`: port dan error didefinisikan di `applic
 
 ### 3.1 Variabel
 
-| Variabel              | Contoh                                              | Keterangan                                         |
-| --------------------- | --------------------------------------------------- | -------------------------------------------------- |
-| `DATABASE_URL`        | `postgresql://postgres:password@localhost:5433/app` | Sudah ada                                          |
-| `PORT`                | `3001`                                              | Sudah ada                                          |
-| `WEB_ORIGIN`          | `http://localhost:3000`                             | Origin Next.js untuk CORS                          |
-| `JWT_SECRET`          | 32+ karakter acak                                   | Dipakai M-11, divalidasi sejak awal                |
-| `TOTP_ENCRYPTION_KEY` | `openssl rand -base64 32`                           | Kunci AES-256, harus 32 byte setelah decode base64 |
-| `ANTHROPIC_API_KEY`   | `sk-ant-...`                                        | Kunci LLM API                                      |
-| `LLM_MODEL`           | `claude-opus-5-5`                                   | Bisa diganti tanpa ubah kode                       |
-| `LLM_EFFORT`          | `medium`                                            | `low` / `medium` / `high` / `xhigh` / `max`        |
-| `LLM_MAX_TOKENS`      | `16000`                                             | Batas output per panggilan                         |
-| `LLM_TIMEOUT_MS`      | `120000`                                            | Timeout per request                                |
-| `LLM_MAX_RETRIES`     | `2`                                                 | Retry otomatis SDK untuk 408/409/429/5xx           |
-| `LLM_CONCURRENCY`     | `3`                                                 | Maksimal panggilan LLM paralel                     |
+| Variabel              | Contoh                                              | Keterangan                                                   |
+| --------------------- | --------------------------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`        | `postgresql://postgres:password@localhost:5433/app` | Sudah ada                                                    |
+| `PORT`                | `3001`                                              | Sudah ada                                                    |
+| `WEB_ORIGIN`          | `http://localhost:3000`                             | Origin Next.js untuk CORS                                    |
+| `JWT_SECRET`          | 32+ karakter acak                                   | Dipakai M-11, divalidasi sejak awal                          |
+| `TOTP_ENCRYPTION_KEY` | `openssl rand -base64 32`                           | Kunci AES-256, harus 32 byte setelah decode base64           |
+| `LLM_API_KEY`         | `sk-...`                                            | API key DeepSeek                                             |
+| `LLM_BASE_URL`        | `https://api.deepseek.com`                          | Endpoint kompatibel OpenAI                                   |
+| `LLM_MODEL`           | `deepseek-v4-flash`                                 | Bisa diganti tanpa ubah kode                                 |
+| `LLM_MAX_TOKENS`      | `8000`                                              | Batas output per panggilan, tidak boleh melebihi batas model |
+| `LLM_TIMEOUT_MS`      | `120000`                                            | Timeout per request                                          |
+| `LLM_MAX_RETRIES`     | `2`                                                 | Retry otomatis SDK untuk 408/409/429/5xx                     |
+| `LLM_CONCURRENCY`     | `3`                                                 | Maksimal panggilan LLM paralel                               |
 
-Semua variabel ditambahkan ke `apps/api/.env.example` dengan nilai contoh, tanpa kunci asli.
+Semua variabel ditambahkan ke `apps/api/.env.example` dengan nilai contoh, tanpa kunci asli. Namanya sengaja `LLM_*`, bukan `DEEPSEEK_*`, supaya pindah ke provider lain yang kompatibel OpenAI cukup dengan mengganti env.
 
 ### 3.2 Validasi saat start
 
@@ -109,12 +109,10 @@ export const envSchema = z.object({
       (value) => Buffer.from(value, 'base64').length === 32,
       'must decode to 32 bytes',
     ),
-  ANTHROPIC_API_KEY: z.string().min(1),
-  LLM_MODEL: z.string().default('claude-opus-5-5'),
-  LLM_EFFORT: z
-    .enum(['low', 'medium', 'high', 'xhigh', 'max'])
-    .default('medium'),
-  LLM_MAX_TOKENS: z.coerce.number().int().positive().default(16000),
+  LLM_API_KEY: z.string().min(1),
+  LLM_BASE_URL: z.string().url().default('https://api.deepseek.com'),
+  LLM_MODEL: z.string().default('deepseek-v4-flash'),
+  LLM_MAX_TOKENS: z.coerce.number().int().positive().default(8000),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
   LLM_CONCURRENCY: z.coerce.number().int().positive().default(3),
@@ -418,10 +416,11 @@ model Decision {
 
 ### 5.1 Prinsip
 
-- **Port netral provider.** Use case hanya mengenal `LlmClient`. Kalau tim pindah provider, cukup tambah adapter baru dan ganti binding di `LlmModule`.
+- **Port netral provider.** Use case hanya mengenal `LlmClient`. Adapter memakai package `openai` yang diarahkan ke DeepSeek lewat `baseURL`, jadi provider lain yang kompatibel OpenAI cukup diganti lewat env.
 - **Dua kemampuan saja:**
   - `generateText` untuk menulis dokumen sintetis (M-02);
-  - `generateStructured` untuk ekstraksi bukti dengan output tervalidasi skema (M-03).
+  - `generateStructured` untuk ekstraksi bukti dengan output yang divalidasi skema Zod (M-03).
+- **JSON mode + validasi Zod, bukan `json_schema` strict.** Adapter memakai `response_format: { type: 'json_object' }` yang umum didukung API kompatibel OpenAI, menanam JSON Schema di system prompt, lalu memvalidasi hasilnya dengan Zod. Helper `zodResponseFormat` dari `openai` tidak dipakai karena bergantung pada `json_schema` strict yang belum tentu didukung DeepSeek.
 - **Error diterjemahkan.** Error SDK tidak boleh keluar dari infrastructure. Pemakai hanya menerima error dari `llm.errors.ts`.
 - **Hemat panggilan.** Hasil generate dan ekstraksi disimpan, sehingga demo tidak memanggil API ulang. Ini tanggung jawab M-02 dan M-03, wrapper tidak melakukan caching.
 
@@ -429,8 +428,6 @@ model Decision {
 
 ```ts
 import type { ZodType } from 'zod';
-
-export type LlmEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 export interface LlmMessage {
   role: 'user' | 'assistant';
@@ -440,7 +437,7 @@ export interface LlmMessage {
 export interface LlmRequest {
   system?: string;
   messages: LlmMessage[];
-  effort?: LlmEffort;
+  temperature?: number;
   maxTokens?: number;
 }
 
@@ -464,62 +461,86 @@ export abstract class LlmClient {
 
 Port memakai `abstract class` supaya langsung bisa jadi token DI Nest tanpa `@Inject` string. Zod diizinkan di layer application karena ia library skema murni, bukan framework.
 
+`temperature` diatur per panggilan: rendah (mis. `0`) untuk ekstraksi supaya konsisten, lebih tinggi (mis. `1`) untuk menulis dokumen sintetis supaya bervariasi.
+
 ### 5.3 Error (`application/ports/llm.errors.ts`)
 
-| Error                   | Kapan                                                         | Sikap pemakai                                            |
-| ----------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
-| `LlmUnavailableError`   | 429, 5xx, timeout, atau koneksi gagal setelah retry SDK habis | Tandai klaim gagal diproses, lanjut ke klaim berikutnya  |
-| `LlmRefusedError`       | `stop_reason === 'refusal'`, termasuk setelah fallback        | Catat `category`, lewati klaim                           |
-| `LlmInvalidOutputError` | `stop_reason === 'max_tokens'` atau `parsed_output` null      | Boleh dicoba ulang sekali dengan `maxTokens` lebih besar |
-| `LlmConfigurationError` | 400 atau 401 (model salah, key salah)                         | Hentikan proses, karena tidak akan sembuh dengan retry   |
+| Error                   | Kapan                                                                                                        | Sikap pemakai                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `LlmUnavailableError`   | 429, 5xx, timeout, atau koneksi gagal setelah retry SDK habis                                                | Tandai klaim gagal diproses, lanjut ke klaim berikutnya     |
+| `LlmRefusedError`       | `finish_reason === 'content_filter'`                                                                         | Catat, lewati klaim                                         |
+| `LlmInvalidOutputError` | `finish_reason === 'length'`, konten kosong, JSON tidak valid, atau tidak cocok skema setelah diulang sekali | Lewati klaim; naikkan `maxTokens` jika penyebabnya `length` |
+| `LlmConfigurationError` | 400 atau 401 (model salah, key salah, parameter tidak didukung)                                              | Hentikan proses, karena tidak akan sembuh dengan retry      |
 
 Semua error turunan dari `LlmError extends Error`.
 
-### 5.4 Adapter (`infrastructure/llm/anthropic-llm.client.ts`)
+### 5.4 Adapter (`infrastructure/llm/openai-llm.client.ts`)
 
-Inti panggilan SDK di bawah sudah di-typecheck terhadap `@anthropic-ai/sdk` 0.131 dengan setting `tsconfig` repo (CommonJS, `moduleResolution: node`).
+Inti kode di bawah sudah di-typecheck terhadap `openai` 7.25 dan `zod` 4 dengan setting `tsconfig` repo (CommonJS, `moduleResolution: node`).
 
 ```ts
-import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
+import OpenAI from 'openai';
+import { z } from 'zod';
 
-const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+// constructor
+this.client = new OpenAI({ apiKey, baseURL, maxRetries, timeout });
 
-// generateStructured
-const response = await this.client.beta.messages.parse({
+// satu panggilan; dipakai generateText (json = false) dan generateStructured (json = true)
+const completion = await this.client.chat.completions.create({
   model: this.model,
   max_tokens: request.maxTokens ?? this.maxTokens,
-  betas: [FALLBACK_BETA],
-  fallbacks: 'default',
-  system: request.system,
-  messages: request.messages,
-  output_config: {
-    effort: request.effort ?? this.effort,
-    format: betaZodOutputFormat(request.schema),
-  },
+  temperature: request.temperature,
+  messages: [
+    ...(system ? [{ role: 'system' as const, content: system }] : []),
+    ...request.messages,
+  ],
+  ...(json ? { response_format: { type: 'json_object' as const } } : {}),
 });
-if (response.stop_reason === 'refusal') {
-  throw new LlmRefusedError(response.stop_details?.category ?? null);
-}
-if (response.stop_reason === 'max_tokens' || response.parsed_output === null) {
-  throw new LlmInvalidOutputError();
-}
-// return { output: response.parsed_output, model: response.model, usage: ... }
+const choice = completion.choices[0];
+if (!choice) throw new LlmInvalidOutputError('empty choices');
+if (choice.finish_reason === 'content_filter') throw new LlmRefusedError();
+if (choice.finish_reason === 'length')
+  throw new LlmInvalidOutputError('length');
+const content = choice.message.content ?? '';
+// usage: completion.usage?.prompt_tokens, completion.usage?.completion_tokens
 
-// generateText: client.beta.messages.create dengan parameter yang sama tanpa format,
-// lalu gabungkan semua blok bertipe 'text'.
+// generateStructured: system prompt ditambah instruksi JSON + skema
+const system = `${request.system ?? ''}
+
+Respond with a single JSON object only, matching this JSON schema:
+${JSON.stringify(z.toJSONSchema(request.schema))}`;
+
+// validasi hasil
+let value: unknown;
+try {
+  value = JSON.parse(content);
+} catch {
+  value = undefined;
+}
+const parsed = request.schema.safeParse(value);
+// gagal -> ulangi panggilan sekali; gagal lagi -> LlmInvalidOutputError
 ```
 
 Ketentuan adapter:
 
-- **Client dibuat sekali** di constructor: `new Anthropic({ apiKey, maxRetries, timeout })` dari `ConfigService`. Retry untuk 408, 409, 429, 5xx, dan error koneksi sudah ditangani SDK, jadi tidak perlu retry manual.
-- **Thinking.** Parameter `thinking` tidak dikirim. Di `claude-opus-5-5` thinking selalu aktif dan diatur lewat `effort`, sedangkan `{ type: 'disabled' }` justru ditolak dengan error 400.
-- **`fallbacks: 'default'`.** Kalau safety classifier menolak request, API otomatis menjalankannya ulang di model fallback dalam panggilan yang sama. Ini relevan karena teks klinis kadang tertangkap classifier.
+- **Client dibuat sekali** di constructor dari `ConfigService`. Retry untuk 408, 409, 429, 5xx, dan error koneksi sudah ditangani SDK, jadi retry manual hanya untuk output JSON yang tidak valid (maksimal sekali).
+- **Instruksi JSON wajib ada di prompt.** JSON mode pada API kompatibel OpenAI umumnya mensyaratkan kata "JSON" muncul di prompt, dan skema membantu model menghasilkan bentuk yang benar. Adapter yang menambahkannya, bukan pemakai.
+- **Konten kosong** di JSON mode diperlakukan sebagai output tidak valid dan ikut aturan ulang sekali.
 - **Pemetaan error** memakai class SDK dari yang paling spesifik, bukan pencocokan string pesan:
-  - `RateLimitError`, `InternalServerError`, `APIConnectionError` → `LlmUnavailableError`;
+  - `APIConnectionTimeoutError`, `APIConnectionError`, `RateLimitError`, `InternalServerError` → `LlmUnavailableError`;
   - `AuthenticationError`, `BadRequestError` → `LlmConfigurationError`.
 - **Batas paralel.** Setiap panggilan dibungkus `Semaphore` (`LLM_CONCURRENCY`) supaya ekstraksi massal tidak memicu 429.
-- **Log** `model`, `usage.input_tokens`, dan `usage.output_tokens` per panggilan lewat `Logger` Nest, tanpa mencatat isi prompt atau dokumen.
+- **Log** `model`, `usage.prompt_tokens`, dan `usage.completion_tokens` per panggilan lewat `Logger` Nest, tanpa mencatat isi prompt atau dokumen.
+
+#### Yang wajib dicek saat implementasi
+
+Dokumentasi DeepSeek tidak bisa diakses saat TRD ini ditulis, jadi tiga hal ini harus dipastikan lewat smoke test (5.8) sebelum M-02 dan M-03 mulai:
+
+1. Nama model `deepseek-v4-flash` diterima oleh `https://api.deepseek.com`.
+2. `response_format: { type: 'json_object' }` didukung model tersebut.
+3. Batas output model. Turunkan `LLM_MAX_TOKENS` jika 8000 melebihi batas.
+
+Jika poin 2 tidak didukung, hapus `response_format` dan andalkan instruksi JSON di prompt + validasi Zod. Port dan pemakai tidak perlu berubah.
 
 ### 5.5 Semaphore (`infrastructure/llm/semaphore.ts`)
 
@@ -550,7 +571,7 @@ Slot langsung diserahkan ke antrean berikutnya tanpa dikurangi dulu, sehingga ti
 
 ```ts
 @Module({
-  providers: [{ provide: LlmClient, useClass: AnthropicLlmClient }],
+  providers: [{ provide: LlmClient, useClass: OpenAiLlmClient }],
   exports: [LlmClient],
 })
 export class LlmModule {}
@@ -568,12 +589,13 @@ const { output } = await this.llm.generateStructured({
   system: EXTRACTION_SYSTEM_PROMPT,
   messages: [{ role: 'user', content: documentText }],
   schema: ExtractionSchema,
+  temperature: 0,
 });
 ```
 
 ### 5.8 Smoke test (`scripts/llm-smoke.ts`)
 
-Script ini membuat Nest application context, mengambil `LlmClient`, lalu memanggil `generateStructured` sekali dengan skema kecil (misalnya `{ ok: boolean }`) dan mencetak hasil serta jumlah token. Jalankan dengan `npx tsx scripts/llm-smoke.ts`. Biayanya satu panggilan kecil.
+Script ini membuat Nest application context, mengambil `LlmClient`, lalu memanggil `generateText` sekali dan `generateStructured` sekali dengan skema kecil (misalnya `{ ok: boolean }`), dan mencetak hasil serta jumlah token. Jalankan dengan `npx tsx scripts/llm-smoke.ts`. Biayanya dua panggilan kecil, dan script ini sekaligus memastikan tiga hal di bagian "Yang wajib dicek saat implementasi".
 
 ---
 
@@ -648,7 +670,7 @@ Tetap tanpa endpoint baru. Hanya menyiapkan perilaku lintas modul:
 | --- | ------------------------------------------------------------------------------------------------- | -------- |
 | 1   | Pasang dependency, tambah env ke `.env.example`, buat `env.schema.ts`, validasi di `ConfigModule` | 0,5 j    |
 | 2   | Tulis `schema.prisma`, `prisma:migrate --name init`, wiring `PrismaModule`                        | 1 j      |
-| 3   | Port + error LLM, `AnthropicLlmClient`, `Semaphore`, `LlmModule`, smoke script                    | 2 j      |
+| 3   | Port + error LLM, `OpenAiLlmClient`, `Semaphore`, `LlmModule`, smoke script                       | 2 j      |
 | 4   | Port + adapter `SecretCipher` dan `TotpVerifier`, `SecurityModule`                                | 0,5 j    |
 | 5   | `DomainError`, `DomainExceptionFilter`, CORS, cookie-parser, shutdown hooks                       | 0,5 j    |
 | 6   | Perbarui README di `src/*` jika struktur berubah, lalu verifikasi (bagian 9)                      | 0,5 j    |
@@ -663,20 +685,20 @@ Langkah 2 diprioritaskan karena Orang B butuh tabel untuk seed data di Hari 1.
 - [ ] `npm run prisma:migrate` berhasil di database kosong dan folder migrasi ter-commit.
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, dan `npm run format:check` lulus dari root.
 - [ ] Aplikasi gagal start dengan pesan jelas jika salah satu env wajib dihapus.
-- [ ] `npx tsx scripts/llm-smoke.ts` mengembalikan JSON valid sesuai skema.
+- [ ] `npx tsx scripts/llm-smoke.ts` berhasil memanggil `deepseek-v4-flash` dan mengembalikan JSON valid sesuai skema.
 - [ ] Mengirim kode TOTP yang sama dua kali: pertama diterima, kedua ditolak (cukup diuji lewat script kecil).
-- [ ] Tidak ada import `@anthropic-ai/sdk`, `otplib`, atau `generated/prisma` di `src/domain` maupun `src/application`.
+- [ ] Tidak ada import `openai`, `otplib`, atau `generated/prisma` di `src/domain` maupun `src/application`.
 - [ ] `GET /health` tetap jalan.
 
 ---
 
 ## 10. Keputusan
 
-| Keputusan                                                   | Alasan                                                                                                                       | Alternatif                                                      |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Claude lewat `@anthropic-ai/sdk`, default `claude-opus-5-5` | SDK resmi dengan structured output tervalidasi Zod; model bisa diganti lewat `LLM_MODEL`                                     | Provider lain cukup lewat adapter baru di balik `LlmClient`     |
-| `effort: medium`                                            | Default model ini; cukup untuk ekstraksi                                                                                     | Naikkan ke `high` lewat env kalau hasil ekstraksi kurang akurat |
-| Server-side fallback aktif                                  | Menghindari klaim gagal diproses karena safety classifier membaca teks klinis                                                | Bisa dimatikan dengan menghapus `fallbacks` dan header beta     |
-| SDK, bukan Axios, untuk LLM                                 | Retry, timeout, error bertipe, dan parsing skema sudah disediakan SDK. Tetap terisolasi di infrastructure sesuai `AGENTS.md` | `HttpModule` Axios tetap dipakai untuk HTTP eksternal lain      |
-| Zod untuk env dan skema LLM                                 | Satu library untuk dua kebutuhan; class-validator tetap khusus DTO HTTP                                                      | class-validator untuk env                                       |
-| Repository tidak masuk foundation                           | `AGENTS.md`: abstraksi dibuat saat fitur nyata membutuhkannya                                                                | —                                                               |
+| Keputusan                                                          | Alasan                                                                                                        | Alternatif                                                               |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Package `openai` ke DeepSeek (`deepseek-v4-flash`) lewat `baseURL` | Keputusan tim; satu SDK untuk semua provider yang kompatibel OpenAI                                           | Provider lain cukup ganti `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`     |
+| JSON mode + validasi Zod, bukan `zodResponseFormat`                | `json_schema` strict belum tentu didukung DeepSeek; Zod tetap menjamin bentuk data sebelum masuk database     | Pakai `zodResponseFormat` jika provider terbukti mendukung `json_schema` |
+| Ulang sekali untuk JSON tidak valid                                | Output JSON model kadang kosong atau terpotong; sekali ulang cukup tanpa membengkakkan biaya                  | Tanpa ulang, langsung `LlmInvalidOutputError`                            |
+| SDK, bukan Axios, untuk LLM                                        | Retry, timeout, dan error bertipe sudah disediakan SDK. Tetap terisolasi di infrastructure sesuai `AGENTS.md` | `HttpModule` Axios tetap dipakai untuk HTTP eksternal lain               |
+| Zod untuk env dan skema LLM                                        | Satu library untuk dua kebutuhan; class-validator tetap khusus DTO HTTP                                       | class-validator untuk env                                                |
+| Repository tidak masuk foundation                                  | `AGENTS.md`: abstraksi dibuat saat fitur nyata membutuhkannya                                                 | —                                                                        |
