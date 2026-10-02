@@ -10,15 +10,15 @@ const jakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Resik App',
-  description: 'Full-stack foundation',
+  title: 'INTEGRA',
+  description: 'Detect with evidence. Decide with integrity.',
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body className={jakartaSans.variable}>
         <QueryProvider>{children}</QueryProvider>
       </body>
