@@ -45,9 +45,14 @@ Edit the copied environment files for your machine. `apps/api/.env.example` prov
 
 Targeted `build:client`, `build:server`, `lint:client`, `lint:server`, `typecheck:client`, and `typecheck:server` are also available.
 
+Development data for the INTEGRA demo, run from the repository root:
+
+- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/load-contract-fixture.ts` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
+- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/seed-users.ts` creates the demo verifier and supervisor accounts and prints each TOTP setup key (add `--rotate` for a new key).
+
 ## Design and engineering guidance
 
-The Heptabase-inspired light visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses warm paper surfaces, Graphite primary controls, compact spacing, flat cards, and limited Research Blue. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
+The Heptabase-inspired light visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses warm paper surfaces, the INTEGRA teal palette from the logo for primary actions, compact spacing, and flat cards. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
 
 ## Troubleshooting
 

@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
+import { AnalysisModule } from './analysis.module';
+import { AuthModule } from './auth.module';
+import { ClaimsModule } from './claims.module';
+import { FacilitiesModule } from './facilities.module';
 import { validateEnv } from './infrastructure/config/env.schema';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { LlmModule } from './infrastructure/llm/llm.module';
@@ -16,6 +20,10 @@ import { DomainExceptionFilter } from './presentation/filters/domain-exception.f
     PrismaModule,
     LlmModule,
     SecurityModule,
+    AuthModule,
+    AnalysisModule,
+    ClaimsModule,
+    FacilitiesModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: DomainExceptionFilter }],
