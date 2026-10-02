@@ -1,0 +1,108 @@
+{
+  "id": "01920000-0000-7000-8000-000000000101",
+  "claimNo": "KLM-2026-08-0101",
+  "status": "PENDING",
+  "admittedAt": "2026-08-03",
+  "dischargedAt": "2026-08-07",
+  "inacbgCode": "A-4-14-III",
+  "severityLevel": 3,
+  "tariffAmount": 9850000,
+  "potentialGap": 4120000,
+  "priorityScore": 0.8255,
+  "facility": {
+    "id": "01920000-0000-7000-8000-000000000001",
+    "code": "RS-3171-021",
+    "name": "RSU Sehat Sentosa",
+    "type": "C",
+    "city": "Jakarta Timur"
+  },
+  "patient": {
+    "id": "01920000-0000-7000-8000-000000000011",
+    "medicalRecordNo": "RM-000781",
+    "name": "Pasien Sintetis 0781",
+    "gender": "F",
+    "birthDate": "1994-05-12"
+  },
+  "diagnoses": [
+    {
+      "id": "01920000-0000-7000-8000-000000000201",
+      "icd10Code": "A91",
+      "name": "Demam berdarah dengue",
+      "isPrimary": true
+    },
+    {
+      "id": "01920000-0000-7000-8000-000000000202",
+      "icd10Code": "R57.9",
+      "name": "Syok",
+      "isPrimary": false
+    }
+  ],
+  "documents": [
+    {
+      "id": "01920000-0000-7000-8000-000000000301",
+      "type": "MEDICAL_RESUME",
+      "recordedAt": "2026-08-07T10:00:00+07:00",
+      "content": "Pasien perempuan 32 tahun datang dengan demam 4 hari. Tampak petekie di kedua lengan. Diagnosis kerja: DBD derajat II. Diagnosis tambahan: syok. Terapi: Parasetamol 3 x 500 mg per oral. Cek Ht serial tiap 12 jam.",
+      "isExtracted": true
+    },
+    {
+      "id": "01920000-0000-7000-8000-000000000302",
+      "type": "DAILY_NOTE",
+      "recordedAt": "2026-08-04T08:00:00+07:00",
+      "content": "Keadaan umum baik. Akral hangat, CRT < 2 detik. TD 110/70 mmHg, nadi 88x/menit.",
+      "isExtracted": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "01920000-0000-7000-8000-000000000401",
+      "testType": "EXISTENCE",
+      "strength": 1,
+      "summary": "Diagnosis sekunder Syok (R57.9) belum didukung bukti klinis: resusitasi cairan, akral dingin, hipotensi.",
+      "citations": [
+        {
+          "kind": "MISSING_EVIDENCE",
+          "evidenceType": "PROCEDURE",
+          "expected": "resusitasi cairan",
+          "guidelineRef": "PNPK Dengue 2021, hlm. 34"
+        },
+        {
+          "kind": "MISSING_EVIDENCE",
+          "evidenceType": "FINDING",
+          "expected": "akral dingin",
+          "guidelineRef": "PNPK Dengue 2021, hlm. 31"
+        },
+        {
+          "kind": "MISSING_EVIDENCE",
+          "evidenceType": "VITAL_SIGN",
+          "expected": "hipotensi",
+          "guidelineRef": "PNPK Dengue 2021, hlm. 31"
+        },
+        {
+          "kind": "QUOTE",
+          "documentId": "01920000-0000-7000-8000-000000000301",
+          "quote": "Diagnosis tambahan: syok."
+        }
+      ],
+      "documentId": "01920000-0000-7000-8000-000000000301",
+      "relatedDocumentId": null,
+      "diagnosisId": "01920000-0000-7000-8000-000000000202",
+      "relatedClaim": null,
+      "similarity": null,
+      "tariffGap": 4120000,
+      "createdAt": "2026-08-10T02:00:00+07:00"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "01920000-0000-7000-8000-000000000501",
+      "action": "REQUEST_CLARIFICATION",
+      "reason": "Mohon lampirkan catatan resusitasi cairan dan tanda vital saat syok.",
+      "createdAt": "2026-08-10T09:15:00+07:00",
+      "verifier": {
+        "id": "01920000-0000-7000-8000-000000000601",
+        "name": "Verifikator Demo"
+      }
+    }
+  ]
+}

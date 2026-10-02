@@ -1,0 +1,51 @@
+{
+  "diagnoses": [
+    {
+      "name": "Demam berdarah dengue",
+      "icd10Code": "A91",
+      "quote": "Diagnosis kerja: DBD derajat II."
+    },
+    {
+      "name": "Syok",
+      "icd10Code": "R57.9",
+      "quote": "Diagnosis tambahan: syok."
+    }
+  ],
+  "findings": [
+    {
+      "name": "petekie",
+      "isPresent": true,
+      "observedAt": "2026-08-03T08:00:00+07:00",
+      "quote": "Tampak petekie di kedua lengan."
+    },
+    {
+      "name": "akral dingin",
+      "isPresent": false,
+      "observedAt": "2026-08-03T08:00:00+07:00",
+      "quote": "Akral hangat, CRT < 2 detik."
+    }
+  ],
+  "vitalSigns": [
+    {
+      "name": "tekanan darah",
+      "value": "110/70 mmHg",
+      "observedAt": "2026-08-03T08:00:00+07:00",
+      "quote": "TD 110/70 mmHg, nadi 88x/menit."
+    }
+  ],
+  "medications": [
+    {
+      "name": "parasetamol",
+      "dose": "3 x 500 mg",
+      "givenAt": "2026-08-03T09:00:00+07:00",
+      "quote": "Parasetamol 3 x 500 mg per oral."
+    }
+  ],
+  "procedures": [
+    {
+      "name": "pemeriksaan hematokrit serial",
+      "performedAt": "2026-08-03T10:00:00+07:00",
+      "quote": "Cek Ht serial tiap 12 jam."
+    }
+  ]
+}
