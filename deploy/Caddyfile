@@ -1,0 +1,18 @@
+# Caddy obtains and renews Let's Encrypt certificates for {$DOMAIN} automatically.
+# The web app calls the API at /api; the prefix is stripped before reaching NestJS.
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	handle_path /api/* {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}

@@ -2,7 +2,7 @@
 
 ## Project overview
 
-This npm-only monorepo contains `apps/api` (NestJS, TypeScript, Prisma, PostgreSQL, Axios, class-validator) and `apps/web` (Next.js App Router, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Axios). There are no shared packages until real cross-application requirements justify one. The backend follows Clean Architecture. Frontend visuals follow [apps/web/DESIGN.md](apps/web/DESIGN.md).
+This npm-only monorepo contains `apps/api` (NestJS, TypeScript, Prisma, PostgreSQL, Axios, class-validator) and `apps/web` (Next.js App Router, TypeScript, Tailwind CSS v4, shadcn/ui, TanStack Query, Axios). There are no shared packages until real cross-application requirements justify one. The backend follows Clean Architecture. Frontend visuals follow [apps/web/DESIGN.md](apps/web/DESIGN.md). Deployment (root `Dockerfile`, `deploy/`, `.github/workflows/ci-cd.yml`) is described in [docs/deployment.md](docs/deployment.md); new API variables also go in `deploy/.env.example`.
 
 ## Root commands
 
