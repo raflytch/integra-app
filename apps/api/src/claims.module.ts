@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GetClaimDetailUseCase } from './application/claims/get-claim-detail.use-case';
+import { GetClaimStatisticsUseCase } from './application/claims/get-claim-statistics.use-case';
 import { ListClaimQueueUseCase } from './application/claims/list-claim-queue.use-case';
 import { RecordDecisionUseCase } from './application/decisions/record-decision.use-case';
 import { ClaimRepository } from './domain/claims/claim.repository';
@@ -27,6 +28,12 @@ import { ClaimsController } from './presentation/controllers/claims.controller';
       provide: GetClaimDetailUseCase,
       useFactory: (claimRepository: ClaimRepository) =>
         new GetClaimDetailUseCase(claimRepository),
+      inject: [ClaimRepository],
+    },
+    {
+      provide: GetClaimStatisticsUseCase,
+      useFactory: (claimRepository: ClaimRepository) =>
+        new GetClaimStatisticsUseCase(claimRepository),
       inject: [ClaimRepository],
     },
     {

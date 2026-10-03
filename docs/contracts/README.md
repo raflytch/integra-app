@@ -43,11 +43,44 @@ Example: [`claim-detail.example.json`](claim-detail.example.json). Returns `404 
 
 ## `GET /claims` (M-07 antrean)
 
-Example: [`claim-list.example.json`](claim-list.example.json). Optional `?status=PENDING|APPROVED|CLARIFICATION_REQUESTED|ESCALATED`. Ordered by `priorityScore` descending, then `potentialGap` descending. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud". `documentCount` and `extractedDocumentCount` show how many documents the AI has read. `analyzedAt` is the ISO timestamp of the last completed analysis (every document extracted and the tests run), or `null` while the claim is unanalyzed; `GET /claims/:id` returns it too.
+Example: [`claim-list.example.json`](claim-list.example.json). Returns one page, `{ items, total, page, pageSize }`, where `total` counts every claim matching the query. The database filters, searches, sorts, and pages; the web app never downloads the whole queue.
+
+| Query param     | Values                                                                                                                                | Default    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `page`          | integer ≥ 1                                                                                                                           | `1`        |
+| `pageSize`      | integer 1 to 100                                                                                                                      | `10`       |
+| `status`        | `PENDING`, `APPROVED`, `CLARIFICATION_REQUESTED`, `ESCALATED`                                                                         | all        |
+| `facilityId`    | facility UUID                                                                                                                         | all        |
+| `search`        | up to 100 characters, case-insensitive: claim number, INA-CBG code, facility name, primary diagnosis name or ICD-10 code              | none       |
+| `analysis`      | `ANALYZED`, `NOT_ANALYZED`                                                                                                            | all        |
+| `signal`        | `FLAGGED`, `CLEAN` (both only match analyzed claims)                                                                                  | all        |
+| `sortBy`        | `priority`, `claimNo`, `facility`, `admittedAt`, `findings` (finding count), `potentialGap`, `status`, `analyzedAt` (unanalyzed last) | `priority` |
+| `sortDirection` | `asc`, `desc`                                                                                                                         | `desc`     |
+
+Ties fall back to `priorityScore` descending, `potentialGap` descending, then `id`, so pages never overlap. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud". `documentCount` and `extractedDocumentCount` show how many documents the AI has read. `analyzedAt` is the ISO timestamp of the last completed analysis (every document extracted and the tests run), or `null` while the claim is unanalyzed; `GET /claims/:id` returns it too.
+
+## `GET /claims/statistics`
+
+Aggregates over every claim for the Ikhtisar charts and the queue status chips: `{ totalCount, analyzedCount, flaggedCount, totalPotentialGap, statusCounts: { PENDING, APPROVED, CLARIFICATION_REQUESTED, ESCALATED }, monthlyCounts: [{ month: "YYYY-MM", notAnalyzed, clean, flagged }] }`. `flaggedCount` counts claims with at least one finding; `monthlyCounts` groups by admission month, oldest first.
+
+## `GET /facilities`
+
+Every facility as `{ id, name }`, ordered by name, for the queue's Faskes filter. Available to both roles.
 
 ## `GET /facilities/summary` (M-10 Ringkasan Faskes)
 
-Example: [`facility-summary.example.json`](facility-summary.example.json). One row per facility, computed by query and never stored. `flaggedClaimCount` counts claims with at least one finding. Ordered by `totalPotentialGap` descending.
+Example: [`facility-summary.example.json`](facility-summary.example.json). Returns one page, `{ items, total, page, pageSize }`; each item is one facility, aggregated in SQL and never stored. `flaggedClaimCount` counts claims with at least one finding.
+
+| Query param     | Values                                                                                                              | Default             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `page`          | integer ≥ 1                                                                                                         | `1`                 |
+| `pageSize`      | integer 1 to 100                                                                                                    | `10`                |
+| `search`        | up to 100 characters, case-insensitive: facility name, code, or city                                                | none                |
+| `type`          | `A`, `B`, `C`, `D`                                                                                                  | all                 |
+| `sortBy`        | `facility` (name), `claimCount`, `flaggedClaimCount`, `EXISTENCE`, `CONSISTENCY`, `SIMILARITY`, `totalPotentialGap` | `totalPotentialGap` |
+| `sortDirection` | `asc`, `desc`                                                                                                       | `desc`              |
+
+Ties fall back to the facility `id`. The Ikhtisar charts request the first 100 facilities by `totalPotentialGap` and take their totals from `GET /claims/statistics`.
 
 ## Auth (M-11)
 

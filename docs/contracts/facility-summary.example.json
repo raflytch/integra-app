@@ -1,15 +1,24 @@
-[
-  {
-    "facility": {
-      "id": "01920000-0000-7000-8000-000000000001",
-      "code": "RS-3171-021",
-      "name": "RSU Sehat Sentosa",
-      "type": "C",
-      "city": "Jakarta Timur"
-    },
-    "claimCount": 1,
-    "flaggedClaimCount": 1,
-    "findingCounts": { "EXISTENCE": 1, "CONSISTENCY": 0, "SIMILARITY": 0 },
-    "totalPotentialGap": 4120000
-  }
-]
+{
+  "items": [
+    {
+      "facility": {
+        "id": "01920000-0000-7000-8000-000000000001",
+        "code": "RS-3171-021",
+        "name": "RSU Sehat Sentosa",
+        "type": "C",
+        "city": "Jakarta Timur"
+      },
+      "claimCount": 1,
+      "flaggedClaimCount": 1,
+      "findingCounts": {
+        "EXISTENCE": 1,
+        "CONSISTENCY": 0,
+        "SIMILARITY": 0
+      },
+      "totalPotentialGap": 4120000
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 10
+}
