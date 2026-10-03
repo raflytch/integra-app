@@ -55,30 +55,34 @@ function UnsupportedDiagnosis({
     <article className="flex flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-1">
-          <span className="text-xs text-quiet-gray">Diagnosis sekunder</span>
+          <span className="text-caption text-ink-secondary">
+            Diagnosis sekunder
+          </span>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-base font-medium text-graphite">
+            <span className="text-body font-medium text-ink">
               {diagnosis?.name ?? 'Diagnosis tidak dikenal'}
             </span>
             {diagnosis && (
-              <span className="font-mono text-xs text-quiet-gray">
+              <span className="font-mono text-caption text-ink-secondary">
                 {diagnosis.icd10Code}
               </span>
             )}
             <MissingEvidencePill />
           </div>
-          <span className="text-xs text-quiet-gray">
+          <span className="text-caption text-ink-secondary">
             {missingEvidence.length} bukti tidak ditemukan · kekuatan sinyal{' '}
             {formatPercent(finding.strength)}
           </span>
         </div>
         {finding.tariffGap !== null && (
           <div className="flex shrink-0 flex-col gap-0.5 sm:items-end">
-            <span className="text-xs text-quiet-gray">Potensi selisih</span>
-            <span className="text-lg font-semibold tracking-tight text-integra-deep">
+            <span className="text-caption text-ink-secondary">
+              Potensi selisih
+            </span>
+            <span className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
               {formatRupiah(finding.tariffGap)}
             </span>
-            <span className="text-xs text-charcoal-copy">
+            <span className="text-caption text-ink-secondary">
               {formatRupiah(tariffBeforeCorrection)} →{' '}
               {formatRupiah(tariffBeforeCorrection - finding.tariffGap)}
             </span>
@@ -87,29 +91,27 @@ function UnsupportedDiagnosis({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-medium text-charcoal-copy">
+        <h3 className="text-caption font-medium text-ink-secondary">
           Bukti yang dicari di rekam medis
         </h3>
-        <ul className="divide-y divide-linen-border rounded-lg border border-linen-border">
+        <ul className="divide-y divide-hairline rounded-lg border border-hairline">
           {missingEvidence.map((evidence) => (
             <li
               key={`${evidence.evidenceType}-${evidence.expected}`}
               className="flex items-start gap-3 px-3 py-2.5"
             >
               <CircleX
-                className="mt-0.5 size-4 shrink-0 text-quiet-gray"
+                className="mt-0.5 size-4 shrink-0 text-ink-secondary"
                 aria-hidden="true"
               />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-sm text-graphite">
-                  {evidence.expected}
-                </span>
-                <span className="text-xs text-quiet-gray">
+                <span className="text-small text-ink">{evidence.expected}</span>
+                <span className="text-caption text-ink-secondary">
                   {EVIDENCE_TYPE_LABELS[evidence.evidenceType]} ·{' '}
                   {evidence.guidelineRef}
                 </span>
               </span>
-              <span className="shrink-0 text-xs text-charcoal-copy">
+              <span className="shrink-0 text-caption text-ink-secondary">
                 Tidak ditemukan
               </span>
             </li>
@@ -119,7 +121,7 @@ function UnsupportedDiagnosis({
 
       {diagnosisMentions.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h3 className="text-xs font-medium text-charcoal-copy">
+          <h3 className="text-caption font-medium text-ink-secondary">
             Tercantum di
           </h3>
           <ul className="flex flex-col gap-2">
@@ -178,7 +180,7 @@ export function ExistencePanel({
 
   return (
     <TestPanelShell testType="EXISTENCE" findingCount={findings.length}>
-      <ul className="divide-y divide-linen-border">
+      <ul className="divide-y divide-hairline">
         {findings.map((finding, findingIndex) => (
           <li key={finding.id} className="px-6 py-5">
             <UnsupportedDiagnosis

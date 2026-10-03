@@ -16,7 +16,7 @@ export default async function ClaimCardPage({
     <div className="flex flex-col gap-4">
       <Link
         href="/claims"
-        className="flex w-fit items-center gap-1 text-sm text-quiet-gray hover:text-graphite"
+        className="flex w-fit items-center gap-1 text-small text-ink-secondary hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden="true" />
         Antrean Klaim

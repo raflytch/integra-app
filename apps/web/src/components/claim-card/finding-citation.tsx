@@ -8,7 +8,7 @@ function DocumentSource({ document }: { document: ClaimDocument | undefined }) {
     <a
       data-tour="claim-citation-source"
       href={`#document-${document.id}`}
-      className="text-xs text-integra-teal hover:underline"
+      className="text-caption text-primary-hover hover:underline"
     >
       {DOCUMENT_TYPE_LABELS[document.type]} ·{' '}
       {formatDateTime(document.recordedAt)}
@@ -25,20 +25,22 @@ export function FindingCitationItem({
 }) {
   if (citation.kind === 'MISSING_EVIDENCE') {
     return (
-      <div className="flex flex-col gap-1 rounded-md bg-paper-beige px-3 py-2">
-        <p className="text-xs text-quiet-gray">
+      <div className="flex flex-col gap-1 rounded-lg border border-hairline bg-canvas px-3 py-2">
+        <p className="text-caption text-ink-secondary">
           Bukti tidak ditemukan · {EVIDENCE_TYPE_LABELS[citation.evidenceType]}
         </p>
-        <p className="text-sm font-medium text-graphite">{citation.expected}</p>
-        <p className="text-xs text-charcoal-copy">{citation.guidelineRef}</p>
+        <p className="text-small font-medium text-ink">{citation.expected}</p>
+        <p className="text-caption text-ink-secondary">
+          {citation.guidelineRef}
+        </p>
       </div>
     );
   }
 
   if (citation.kind === 'QUOTE') {
     return (
-      <figure className="flex flex-col gap-1 border-l-2 border-integra-mint pl-3">
-        <blockquote className="text-sm text-charcoal-copy">
+      <figure className="flex flex-col gap-1 border-l-2 border-ink-muted pl-3">
+        <blockquote className="text-small text-ink-secondary">
           “{citation.quote}”
         </blockquote>
         <figcaption>
@@ -50,8 +52,8 @@ export function FindingCitationItem({
 
   return (
     <figure className="flex flex-col gap-1">
-      <blockquote className="text-sm text-charcoal-copy">
-        <mark className="rounded-sm bg-integra-wash px-0.5 text-graphite">
+      <blockquote className="text-small text-ink-secondary">
+        <mark className="rounded-sm bg-warning/20 px-0.5 text-ink">
           {citation.text}
         </mark>
       </blockquote>

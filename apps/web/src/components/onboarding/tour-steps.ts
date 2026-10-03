@@ -24,11 +24,13 @@ export const TOUR_STEPS: TourStep[] = [
     showsLogo: true,
   },
   {
-    id: 'sidebar-menu',
-    target: 'sidebar-menu',
+    id: 'main-nav',
+    target: 'main-nav',
     title: 'Menu utama',
     description:
       'Antrean Klaim untuk verifikator. Eskalasi dan Ringkasan Faskes untuk supervisor yang menindaklanjuti klaim dan memantau pola per faskes.',
+    missingTargetDescription:
+      'Buka menu di kiri atas untuk berpindah halaman. Antrean Klaim untuk verifikator; Eskalasi dan Ringkasan Faskes untuk supervisor.',
   },
   {
     id: 'run-analysis',

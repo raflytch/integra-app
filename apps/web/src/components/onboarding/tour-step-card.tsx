@@ -39,28 +39,26 @@ export function TourStepCard({
         />
       )}
       <div className="flex flex-col gap-1.5">
-        <p className="text-xs text-quiet-gray">
+        <p className="text-caption text-ink-secondary">
           Langkah {stepIndex + 1} dari {totalSteps}
         </p>
         <TitleElement
           id={titleId}
-          className="text-base leading-snug font-medium text-graphite"
+          className="text-body font-semibold tracking-display text-ink"
         >
           {step.title}
         </TitleElement>
-        <p className="text-sm leading-normal text-charcoal-copy">
+        <p className="text-small leading-normal text-ink-secondary">
           {isTargetMissing
             ? (step.missingTargetDescription ?? step.description)
             : step.description}
         </p>
       </div>
       {step.points && (
-        <ul className="flex flex-col gap-1.5 rounded-lg bg-paper-beige px-4 py-3">
+        <ul className="flex flex-col gap-1.5 rounded-lg border border-hairline bg-canvas px-4 py-3">
           {step.points.map((point) => (
-            <li key={point.label} className="text-sm text-charcoal-copy">
-              <span className="font-semibold text-graphite">
-                {point.label}.
-              </span>{' '}
+            <li key={point.label} className="text-small text-ink-secondary">
+              <span className="font-medium text-ink">{point.label}.</span>{' '}
               {point.detail}
             </li>
           ))}
@@ -72,9 +70,7 @@ export function TourStepCard({
             key={progressIndex}
             className={cn(
               'h-1 flex-1 rounded-full',
-              progressIndex <= stepIndex
-                ? 'bg-integra-deep'
-                : 'bg-whiteboard-gray',
+              progressIndex <= stepIndex ? 'bg-ink' : 'bg-hairline',
             )}
           />
         ))}
@@ -84,7 +80,7 @@ export function TourStepCard({
           variant="ghost"
           size="sm"
           onClick={onSkip}
-          className="text-quiet-gray"
+          className="text-ink-secondary"
         >
           Lewati
         </Button>

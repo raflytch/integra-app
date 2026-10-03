@@ -27,13 +27,14 @@ import type {
   TestType,
 } from '@/types/claim.types';
 
+/** Chip tones from DESIGN.md. Indigo is reserved for interactive elements, so no chip uses it. */
 const PILL_TONE_CLASS_NAMES = {
-  neutral: 'border-linen-border bg-eggshell-canvas text-charcoal-copy',
-  muted: 'border-transparent bg-cloud-surface text-quiet-gray',
-  warm: 'border-transparent bg-paper-beige text-graphite',
-  brand: 'border-transparent bg-integra-wash text-integra-deep',
-  brandStrong: 'border-transparent bg-integra-deep text-white',
-  strong: 'border-transparent bg-graphite text-white',
+  outline: 'border-hairline bg-surface text-ink-secondary',
+  neutral: 'border-transparent bg-subtle text-ink-secondary',
+  success: 'border-success/30 bg-success/10 text-success-ink',
+  warning: 'border-warning/30 bg-warning/10 text-warning-ink',
+  error: 'border-error/30 bg-error/10 text-error-ink',
+  inverse: 'border-transparent bg-ink text-surface',
 } as const;
 
 type PillTone = keyof typeof PILL_TONE_CLASS_NAMES;
@@ -44,10 +45,10 @@ const CLAIM_STATUS_APPEARANCE: Record<
   ClaimStatus,
   { tone: PillTone; icon: LucideIcon }
 > = {
-  PENDING: { tone: 'neutral', icon: CircleDashed },
-  CLARIFICATION_REQUESTED: { tone: 'warm', icon: MessageSquareText },
-  ESCALATED: { tone: 'strong', icon: ShieldAlert },
-  APPROVED: { tone: 'brand', icon: CircleCheck },
+  PENDING: { tone: 'outline', icon: CircleDashed },
+  CLARIFICATION_REQUESTED: { tone: 'warning', icon: MessageSquareText },
+  ESCALATED: { tone: 'error', icon: ShieldAlert },
+  APPROVED: { tone: 'success', icon: CircleCheck },
 };
 
 const DECISION_ACTION_APPEARANCE: Record<
@@ -66,9 +67,9 @@ const TEST_TYPE_ICONS: Record<TestType, LucideIcon> = {
 };
 
 const PRIORITY_LEVELS: { minScore: number; label: string; tone: PillTone }[] = [
-  { minScore: 0.7, label: 'Prioritas tinggi', tone: 'brandStrong' },
-  { minScore: 0.4, label: 'Prioritas sedang', tone: 'brand' },
-  { minScore: 0, label: 'Prioritas rendah', tone: 'muted' },
+  { minScore: 0.7, label: 'Prioritas tinggi', tone: 'error' },
+  { minScore: 0.4, label: 'Prioritas sedang', tone: 'warning' },
+  { minScore: 0, label: 'Prioritas rendah', tone: 'neutral' },
 ];
 
 export function Pill({
@@ -85,7 +86,11 @@ export function Pill({
   return (
     <Badge
       variant="outline"
-      className={cn(PILL_TONE_CLASS_NAMES[tone], className)}
+      className={cn(
+        'rounded-full px-2.5 py-0.5 text-caption',
+        PILL_TONE_CLASS_NAMES[tone],
+        className,
+      )}
     >
       {Icon && <Icon aria-hidden="true" />}
       {children}
@@ -113,7 +118,7 @@ export function DecisionActionPill({ action }: { action: DecisionAction }) {
 
 export function NeedsClarificationPill() {
   return (
-    <Pill tone="brand" icon={Flag}>
+    <Pill tone="warning" icon={Flag}>
       Perlu klarifikasi
     </Pill>
   );
@@ -121,7 +126,7 @@ export function NeedsClarificationPill() {
 
 export function MissingEvidencePill() {
   return (
-    <Pill tone="brand" icon={CircleAlert}>
+    <Pill tone="warning" icon={CircleAlert}>
       Belum ada bukti
     </Pill>
   );
@@ -149,7 +154,7 @@ export function TestSignalPill({
   const hasFindings = findingCount > 0;
   return (
     <Pill
-      tone={hasFindings ? 'brand' : 'muted'}
+      tone={hasFindings ? 'warning' : 'neutral'}
       icon={TEST_TYPE_ICONS[testType]}
     >
       {TEST_TYPE_DETAILS[testType].title}
@@ -160,7 +165,7 @@ export function TestSignalPill({
 
 export function SeverityPill({ severityLevel }: { severityLevel: number }) {
   return (
-    <Pill tone="neutral">
+    <Pill tone="outline">
       Severity {SEVERITY_LEVEL_NUMERALS[severityLevel - 1] ?? severityLevel}
     </Pill>
   );
@@ -171,12 +176,12 @@ export function FacilityTypePill({
 }: {
   facilityType: FacilityType;
 }) {
-  return <Pill tone="muted">Tipe {facilityType}</Pill>;
+  return <Pill tone="neutral">Tipe {facilityType}</Pill>;
 }
 
 export function IntegraAiPill() {
   return (
-    <Pill tone="brandStrong" icon={Sparkles}>
+    <Pill tone="inverse" icon={Sparkles}>
       INTEGRA AI
     </Pill>
   );
@@ -184,7 +189,7 @@ export function IntegraAiPill() {
 
 export function ReadByAiPill() {
   return (
-    <Pill tone="brand" icon={Sparkles}>
+    <Pill tone="neutral" icon={Sparkles}>
       Dibaca AI
     </Pill>
   );

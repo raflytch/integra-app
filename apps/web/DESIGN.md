@@ -1,88 +1,104 @@
-# Resik visual system
+# INTEGRA visual system
 
-This is the visual source of truth for `apps/web`. The reference direction is a Heptabase-inspired **sunlit research desk**: calm, compact, document-oriented, and professional. Product interfaces should feel like organized paper and workspace surfaces. Use warm neutrals, Graphite copy, and the INTEGRA teal family taken from the logo (`public/integra-logo.png`). Avoid the look of a generic SaaS dashboard.
+This is the visual source of truth for `apps/web`. The direction is **editorial precision**, adapted from the Genesis system (designmd.ai/chef/genesis): quietly confident, bold display typography, generous spacing, and gallery-frame surfaces. It should feel professional and modern without being sterile, with high information density balanced by breathing room.
 
-## Visual hierarchy and surfaces
+INTEGRA keeps Genesis's gallery-frame idea but leads with borders: every surface has a 1px `hairline` border, and shadows are **small and low-opacity** (at most 8% black), only hinting at elevation.
 
-The light theme is the default. Eggshell Canvas is the page and primary card surface. Cloud Surface is for muted panels and segmented tracks. Paper Beige is for explanatory insets. Whiteboard Gray is a workspace canvas. Linen Border separates content gently. Standard cards are flat; use borders, spacing, and surface changes before shadows. Keep application density compact.
+## Colors
 
-| Token           | Value     | Use                                         |
-| --------------- | --------- | ------------------------------------------- |
-| Eggshell Canvas | `#fdfcfb` | Page, navigation, cards, light controls     |
-| Cloud Surface   | `#f7f7f7` | Secondary panels and tracks                 |
-| Paper Beige     | `#f0f0ea` | Warm inset and feature boxes                |
-| Whiteboard Gray | `#eeeded` | Workspace canvas                            |
-| Linen Border    | `#e4ded3` | Borders, dividers, outlined badges          |
-| Graphite        | `#2e2e2e` | Primary copy, buttons, important icons      |
-| Charcoal Copy   | `#454545` | Secondary copy and icons                    |
-| Quiet Gray      | `#6a6972` | Metadata and helper text                    |
-| Disabled Ash    | `#a8a8a8` | Disabled controls                           |
-| Integra Deep    | `#075c59` | Primary buttons, brand wordmark, active nav |
-| Integra Teal    | `#048173` | Links, focus ring, references               |
-| Integra Mint    | `#39c097` | Small decorative highlights, never text     |
-| Integra Wash    | `#e8f5f0` | Selected and active surfaces, icon tiles    |
+| Token          | Value     | Tailwind                            | Use                                                                |
+| -------------- | --------- | ----------------------------------- | ------------------------------------------------------------------ |
+| Primary        | `#6366F1` | `primary`                           | Primary buttons, active filter chips, selected controls, focus     |
+| Primary Hover  | `#4F46E5` | `primary-hover`                     | Hover on primary elements; text links (meets AA on white)          |
+| Primary Wash   | `#EEF2FF` | `primary-wash`                      | Selected surface of an interactive control (e.g. chosen decision)  |
+| Background     | `#FAFAFA` | `canvas`, `background`              | Page background, table headers, inset boxes inside cards           |
+| Surface        | `#FFFFFF` | `surface`, `card`, `popover`        | Cards, panels, navigation, dialogs, menus                          |
+| Subtle         | `#F4F4F5` | `subtle`                            | Neutral chips, hover rows, nav-link hover and active background    |
+| Border         | `#E8E8EC` | `hairline`, `border`                | Card borders, dividers, input borders                              |
+| Text Primary   | `#0A0A0A` | `ink`                               | Headings, body text, key values                                    |
+| Text Secondary | `#6B6B6B` | `ink-secondary`                     | Descriptions, metadata, timestamps, labels                         |
+| Neutral        | `#9C9C9C` | `ink-muted`                         | Placeholders, disabled text, decorative icons only (fails AA text) |
+| Chart Neutral  | `#D4D4D8` | `chart-neutral`                     | Baseline chart series (claims without flags, pending status)       |
+| Success        | `#10B981` | `success` (`success-ink` `#047857`) | Approved status, saved confirmations                               |
+| Warning        | `#F59E0B` | `warning` (`warning-ink` `#B45309`) | "Perlu klarifikasi", findings, pending caution, identical text     |
+| Error          | `#EF4444` | `error` (`error-ink` `#B91C1C`)     | Escalation, high priority, validation errors, destructive actions  |
 
-Primary application actions use Integra Deep; body copy stays Graphite. Use the teal family with restraint: one primary action per area, not a wall of teal buttons, badges, tabs, and icons. The logo gradient lives only in the logo asset; UI surfaces stay flat.
+Indigo is reserved for interactive elements: never for decoration, static text, money, or status chips. Semantic colors appear as a 10% tint with a 30% border and their `*-ink` text tone, which keeps chip text above 4.5:1 contrast. The INTEGRA logo keeps its own colors and is never recolored. Light mode is the only theme for now. Color tokens live in a non-inline `@theme` block, so charts can reference them as `var(--color-warning)` and so on.
 
 ## Typography
 
-Use Plus Jakarta Sans for headings and interface text. Prefer weight 500 for major headings and weights 400, 500, and 600 for body copy and controls. Technical IDs and code use `ui-monospace`. The Next.js font loader provides Plus Jakarta Sans with a system sans-serif fallback. Avoid extra font families and overly heavy headings.
+- **Display:** General Sans (Fontshare stylesheet in `app/layout.tsx`), weight 600, tracking `-0.03em` (`font-display tracking-display`). `h1`–`h3` use it by default.
+- **Body and UI:** DM Sans (`next/font`), weights 400 and 500 only.
+- **Code and IDs:** JetBrains Mono (`font-mono`) for claim numbers, ICD-10 and INA-CBG codes, facility codes.
 
-| Role              | Size | Font / weight         | Line height and tracking |
-| ----------------- | ---- | --------------------- | ------------------------ |
-| Utility           | 12px | Plus Jakarta Sans 400 | 1.5                      |
-| Segmented control | 13px | Plus Jakarta Sans 500 | Default                  |
-| Caption           | 14px | Plus Jakarta Sans 400 | 1.5                      |
-| Body              | 16px | Plus Jakarta Sans 400 | 1.5                      |
-| Body strong       | 16px | Plus Jakarta Sans 600 | 1.5                      |
-| Card heading      | 20px | Plus Jakarta Sans 500 | Default                  |
-| Section heading   | 36px | Plus Jakarta Sans 500 | 1.3, -0.54px             |
-| Hero              | 48px | Plus Jakarta Sans 500 | 1.3, -1.584px            |
+Never swap the display and body faces, and use no more than two body weights on a screen.
 
-## Spacing, radius, and elevation
+| Role            | Size | Tailwind        | Use                                                     |
+| --------------- | ---- | --------------- | ------------------------------------------------------- |
+| Headline        | 60px | `text-headline` | Login brand statement (wide screens only)               |
+| Section heading | 32px | `text-section`  | Page titles, claim title                                |
+| Subhead         | 24px | `text-subhead`  | Login title, headline money figures                     |
+| Body            | 15px | `text-body`     | Body copy, table cells, panel headings                  |
+| UI              | 14px | `text-sm`       | Buttons, inputs, navigation links                       |
+| Small           | 13px | `text-small`    | Secondary rows, list content, filter chips              |
+| Caption         | 12px | `text-caption`  | Metadata, chips, helper text                            |
+| Overline        | 11px | `text-overline` | Uppercase table headers and eyebrows (`tracking-wider`) |
 
-Use a 4px base scale: `4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 52, 60, 64, 80, 128px`. The usual element gap is 8px; compact cards use 16px padding; standard content cards use 24px. Reserve 128px for large public sections, not workspace UI.
+These size tokens are registered with tailwind-merge in `src/lib/utils.ts`; add any new one there too, or `cn()` will drop it next to a text color.
 
-| Element                                          | Radius |
-| ------------------------------------------------ | ------ |
-| Standard cards and images                        | 12px   |
-| Feature boxes                                    | 8px    |
-| Compact workspace cards, buttons, inputs, badges | 6px    |
-| Pills and segmented tracks                       | 9999px |
-| Links                                            | 0      |
+## Spacing and layout
 
-Standard cards have no shadow. A floating preview may use `0 0 4px rgba(0,0,0,.03), 0 4px 8px rgba(0,0,0,.04), 0 16px 26px rgba(0,0,0,.05)`. A large overlay may use `0 0 0 1px rgba(0,0,0,.04), 0 14px 32px rgba(0,0,0,.10), 0 28px 70px rgba(0,0,0,.14)`. A selected segmented control may use `0 1px 2px rgba(0,0,0,.05)`. Avoid colored or heavy shadows.
+- 4px base grid: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96px.
+- Component padding: small 8×12, medium 10×16, large 12×24.
+- Workspace content: `max-w-7xl` (1280px), 32px side padding on desktop, 16px on mobile; 32px top padding on mobile and 40px on desktop.
+- Grid and stack gaps between cards: 16–24px.
 
-## Component recipes
+## Radius
 
-- **Standard content card:** Eggshell background, 12px radius, 24px padding, no shadow, optional `1px rgba(0,0,0,.08)` border. It should read as paper, not a floating tile.
-- **Compact workspace card:** `rgba(252,252,252,.5)` background, 6px radius, 16px padding, no shadow, subtle dividers as needed.
-- **Paper feature box:** Paper Beige background, 8px radius, `16px 17px` padding for supporting explanation.
-- **Primary button:** Integra Deep background, white Plus Jakarta Sans 16px medium or semibold text, 6px radius. Public campaign CTAs may use a pill radius where justified.
-- **Outlined button:** Transparent, `1px solid rgba(0,0,0,.13)`, Graphite text, 6px radius, compact padding.
-- **Segmented control:** Cloud track and pill radius; Plus Jakarta Sans 13px medium. Selected segment is Eggshell with Integra Deep text and optional tiny shadow; inactive text is Quiet Gray.
-- **Editorial link:** Integra Teal text without a pill, gradient, or button treatment. Underline only when needed for affordance.
-- **Table:** Semantic table with restrained row separators, warm surfaces, compact rows, Graphite key values, Quiet Gray metadata. Avoid boxing every cell. Allow horizontal scrolling or compact representations on narrow screens.
-- **Form:** Prefer shadcn form primitives. Use 6px radius, subtle borders, explicit labels, accessible concise errors adjacent to fields, and no heavy field shadows.
-- **Loading:** Use shadcn Skeleton for known cards, rows, lists, and panels to preserve geometry. Avoid replacing structured pages with a single spinner.
-- **Error and empty states:** Explain the issue in plain language and offer a useful recovery or next action when one exists. Use Alert, AlertDialog, or Sonner as appropriate; never expose stack traces, SQL, credentials, or internal service details. Empty states are concise and avoid giant illustrations.
+| Radius | Use                                             |
+| ------ | ----------------------------------------------- |
+| 4px    | Inline code, `mark` highlights                  |
+| 6px    | Buttons, inputs, selects, nav links, icon tiles |
+| 8px    | Inset boxes, dropdowns, menus, list frames      |
+| 12px   | Cards, panels, tables, dialogs, empty states    |
+| 9999px | Chips and badges, avatars, status dots          |
 
-Before building a new primitive, check the official shadcn/ui registry. Compose application components from its primitives in `src/components/ui` and keep overrides aligned with these tokens.
+Keep cards at 12px and controls at 6px; do not mix them.
 
-## Layout, responsiveness, and imagery
+## Elevation: border first, small shadows
 
-Use readable content widths, compact vertical rhythm, and clear document hierarchy. Desktop, tablet, and mobile layouts should preserve reading order and keyboard use. Tables can scroll horizontally without losing semantic markup. Avoid oversized cards, excessive blank space, and decorative animation. Imagery, when a real content need exists, should support a research or document context and use 12px corners. Do not add generic dashboard illustrations or fake content to fill space.
+The shadow scale in `globals.css` is capped: `shadow-xs` (1px, 4%) for resting surfaces, `shadow-sm` for chart tooltips, `shadow-md` for menus and popovers, and `shadow-lg` and above share one 8px, 8% value for sheets, dialogs, and the tour card. Do not add arbitrary `shadow-[...]` values.
 
-## Accessibility and motion
+- Cards, panels, stat tiles, tables, buttons (primary and outline), and inputs rest on a 1px `hairline` border with `shadow-xs`.
+- Interactive rows and cards change background (`hover:bg-subtle`) instead of lifting further.
+- Overlays dim with a solid `bg-ink/55` layer (the tour spotlight uses four such panels around its target and a 2px `primary` border).
+- Focus: inputs turn their border `primary` with a 3px `primary/15` ring; other controls use the global 2px `primary` outline.
 
-Use semantic HTML, explicit labels, visible focus rings, keyboard-operable controls, and sufficient text contrast. Add ARIA only when semantics need it. Respect reduced-motion preferences for future transitions. Disabled appearance must remain understandable; do not rely on color alone for meaning.
+## Components
 
-## CSS and Tailwind v4 contract
+- **Buttons:** Primary is indigo fill, white text, 6px radius, medium weight, hover `primary-hover`. Outline (secondary) is `surface` with a `hairline` border. Ghost has no border or fill, only a subtle hover background. Destructive is red text with a red border. All shift up 1px on hover when motion is allowed. Sizes: sm 32px, default 38px, lg 44px. Use one primary button per view section.
+- **Cards and panels:** `rounded-xl border border-hairline bg-surface`, 16px padding for compact side panels and 24px for content panels. Panel headers are separated by a `hairline` bottom border.
+- **Inset boxes:** `rounded-lg border border-hairline bg-canvas` for supporting explanations, evidence that was not found, and money breakdowns.
+- **Inputs:** 1px `hairline` border, `surface` background, 6px radius, 10×14px padding, 14px text, `ink-muted` placeholder. Error state turns the border red.
+- **Chips (`Pill` in `components/claim-pills.tsx`):** pill shape, 12px text, medium weight. Tones: `outline`, `neutral` (gray), `success`, `warning`, `error`, and `inverse` (ink, for the INTEGRA AI mark). Filter chips are the only indigo chips: `surface` with a `hairline` border, and indigo fill with white text when active.
+- **Tables and lists:** stacked rows with 1px dividers, 12px×16px cell padding, `canvas` header row with uppercase overline labels, `hover:bg-subtle` on rows. Tables live inside a 12px bordered frame and may scroll horizontally on narrow screens. Long tables paginate at 20 rows with outline Sebelumnya/Berikutnya buttons in a bordered footer.
+- **Navigation:** the shadcn Sidebar (`components/app-sidebar.tsx`) on `surface` with a right `hairline` border: logo and wordmark on top, role-based groups with overline labels, and a footer with the signed-in user card, Panduan, and Keluar. Menu buttons are 36px, 14px medium; the active item uses `primary-wash` with `primary-hover` text. Below `md` the sidebar becomes a sheet opened from a sticky 56px header.
+- **Dashboards (`components/dashboard-panels.tsx`):** `StatTile` (overline label, subhead value, caption hint) in a 2-column grid on mobile and 4 on desktop; `ChartPanel` cards (24px padding, body-weight heading, small description) holding shadcn charts. Chart series use tokens only: `chart-neutral` for the baseline, `warning` for flagged claims, semantic colors for statuses, `warning`, `error`, and `ink-secondary` for the three tests, `warning-ink` for rupiah gaps. Gridlines are `hairline`, axes have no lines, bars have a 4px end radius, and every chart has a text legend (`ChartLegendList`) with values so color is never the only cue. Indigo is not used in charts.
+- **Quotes and highlights:** document quotes have a 2px `ink-muted` left rule; identical text across claims is a `warning/20` `mark`.
+- **Loading, errors, empty states:** shadcn Skeleton on `subtle` with the final geometry; plain-language Alerts with a recovery action; concise Empty states in a bordered `surface` card.
 
-`src/app/globals.css` defines both semantic shadcn variables (`--background`, `--primary`, `--border`, etc.) and Tailwind v4 `@theme inline` utilities. The named palette is exposed as `--color-eggshell-canvas`, `--color-cloud-surface`, `--color-paper-beige`, `--color-whiteboard-gray`, `--color-linen-border`, `--color-graphite`, `--color-charcoal-copy`, `--color-quiet-gray`, `--color-disabled-ash`, `--color-integra-deep`, `--color-integra-teal`, `--color-integra-mint`, and `--color-integra-wash`. Font tokens are `--font-jakarta-sans`, `--font-sans`, and `--font-ui-monospace`; radius tokens include `--radius-md`, `--radius-xl`, and `--radius-full`. Reuse these utilities and the 4px spacing scale instead of scattering hex values or arbitrary spacing in components.
+Check the official shadcn/ui registry before building a primitive. Primitives in `src/components/ui` import `cn` from `@/lib/utils` and have been aligned with these tokens; keep further overrides inside the same palette.
+
+## Decoration and motion
+
+The only decorative element is the static dot grid on the login brand panel (`hairline` dots on a 20px grid). No gradients, illustrations, or glass effects elsewhere. Transitions last 200ms and run only under `motion-safe`.
+
+## Accessibility
+
+Use semantic HTML, explicit labels, visible focus, and keyboard-operable controls. Body and metadata text use `ink` or `ink-secondary` (never `ink-muted`). Do not rely on color alone: chips pair color with an icon or label. Do not use pure black (`#000`) for text.
 
 ## Do and don't
 
-**Do:** use Eggshell as the page base, Integra Deep for primary actions, restrained borders, flat cards, compact spacing, Plus Jakarta Sans throughout the interface, existing shadcn components, visible focus, selective Integra Teal links, and the logo mark (`public/integra-mark.png`) for brand placement.
+**Do:** use `canvas` for the page and `surface` for cards, separate everything with `hairline` borders, use indigo only for what can be clicked or is selected, keep General Sans for headings and DM Sans for everything else, and keep the 4px grid.
 
-**Don't:** make every control teal, recolor or stretch the logo, use gradients or glassmorphism, overuse shadows, use pure white everywhere, make every shape a pill, add arbitrary colors or spacing, create oversized dashboard cards, or add decorative motion without purpose.
+**Don't:** add shadows larger than the capped scale or without a border, use indigo for static text or money, put more than one primary button in a section, use `ink-muted` for readable text, mix 12px and 6px radii on the same kind of element, or add decorative gradients and illustrations.

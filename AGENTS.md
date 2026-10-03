@@ -6,7 +6,7 @@ This npm-only monorepo contains `apps/api` (NestJS, TypeScript, Prisma, PostgreS
 
 ## Root commands
 
-Use root commands for normal work: `npm run dev` (both), `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run format:check`, `npm run prisma:generate`, `npm run prisma:migrate`, `npm run prisma:deploy`, `npm run prisma:studio`, `npm run prisma:validate`, and `npm run llm:smoke` (two small paid calls to the configured LLM). Prefer these over changing into a workspace. Use npm only: never pnpm, Yarn, or Bun.
+Use root commands for normal work: `npm run dev` (both), `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run format:check`, `npm run prisma:generate`, `npm run prisma:migrate`, `npm run prisma:deploy`, `npm run prisma:studio`, `npm run prisma:validate`, `npm run llm:smoke` (two small paid calls to the configured LLM), and the free demo seeds `npm run seed` (`seed:users` then `seed:demo`), `npm run seed:demo -- --count=N`, and `npm run seed:fixture`. `npm run data:generate` makes paid LLM calls; run it only when asked. Prefer these over changing into a workspace. Use npm only: never pnpm, Yarn, or Bun.
 
 ## Architecture
 

@@ -74,10 +74,10 @@ export function LoginForm() {
     <form onSubmit={handleSubmit}>
       <FieldGroup className="gap-6">
         <Field>
-          <FieldLabel htmlFor="login-email" className="text-graphite">
+          <FieldLabel htmlFor="login-email" className="text-small text-ink">
             Email kerja
           </FieldLabel>
-          <InputGroup className="h-10 border-linen-border bg-eggshell-canvas">
+          <InputGroup className="h-11">
             <InputGroupInput
               id="login-email"
               type="email"
@@ -87,13 +87,13 @@ export function LoginForm() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
-            <InputGroupAddon className="text-quiet-gray">
+            <InputGroupAddon className="text-ink-muted">
               <Mail aria-hidden="true" />
             </InputGroupAddon>
           </InputGroup>
         </Field>
         <Field>
-          <FieldLabel htmlFor="login-code" className="text-graphite">
+          <FieldLabel htmlFor="login-code" className="text-small text-ink">
             Kode authenticator
           </FieldLabel>
           <InputOTP
@@ -108,27 +108,27 @@ export function LoginForm() {
             {[0, OTP_GROUP_SIZE].map((groupStartIndex) => (
               <Fragment key={groupStartIndex}>
                 {groupStartIndex > 0 && (
-                  <InputOTPSeparator className="text-disabled-ash" />
+                  <InputOTPSeparator className="text-ink-muted" />
                 )}
                 <InputOTPGroup>
                   {Array.from({ length: OTP_GROUP_SIZE }, (_, offset) => (
                     <InputOTPSlot
                       key={offset}
                       index={groupStartIndex + offset}
-                      className="size-11 border-linen-border bg-eggshell-canvas text-base font-medium text-graphite"
+                      className="size-11 text-body font-medium text-ink"
                     />
                   ))}
                 </InputOTPGroup>
               </Fragment>
             ))}
           </InputOTP>
-          <FieldDescription className="flex items-center gap-1.5 text-quiet-gray">
+          <FieldDescription className="flex items-center gap-1.5 text-caption text-ink-secondary">
             <Smartphone className="size-3.5" aria-hidden="true" />
             Lihat 6 digit kode INTEGRA di aplikasi authenticator.
           </FieldDescription>
         </Field>
         {logInMutation.isError && (
-          <Alert variant="destructive" className="border-linen-border">
+          <Alert variant="destructive">
             <CircleAlert aria-hidden="true" />
             <AlertTitle>Gagal masuk</AlertTitle>
             <AlertDescription>

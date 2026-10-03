@@ -32,7 +32,7 @@ const CONFIGURATION_STATUSES = new Set([400, 401, 403, 404, 422]);
 
 /**
  * `LlmClient` backed by the `openai` SDK, pointed at any OpenAI-compatible
- * endpoint (DeepSeek by default). The SDK retries 408/409/429/5xx and network
+ * endpoint (DeepSeek V4 Flash via SumoPod by default). The SDK retries 408/409/429/5xx and network
  * errors; this class only retries once on output that fails the schema.
  */
 @Injectable()

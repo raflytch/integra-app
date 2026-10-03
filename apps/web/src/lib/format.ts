@@ -50,3 +50,23 @@ export function calculateAgeInYears(birthDate: string, onDate: string): number {
   const yearDifference = reference.getUTCFullYear() - birth.getUTCFullYear();
   return hasHadBirthdayThisYear ? yearDifference : yearDifference - 1;
 }
+
+const compactNumberFormatter = new Intl.NumberFormat('id-ID', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+const monthFormatter = new Intl.DateTimeFormat('id-ID', {
+  month: 'short',
+  year: '2-digit',
+  timeZone: 'UTC',
+});
+
+/** Short rupiah for chart axes, e.g. "Rp 12,5 jt". */
+export function formatCompactRupiah(amount: number): string {
+  return `Rp ${compactNumberFormatter.format(amount)}`;
+}
+
+/** Month label for a date-only string, e.g. "Sep 26". */
+export function formatMonth(dateOnly: string): string {
+  return monthFormatter.format(new Date(dateOnly));
+}

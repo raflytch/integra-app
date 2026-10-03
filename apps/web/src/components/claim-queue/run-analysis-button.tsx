@@ -38,7 +38,7 @@ export function RunAnalysisButton() {
       </Button>
       <p
         role="status"
-        className="max-w-xs text-xs text-quiet-gray sm:text-right"
+        className="max-w-xs text-caption text-ink-secondary sm:text-right"
       >
         {analysisMutation.isSuccess &&
           describeAnalysisRun(analysisMutation.data)}

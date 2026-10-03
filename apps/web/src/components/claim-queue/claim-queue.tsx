@@ -37,13 +37,14 @@ export function ClaimQueue({
           }
           aria-label="Filter status klaim"
           data-tour="queue-filter"
-          className="w-fit rounded-full bg-cloud-surface p-1"
+          spacing={2}
+          className="flex-wrap"
         >
           {filterOptions.map((option) => (
             <ToggleGroupItem
               key={option.value}
               value={option.value}
-              className="h-7 rounded-full px-3 text-[13px] font-medium text-quiet-gray data-[state=on]:bg-eggshell-canvas data-[state=on]:text-integra-deep data-[state=on]:shadow-[0_1px_2px_rgba(0,0,0,.05)]"
+              className="h-8 rounded-full border border-hairline bg-surface px-3 text-small font-medium text-ink-secondary hover:bg-subtle hover:text-ink data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
             >
               {option.label}
             </ToggleGroupItem>
@@ -63,7 +64,7 @@ export function ClaimQueue({
           description={activeFilterOption.emptyDescription}
         />
       ) : (
-        <ClaimQueueTable claims={claimQueueQuery.data} />
+        <ClaimQueueTable key={queueFilter} claims={claimQueueQuery.data} />
       )}
     </div>
   );

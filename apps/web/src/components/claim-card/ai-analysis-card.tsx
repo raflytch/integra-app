@@ -98,44 +98,42 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
     <section
       aria-labelledby="ai-analysis-heading"
       data-tour="claim-ai-analysis"
-      className="flex flex-col gap-4 rounded-xl border border-linen-border bg-eggshell-canvas p-6"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-6"
     >
       <div className="flex flex-col items-start gap-2">
         <IntegraAiPill />
         <h2
           id="ai-analysis-heading"
-          className="text-base font-medium text-graphite"
+          className="text-body font-semibold tracking-display text-ink"
         >
           {headline}
         </h2>
-        <p className="text-sm leading-normal text-charcoal-copy">
-          {explanation}
-        </p>
+        <p className="text-body text-ink-secondary">{explanation}</p>
       </div>
-      <div className="flex gap-3 rounded-lg bg-paper-beige px-4 py-3">
+      <div className="flex gap-3 rounded-lg border border-hairline bg-canvas px-4 py-3">
         <Lightbulb
-          className="mt-0.5 size-4 shrink-0 text-integra-deep"
+          className="mt-0.5 size-4 shrink-0 text-ink"
           aria-hidden="true"
         />
-        <p className="text-sm text-graphite">
-          <span className="font-semibold">Saran langkah berikutnya. </span>
+        <p className="text-small text-ink">
+          <span className="font-medium">Saran langkah berikutnya. </span>
           {suggestion}
         </p>
       </div>
       <ol className="grid gap-3 sm:grid-cols-3">
         {ANALYSIS_STEPS.map((analysisStep, stepIndex) => (
           <li key={analysisStep.title} className="flex gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-integra-wash text-integra-deep">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-hairline bg-canvas text-ink">
               <analysisStep.icon className="size-4" aria-hidden="true" />
             </span>
             <span className="flex flex-col gap-0.5">
-              <span className="text-xs text-quiet-gray">
+              <span className="text-caption text-ink-secondary">
                 Langkah {stepIndex + 1}
               </span>
-              <span className="text-sm font-medium text-graphite">
+              <span className="text-small font-medium text-ink">
                 {analysisStep.title}
               </span>
-              <span className="text-xs text-quiet-gray">
+              <span className="text-caption text-ink-secondary">
                 {analysisStep.detail}
               </span>
             </span>

@@ -37,16 +37,16 @@ const DECISION_ACTIONS = Object.keys(
 function DecisionHistory({ decisions }: { decisions: ClaimDecision[] }) {
   if (decisions.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2 border-t border-linen-border pt-4">
-      <h3 className="text-xs text-quiet-gray">Riwayat keputusan</h3>
+    <div className="flex flex-col gap-2 border-t border-hairline pt-4">
+      <h3 className="text-caption text-ink-secondary">Riwayat keputusan</h3>
       <ol className="flex flex-col gap-3">
         {decisions.map((decision) => (
           <li key={decision.id} className="flex flex-col items-start gap-1">
             <DecisionActionPill action={decision.action} />
-            <span className="text-sm text-charcoal-copy">
+            <span className="text-small text-ink-secondary">
               {decision.reason}
             </span>
-            <span className="text-xs text-quiet-gray">
+            <span className="text-caption text-ink-secondary">
               {decision.verifier.name} · {formatDateTime(decision.createdAt)}
             </span>
           </li>
@@ -91,27 +91,27 @@ export function DecisionPanel({
     <section
       aria-labelledby="decision-panel-heading"
       data-tour="claim-decision-panel"
-      className="flex flex-col gap-4 rounded-xl border border-linen-border bg-eggshell-canvas p-4"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
       <div className="flex flex-col gap-0.5">
         <h2
           id="decision-panel-heading"
-          className="text-sm font-medium text-graphite"
+          className="text-body font-semibold tracking-display text-ink"
         >
           Keputusan verifikator
         </h2>
-        <p className="text-xs text-quiet-gray">
+        <p className="text-caption text-ink-secondary">
           INTEGRA menandai, Anda yang memutuskan.
         </p>
       </div>
       {savedDecision && (
-        <Alert role="status" className="border-integra-teal bg-integra-wash">
-          <CircleCheck aria-hidden="true" className="text-integra-deep" />
-          <AlertTitle className="text-integra-deep">
+        <Alert role="status" className="border-success/30 bg-success/10">
+          <CircleCheck aria-hidden="true" className="text-success-ink" />
+          <AlertTitle className="text-success-ink">
             Keputusan tersimpan:{' '}
             {DECISION_ACTION_DETAILS[savedDecision.action].label}
           </AlertTitle>
-          <AlertDescription className="flex flex-col items-start gap-2 text-charcoal-copy">
+          <AlertDescription className="flex flex-col items-start gap-2 text-ink-secondary">
             Status klaim di antrean sudah diperbarui.
             <Button asChild size="sm" variant="outline">
               <Link href="/claims">Kembali ke antrean</Link>
@@ -132,7 +132,7 @@ export function DecisionPanel({
             <label
               key={action}
               htmlFor={`decision-${action}`}
-              className="flex cursor-pointer items-start gap-3 rounded-md border border-linen-border px-3 py-2 has-[[data-state=checked]]:border-integra-teal has-[[data-state=checked]]:bg-integra-wash"
+              className="flex cursor-pointer items-start gap-3 rounded-md border border-hairline px-3 py-2 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary-wash"
             >
               <RadioGroupItem
                 id={`decision-${action}`}
@@ -140,10 +140,10 @@ export function DecisionPanel({
                 className="mt-0.5"
               />
               <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-graphite">
+                <span className="text-small font-medium text-ink">
                   {DECISION_ACTION_DETAILS[action].label}
                 </span>
-                <span className="text-xs text-quiet-gray">
+                <span className="text-caption text-ink-secondary">
                   {DECISION_ACTION_DETAILS[action].description}
                 </span>
               </span>
@@ -151,10 +151,7 @@ export function DecisionPanel({
           ))}
         </RadioGroup>
         <Field>
-          <FieldLabel
-            htmlFor={DECISION_REASON_INPUT_ID}
-            className="text-graphite"
-          >
+          <FieldLabel htmlFor={DECISION_REASON_INPUT_ID} className="text-ink">
             Alasan
           </FieldLabel>
           <Textarea
@@ -167,9 +164,9 @@ export function DecisionPanel({
               onDraftChange({ ...draft, reason: event.target.value })
             }
             placeholder="Sebutkan bukti yang dicek atau yang perlu dilengkapi faskes."
-            className="min-h-24 border-linen-border bg-eggshell-canvas"
+            className="min-h-24 border-hairline bg-surface"
           />
-          <FieldDescription className="text-quiet-gray">
+          <FieldDescription className="text-ink-secondary">
             Minimal {MIN_REASON_LENGTH} karakter. Tercatat sebagai jejak audit.
           </FieldDescription>
         </Field>

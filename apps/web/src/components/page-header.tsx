@@ -11,11 +11,11 @@ export function PageHeader({
 }) {
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-medium tracking-tight text-graphite">
+      <div className="flex max-w-2xl flex-col gap-2">
+        <h1 className="font-display text-section font-semibold tracking-display text-ink">
           {title}
         </h1>
-        <p className="text-sm text-quiet-gray">{description}</p>
+        <p className="text-body text-ink-secondary">{description}</p>
       </div>
       {action}
     </header>

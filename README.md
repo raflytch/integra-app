@@ -42,17 +42,24 @@ Edit the copied environment files for your machine. `apps/api/.env.example` prov
 | `npm run prisma:migrate`  | Create/apply a local migration after adding a model |
 | `npm run prisma:deploy`   | Apply committed migrations                          |
 | `npm run prisma:studio`   | Open Prisma Studio                                  |
+| `npm run seed`            | Demo accounts plus 300 demo claims (no LLM calls)   |
+| `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR  |
+| `npm run seed:demo`       | Replace `KLM-DEMO-*` claims and run analysis        |
+| `npm run seed:fixture`    | Load the UC-1 contract fixture claim                |
+| `npm run data:generate`   | Generate the LLM dataset (paid LLM calls)           |
+| `npm run data:seed`       | Load the generated LLM dataset                      |
 
 Targeted `build:client`, `build:server`, `lint:client`, `lint:server`, `typecheck:client`, and `typecheck:server` are also available.
 
 Development data for the INTEGRA demo, run from the repository root:
 
-- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/load-contract-fixture.ts` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
-- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/seed-users.ts` creates the demo verifier and supervisor accounts and prints each TOTP setup key with a scannable QR code; the QR is also saved as a PNG in the gitignored `apps/api/.totp-qr/` (add `--rotate` for a new key).
+- `npm run seed:users` creates the demo verifier and supervisor accounts and prints each TOTP setup key with a scannable QR code; the QR is also saved as a PNG in the gitignored `apps/api/.totp-qr/` (add `-- --rotate` for a new key).
+- `npm run seed:demo` creates 12 fictional facilities and 300 template-based claims (April–September 2026) with documents and their extraction, so no LLM is called. It then runs the same analysis as "Jalankan analisis". Older claims get decisions from the first verifier account, so run `seed:users` first. Use `npm run seed:demo -- --count=800` for another size (up to 5,000). It is idempotent and only replaces `KLM-DEMO-*` claims and `RM-DEMO-*` patients.
+- `npm run seed:fixture` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
 
 ## Design and engineering guidance
 
-The Heptabase-inspired light visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses warm paper surfaces, the INTEGRA teal palette from the logo for primary actions, compact spacing, and flat cards. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
+The Genesis-inspired editorial visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses General Sans and DM Sans, an indigo accent reserved for interactive elements, a shadcn sidebar, dashboards with token-colored charts, and surfaces framed by 1px borders with small, low-opacity shadows. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
 
 ## Troubleshooting
 

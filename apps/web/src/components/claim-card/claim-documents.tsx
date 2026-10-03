@@ -13,16 +13,16 @@ export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {
   return (
     <section
       aria-labelledby="claim-documents-heading"
-      className="rounded-xl border border-linen-border bg-eggshell-canvas p-4"
+      className="rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
       <h2
         id="claim-documents-heading"
-        className="text-sm font-medium text-graphite"
+        className="text-body font-semibold tracking-display text-ink"
       >
         Rekam medis
       </h2>
       {documents.length === 0 ? (
-        <p className="mt-3 text-sm text-quiet-gray">
+        <p className="mt-3 text-small text-ink-secondary">
           Klaim ini belum punya dokumen klinis.
         </p>
       ) : (
@@ -32,20 +32,20 @@ export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {
               key={document.id}
               value={document.id}
               id={`document-${document.id}`}
-              className="scroll-mt-20 border-linen-border"
+              className="scroll-mt-20 border-hairline"
             >
-              <AccordionTrigger className="py-3 text-sm text-graphite hover:no-underline">
+              <AccordionTrigger className="py-3 text-small text-ink hover:no-underline">
                 <span className="flex flex-col items-start gap-1">
                   <span className="flex flex-wrap items-center gap-2">
                     {DOCUMENT_TYPE_LABELS[document.type]}
                     {document.isExtracted && <ReadByAiPill />}
                   </span>
-                  <span className="text-xs font-normal text-quiet-gray">
+                  <span className="text-caption font-normal text-ink-secondary">
                     {formatDateTime(document.recordedAt)}
                   </span>
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="text-sm whitespace-pre-line text-charcoal-copy">
+              <AccordionContent className="text-small whitespace-pre-line text-ink-secondary">
                 {document.content}
               </AccordionContent>
             </AccordionItem>

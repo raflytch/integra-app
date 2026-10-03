@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Suspense } from 'react';
 import { LoginForm } from '@/components/auth/login-form';
-import { Separator } from '@/components/ui/separator';
 
 export const metadata: Metadata = { title: 'Masuk · INTEGRA' };
 
@@ -32,36 +31,46 @@ const PRODUCT_PRINCIPLES: {
   },
 ];
 
+/** The dot grid is the only decorative element DESIGN.md allows. */
+const DOT_GRID_CLASS_NAME =
+  'bg-[radial-gradient(circle,var(--color-hairline)_1px,transparent_1px)] bg-size-[20px_20px]';
+
 function BrandPanel() {
   return (
-    <aside className="hidden flex-col justify-between gap-12 border-r border-linen-border bg-paper-beige p-12 lg:flex">
+    <aside
+      className={`hidden flex-col justify-between gap-12 border-r border-hairline bg-canvas p-12 lg:flex ${DOT_GRID_CLASS_NAME}`}
+    >
       <Image
         src="/integra-logo.png"
         alt="INTEGRA"
-        width={240}
-        height={61}
+        width={200}
+        height={51}
         priority
       />
-      <div className="flex max-w-md flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <h2 className="text-4xl leading-[1.3] font-medium tracking-[-0.54px] text-graphite">
+      <div className="flex max-w-lg flex-col gap-10">
+        <div className="flex flex-col gap-4">
+          <p className="text-overline font-medium tracking-wider text-ink-secondary uppercase">
+            Verifikasi klaim JKN
+          </p>
+          <h2 className="font-display text-section font-semibold tracking-display text-ink xl:text-headline">
             Detect with evidence. Decide with integrity.
           </h2>
-          <p className="text-base text-charcoal-copy">
-            Asisten peninjau klaim JKN yang selalu berlandaskan bukti klinis.
+          <p className="text-body text-ink-secondary">
+            Asisten peninjau klaim yang selalu berlandaskan bukti klinis.
           </p>
         </div>
-        <ul className="flex flex-col gap-5">
+        <ul className="flex flex-col divide-y divide-hairline rounded-xl border border-hairline bg-surface shadow-xs">
           {PRODUCT_PRINCIPLES.map((principle) => (
-            <li key={principle.title} className="flex gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-eggshell-canvas text-integra-deep">
-                <principle.icon className="size-4" aria-hidden="true" />
-              </span>
+            <li key={principle.title} className="flex gap-3 px-4 py-3">
+              <principle.icon
+                className="mt-0.5 size-4 shrink-0 text-ink"
+                aria-hidden="true"
+              />
               <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-graphite">
+                <span className="text-small font-medium text-ink">
                   {principle.title}
                 </span>
-                <span className="text-sm text-charcoal-copy">
+                <span className="text-small text-ink-secondary">
                   {principle.description}
                 </span>
               </span>
@@ -69,38 +78,34 @@ function BrandPanel() {
           ))}
         </ul>
       </div>
-      <p className="text-xs text-quiet-gray">
-        MVP Healthkathon dengan data sintetis. Tidak memakai data peserta JKN
-        riil.
-      </p>
     </aside>
   );
 }
 
 export default function LoginPage() {
   return (
-    <main className="grid min-h-screen bg-eggshell-canvas lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)]">
+    <main className="grid min-h-screen bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
       <BrandPanel />
-      <section className="flex items-center justify-center px-4 py-16 sm:px-8">
+      <section className="flex items-center justify-center bg-surface px-4 py-16 sm:px-8">
         <div className="flex w-full max-w-sm flex-col gap-8">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-2 lg:hidden">
               <Image
                 src="/integra-mark.png"
                 alt=""
-                width={36}
-                height={36}
+                width={28}
+                height={28}
                 priority
               />
-              <span className="text-lg font-semibold tracking-tight text-integra-deep">
+              <span className="font-display text-base font-semibold tracking-display text-ink">
                 INTEGRA
               </span>
             </div>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-xl font-medium text-graphite">
+            <div className="flex flex-col gap-2">
+              <h1 className="font-display text-subhead font-semibold tracking-display text-ink">
                 Masuk ke INTEGRA
               </h1>
-              <p className="text-sm text-quiet-gray">
+              <p className="text-body text-ink-secondary">
                 Gunakan email kerja dan kode dari aplikasi authenticator Anda.
               </p>
             </div>
@@ -108,8 +113,7 @@ export default function LoginPage() {
           <Suspense>
             <LoginForm />
           </Suspense>
-          <Separator className="bg-linen-border" />
-          <p className="text-xs leading-normal text-quiet-gray">
+          <p className="border-t border-hairline pt-6 text-caption leading-normal text-ink-secondary">
             Akses hanya untuk verifikator dan supervisor terdaftar. Kode
             berganti setiap 30 detik dan hanya bisa dipakai sekali.
           </p>

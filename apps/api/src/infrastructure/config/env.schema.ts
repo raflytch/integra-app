@@ -13,7 +13,7 @@ export const envSchema = z.object({
       'must decode to exactly 32 bytes (openssl rand -base64 32)',
     ),
   LLM_API_KEY: z.string().min(1),
-  LLM_BASE_URL: z.url().default('https://api.deepseek.com'),
+  LLM_BASE_URL: z.url().default('https://ai.sumopod.com/v1'),
   LLM_MODEL: z.string().min(1).default('deepseek-v4-flash'),
   LLM_MAX_TOKENS: z.coerce.number().int().positive().default(8000),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
