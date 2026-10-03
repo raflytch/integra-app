@@ -52,3 +52,17 @@ export const TERM_SYNONYMS: Readonly<Record<string, string>> = {
   paracetamol: 'parasetamol',
   ceftriaxone: 'seftriakson',
 };
+
+/** Maps an extracted finding name to its canonical term for comparison across documents. */
+export function toCanonicalFinding(name: string): string {
+  const normalizedName = name.toLowerCase().replace(/\s+/g, ' ').trim();
+  const synonymTerm = TERM_SYNONYMS[normalizedName];
+  if (synonymTerm) return synonymTerm;
+  const containedTerms = CANONICAL_TERMS.findings.filter((term) =>
+    normalizedName.includes(term),
+  );
+  if (containedTerms.length === 0) return normalizedName;
+  return containedTerms.reduce((longest, term) =>
+    term.length > longest.length ? term : longest,
+  );
+}

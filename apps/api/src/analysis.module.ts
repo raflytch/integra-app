@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AnalyzeClaimUseCase } from './application/analysis/analyze-claim.use-case';
 import { EvaluateClaimUseCase } from './application/analysis/evaluate-claim.use-case';
 import { ExtractClaimDocumentsUseCase } from './application/analysis/extract-claim-documents.use-case';
+import { RunConsistencyTestUseCase } from './application/analysis/run-consistency-test.use-case';
 import { RunExistenceTestUseCase } from './application/analysis/run-existence-test.use-case';
 import { LlmClient } from './application/ports/llm-client.port';
 import { TariffSchedule } from './application/ports/tariff-schedule.port';
@@ -27,12 +28,28 @@ import { AnalysisController } from './presentation/controllers/analysis.controll
       inject: [AnalysisRepository, TariffSchedule],
     },
     {
+      provide: RunConsistencyTestUseCase,
+      useFactory: (analysisRepository: AnalysisRepository) =>
+        new RunConsistencyTestUseCase(analysisRepository),
+      inject: [AnalysisRepository],
+    },
+    {
       provide: EvaluateClaimUseCase,
       useFactory: (
         analysisRepository: AnalysisRepository,
         runExistenceTest: RunExistenceTestUseCase,
-      ) => new EvaluateClaimUseCase(analysisRepository, runExistenceTest),
-      inject: [AnalysisRepository, RunExistenceTestUseCase],
+        runConsistencyTest: RunConsistencyTestUseCase,
+      ) =>
+        new EvaluateClaimUseCase(
+          analysisRepository,
+          runExistenceTest,
+          runConsistencyTest,
+        ),
+      inject: [
+        AnalysisRepository,
+        RunExistenceTestUseCase,
+        RunConsistencyTestUseCase,
+      ],
     },
     {
       provide: ExtractClaimDocumentsUseCase,
