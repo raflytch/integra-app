@@ -119,6 +119,13 @@ jobs:
           trap on_exit EXIT
           export IMAGE_TAG="$image_tag"
           docker compose pull
+          # Persist the tag so manual `docker compose run/up` on the VPS uses the
+          # pulled images instead of pulling :latest from the private registry.
+          if grep -q '^IMAGE_TAG=' .env; then
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$image_tag/" .env
+          else
+            printf '\nIMAGE_TAG=%s\n' "$image_tag" >> .env
+          fi
           docker compose up -d --remove-orphans
           echo "Waiting for the API health check..."
           for attempt in $(seq 1 30); do
