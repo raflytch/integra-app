@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import type { ElementType } from 'react';
+import { CopyButton } from '@/components/copy-button';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TourStep } from './tour-steps';
@@ -56,12 +57,27 @@ export function TourStepCard({
       </div>
       {step.points && (
         <ul className="flex flex-col gap-1.5 rounded-lg border border-hairline bg-canvas px-4 py-3">
-          {step.points.map((point) => (
-            <li key={point.label} className="text-small text-ink-secondary">
-              <span className="font-medium text-ink">{point.label}.</span>{' '}
-              {point.detail}
-            </li>
-          ))}
+          {step.points.map((point) =>
+            point.copyable ? (
+              <li
+                key={point.label}
+                className="flex items-center justify-between gap-2 text-small text-ink-secondary"
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-mono text-caption break-all text-ink">
+                    {point.label}
+                  </span>
+                  {point.detail}
+                </span>
+                <CopyButton value={point.label} />
+              </li>
+            ) : (
+              <li key={point.label} className="text-small text-ink-secondary">
+                <span className="font-medium text-ink">{point.label}.</span>{' '}
+                {point.detail}
+              </li>
+            ),
+          )}
         </ul>
       )}
       <div className="flex gap-1" aria-hidden="true">

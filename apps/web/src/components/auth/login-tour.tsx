@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { LuCircleHelp } from 'react-icons/lu';
 import { TourOverlay } from '@/components/onboarding/tour-overlay';
 import type { TourStep } from '@/components/onboarding/tour-steps';
 import { Button } from '@/components/ui/button';
-import { useTourSnooze } from '@/hooks/use-tour-snooze';
 import { useTourTarget } from '@/hooks/use-tour-target';
 
-const LOGIN_TOUR_DISMISSED_AT_STORAGE_KEY = 'integra:login-tour-dismissed-at';
-
 const LOGIN_TOUR_STEPS: TourStep[] = [
+  {
+    id: 'login-welcome',
+    title: 'Selamat datang di INTEGRA',
+    description:
+      'Asisten verifikasi klaim JKN yang menandai klaim dengan bukti kurang, tidak konsisten, atau tersalin. Panduan singkat ini menunjukkan cara masuk, termasuk dengan akun demo.',
+    showsLogo: true,
+  },
   {
     id: 'login-email',
     target: 'login-email',
@@ -31,15 +35,17 @@ const LOGIN_TOUR_STEPS: TourStep[] = [
     id: 'login-demo',
     title: 'Coba dengan akun demo',
     description:
-      'Belum punya akun? Ketik salah satu email demo berikut dan klik Masuk, tanpa kode authenticator.',
+      'Belum punya akun? Salin salah satu email demo berikut, tempel di kolom email, lalu klik Masuk tanpa kode authenticator.',
     points: [
       {
         label: 'verifikator@integra.local',
         detail: 'Antrean klaim, analisis AI, dan keputusan.',
+        copyable: true,
       },
       {
         label: 'supervisor@integra.local',
         detail: 'Ditambah Ikhtisar, Eskalasi, dan Ringkasan Faskes.',
+        copyable: true,
       },
     ],
     nextLabel: 'Mulai',
@@ -47,22 +53,32 @@ const LOGIN_TOUR_STEPS: TourStep[] = [
 ];
 const FINAL_STEP_INDEX = LOGIN_TOUR_STEPS.length - 1;
 
-/** Three-step login guide, shown again 24 hours after it is closed. */
+function subscribeToNothing() {
+  return () => {};
+}
+
+/** Four-step login guide, opened on every visit to the login page. */
 export function LoginTour() {
-  const { isTourSnoozed, snoozeTour } = useTourSnooze(
-    LOGIN_TOUR_DISMISSED_AT_STORAGE_KEY,
+  const [isTourOpen, setIsTourOpen] = useState(true);
+  // The overlay measures the window, so it only renders after hydration.
+  const isHydrated = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
   );
-  const [isRestartRequested, setIsRestartRequested] = useState(false);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const isTourOpen = isRestartRequested || !isTourSnoozed;
   const activeStep = LOGIN_TOUR_STEPS[activeStepIndex];
   const { targetRect, isTargetMissing } = useTourTarget(
-    isTourOpen ? activeStep.target : undefined,
+    isTourOpen && isHydrated ? activeStep.target : undefined,
   );
 
+  function openTour() {
+    setActiveStepIndex(0);
+    setIsTourOpen(true);
+  }
+
   function finishTour() {
-    snoozeTour();
-    setIsRestartRequested(false);
+    setIsTourOpen(false);
     setActiveStepIndex(0);
   }
 
@@ -73,12 +89,12 @@ export function LoginTour() {
         variant="ghost"
         size="sm"
         className="self-start text-ink-secondary"
-        onClick={() => setIsRestartRequested(true)}
+        onClick={openTour}
       >
         <LuCircleHelp aria-hidden="true" />
         Lihat panduan masuk
       </Button>
-      {isTourOpen && (
+      {isTourOpen && isHydrated && (
         <TourOverlay
           step={activeStep}
           stepIndex={activeStepIndex}
