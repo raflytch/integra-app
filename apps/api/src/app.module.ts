@@ -6,6 +6,7 @@ import { AnalysisModule } from './analysis.module';
 import { AuthModule } from './auth.module';
 import { ClaimsModule } from './claims.module';
 import { FacilitiesModule } from './facilities.module';
+import { ImportsModule } from './imports.module';
 import { validateEnv } from './infrastructure/config/env.schema';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { LlmModule } from './infrastructure/llm/llm.module';
@@ -24,6 +25,7 @@ import { DomainExceptionFilter } from './presentation/filters/domain-exception.f
     AnalysisModule,
     ClaimsModule,
     FacilitiesModule,
+    ImportsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: DomainExceptionFilter }],

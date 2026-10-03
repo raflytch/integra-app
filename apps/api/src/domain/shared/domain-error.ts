@@ -4,6 +4,8 @@
  */
 export abstract class DomainError extends Error {
   abstract readonly code: string;
+  /** Extra response fields the client needs to recover, e.g. `{ estimatedAiCalls }`. */
+  readonly details?: Readonly<Record<string, unknown>>;
 
   constructor(message: string) {
     super(message);

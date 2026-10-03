@@ -195,6 +195,15 @@ export function IntegraAiPill() {
   );
 }
 
+/** Imported file rearranged into the INTEGRA format by the AI; same mark as INTEGRA AI. */
+export function AiAdjustedPill() {
+  return (
+    <Pill tone="inverse" icon={LuSparkles}>
+      Disesuaikan AI
+    </Pill>
+  );
+}
+
 export function ReadByAiPill() {
   return (
     <Pill tone="neutral" icon={LuSparkles}>
