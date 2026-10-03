@@ -110,6 +110,7 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
   return (
     <section
       aria-labelledby="ai-analysis-heading"
+      data-tour="claim-ai-analysis"
       className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-6 shadow-xs"
     >
       <div className="flex flex-col items-start gap-2">

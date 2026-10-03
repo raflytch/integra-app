@@ -90,6 +90,7 @@ export function DecisionPanel({
   return (
     <section
       aria-labelledby="decision-panel-heading"
+      data-tour="claim-decision-panel"
       className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
       <div className="flex flex-col gap-0.5">

@@ -1,4 +1,4 @@
-export type TourPage = 'queue';
+export type TourPage = 'queue' | 'claim';
 
 export interface TourStep {
   id: string;
@@ -9,16 +9,19 @@ export interface TourStep {
   target?: string;
   points?: { label: string; detail: string }[];
   nextLabel?: string;
+  advancesOnTargetClick?: boolean;
   showsLogo?: boolean;
 }
 
-/** Kept short on purpose: four steps on the queue, the page every user starts from. */
+export const OPEN_FIRST_CLAIM_STEP_ID = 'queue-first-claim';
+
+/** Seven steps from the queue to a decision; detail lives in each step's text. */
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
     title: 'Selamat datang di INTEGRA',
     description:
-      'INTEGRA menandai klaim yang buktinya kurang, tidak konsisten, atau tersalin. Keputusan tetap di tangan Anda. Kenali alurnya dalam empat langkah singkat.',
+      'Panduan singkat ini menunjukkan alur verifikasi dari antrean sampai keputusan. INTEGRA menandai klaim yang buktinya kurang, tidak konsisten, atau tersalin. Keputusan tetap di tangan Anda.',
     showsLogo: true,
   },
   {
@@ -26,9 +29,9 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'main-nav',
     title: 'Menu utama',
     description:
-      'Antrean Klaim untuk verifikator. Ikhtisar, Eskalasi, dan Ringkasan Faskes untuk supervisor. Panduan ini bisa dibuka lagi dari menu Panduan.',
+      'Antrean Klaim dan Impor Klaim untuk verifikator. Ikhtisar, Eskalasi, dan Ringkasan Faskes untuk supervisor. Buka panduan ini lagi kapan saja lewat menu Panduan.',
     missingTargetDescription:
-      'Buka menu di kiri atas untuk berpindah halaman. Panduan ini bisa dibuka lagi dari menu Panduan.',
+      'Buka menu di kiri atas untuk berpindah halaman. Panduan ini bisa dibuka lagi lewat menu Panduan.',
   },
   {
     id: 'run-analysis',
@@ -36,30 +39,58 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'run-analysis',
     title: 'Pilih klaim, lalu analisis dengan AI',
     description:
-      'Centang klaim atau gunakan menu Pilih, lalu klik Analisis AI. AI hanya membaca klaim yang Anda pilih. Cari, saring, dan urutkan klaim lewat kolom di atas tabel.',
+      'Centang klaim atau gunakan menu Pilih, lalu klik Analisis AI. AI hanya membaca klaim yang Anda pilih, karena setiap dokumen memakai token berbayar. Cari, saring, dan urutkan klaim lewat kolom di atas tabel.',
     missingTargetDescription:
       'Tombol Analisis AI ada di atas tabel Antrean Klaim. AI hanya membaca klaim yang Anda pilih.',
   },
   {
-    id: 'queue-first-claim',
+    id: OPEN_FIRST_CLAIM_STEP_ID,
     page: 'queue',
     target: 'queue-first-claim',
-    title: 'Buka klaim untuk memutuskan',
+    title: 'Mulai dari klaim teratas',
     description:
-      'Klik baris klaim untuk membuka Kartu Klaim. Di sana Anda menemukan:',
+      'Klaim diurutkan dari sinyal terkuat dan potensi selisih tarif terbesar. Label perlu klarifikasi bukan tuduhan. Klik baris klaim untuk membuka Kartu Klaim.',
+    missingTargetDescription:
+      'Antrean masih kosong. Klaim akan muncul setelah data klaim dimuat.',
+    nextLabel: 'Buka Kartu Klaim',
+    advancesOnTargetClick: true,
+  },
+  {
+    id: 'claim-ai-analysis',
+    page: 'claim',
+    target: 'claim-ai-analysis',
+    title: 'Baca ringkasan INTEGRA AI',
+    description:
+      'AI membaca rekam medis dan mengekstrak buktinya, lalu aturan klinis menilai. Ringkasan ini menjelaskan temuan dan langkah berikutnya. Potensi selisih tarif di atas kartu menunjukkan dampak finansialnya.',
+    missingTargetDescription:
+      'Ringkasan AI muncul di Kartu Klaim. Jika klaim belum dianalisis, klik Analisis dengan AI.',
+  },
+  {
+    id: 'claim-test-panels',
+    page: 'claim',
+    target: 'claim-test-panels',
+    title: 'Cek tiga uji dan buktinya',
+    description:
+      'Setiap panel menjelaskan tanda dari satu uji. Klik sumber kutipan untuk membuka dokumen rekam medis aslinya.',
     points: [
+      { label: 'Uji Ada', detail: 'Diagnosis sekunder tanpa bukti klinis.' },
       {
-        label: 'Tiga uji',
-        detail: 'Tanda bukti kurang, tidak konsisten, atau tersalin.',
+        label: 'Uji Konsisten',
+        detail: 'Catatan pemeriksaan yang tidak sejalan dengan catatan lain.',
       },
-      { label: 'Bukti asli', detail: 'Kutipan yang menautkan rekam medis.' },
       {
-        label: 'Keputusan',
-        detail: 'Setujui, minta klarifikasi, atau eskalasi dengan alasan.',
+        label: 'Uji Bukan Salinan',
+        detail: 'Dokumen yang hampir identik dengan klaim pasien lain.',
       },
     ],
-    missingTargetDescription:
-      'Antrean masih kosong. Klaim akan muncul di sini setelah data klaim dimuat.',
+  },
+  {
+    id: 'decide',
+    page: 'claim',
+    target: 'claim-decision-panel',
+    title: 'Anda yang memutuskan',
+    description:
+      'Pilih setujui, minta klarifikasi, atau eskalasi, lalu tulis alasan singkat. Keputusan tercatat atas nama Anda dan status klaim di antrean ikut berubah.',
     nextLabel: 'Mulai meninjau',
   },
 ];
