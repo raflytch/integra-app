@@ -13,3 +13,12 @@ export const DEMO_ACCOUNTS: NewUser[] = [
     role: 'SUPERVISOR',
   },
 ];
+
+const DEMO_ACCOUNT_EMAILS = new Set(
+  DEMO_ACCOUNTS.map((account) => account.email),
+);
+
+/** Demo accounts sign in with the email alone; every other account needs its TOTP code. */
+export function isDemoAccount(normalizedEmail: string): boolean {
+  return DEMO_ACCOUNT_EMAILS.has(normalizedEmail);
+}

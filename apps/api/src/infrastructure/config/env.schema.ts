@@ -12,8 +12,6 @@ export const envSchema = z.object({
       (value) => Buffer.from(value, 'base64').length === 32,
       'must decode to exactly 32 bytes (openssl rand -base64 32)',
     ),
-  /** Lets the seeded demo accounts sign in without an authenticator code. Keep off in production. */
-  DEMO_LOGIN_ENABLED: z.stringbool().default(false),
   LLM_API_KEY: z.string().min(1),
   LLM_BASE_URL: z.url().default('https://ai.sumopod.com/v1'),
   LLM_MODEL: z.string().min(1).default('deepseek-v4-flash'),

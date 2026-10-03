@@ -1,15 +1,15 @@
 import { InvalidLoginError } from '../../domain/auth/auth.errors';
+import { isDemoAccount } from '../../domain/users/demo-accounts';
 import type { User } from '../../domain/users/user';
 import type { UserRepository } from '../../domain/users/user.repository';
 import type { SecretCipher } from '../ports/secret-cipher.port';
 import type { SessionTokenService } from '../ports/session-token.port';
 import type { TotpVerifier } from '../ports/totp-verifier.port';
-import type { DemoLoginPolicy } from './demo-login-policy';
 import { normalizeEmail } from './normalize-email';
 
 export interface LogInInput {
   email: string;
-  /** Omitted only for demo accounts that `DemoLoginPolicy` lets in without one. */
+  /** Omitted only for demo accounts, which sign in without one. */
   code?: string;
 }
 
@@ -24,7 +24,6 @@ export class LogInUseCase {
     private readonly secretCipher: SecretCipher,
     private readonly totpVerifier: TotpVerifier,
     private readonly sessionTokenService: SessionTokenService,
-    private readonly demoLoginPolicy: DemoLoginPolicy,
   ) {}
 
   async execute({ email, code }: LogInInput): Promise<LogInResult> {
@@ -34,7 +33,7 @@ export class LogInUseCase {
     if (!credentials) throw new InvalidLoginError();
 
     if (code === undefined) {
-      if (!this.demoLoginPolicy.allowsLoginWithoutCode(credentials.email)) {
+      if (!isDemoAccount(credentials.email)) {
         throw new InvalidLoginError();
       }
       return this.startSession(credentials);
