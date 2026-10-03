@@ -36,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useTableControls } from '@/hooks/use-table-controls';
+import { type TableSort, useTableControls } from '@/hooks/use-table-controls';
 import {
   countClaimFindings,
   isClaimAnalyzed,
@@ -58,6 +58,7 @@ const ALL = 'ALL';
 
 type AnalysisFilter = typeof ALL | 'ANALYZED' | 'NOT_ANALYZED';
 type SignalFilter = typeof ALL | 'FLAGGED' | 'CLEAN';
+type AnalysisTimeOrder = typeof ALL | 'NEWEST' | 'OLDEST';
 
 const ANALYSIS_FILTER_OPTIONS: FilterOption<AnalysisFilter>[] = [
   { value: ALL, label: 'Semua' },
@@ -69,6 +70,12 @@ const SIGNAL_FILTER_OPTIONS: FilterOption<SignalFilter>[] = [
   { value: ALL, label: 'Semua' },
   { value: 'FLAGGED', label: 'Perlu klarifikasi' },
   { value: 'CLEAN', label: 'Tidak ada tanda' },
+];
+
+const ANALYSIS_TIME_ORDER_OPTIONS: FilterOption<AnalysisTimeOrder>[] = [
+  { value: ALL, label: 'Semua' },
+  { value: 'NEWEST', label: 'Terbaru' },
+  { value: 'OLDEST', label: 'Terlama' },
 ];
 
 const STATUS_SORT_ORDER: ClaimStatus[] = [
@@ -86,6 +93,13 @@ const CLAIM_SORT_VALUES = {
   findings: (claim: ClaimQueueItem) => countClaimFindings(claim),
   potentialGap: (claim: ClaimQueueItem) => claim.potentialGap,
   status: (claim: ClaimQueueItem) => STATUS_SORT_ORDER.indexOf(claim.status),
+  analyzedAt: (claim: ClaimQueueItem) =>
+    claim.analyzedAt ? Date.parse(claim.analyzedAt) : null,
+};
+
+const INITIAL_CLAIM_SORT: TableSort<keyof typeof CLAIM_SORT_VALUES> = {
+  key: 'priority',
+  direction: 'desc',
 };
 
 function toAnalysisTarget(claim: ClaimQueueItem): AnalysisTarget {
@@ -182,9 +196,24 @@ export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
     rows: filteredClaims,
     toSearchText: toClaimSearchText,
     sortValues: CLAIM_SORT_VALUES,
-    initialSort: { key: 'priority', direction: 'desc' },
+    initialSort: INITIAL_CLAIM_SORT,
     pageSize: CLAIMS_PER_PAGE,
   });
+
+  const analysisTimeOrder: AnalysisTimeOrder =
+    table.sort.key !== 'analyzedAt'
+      ? ALL
+      : table.sort.direction === 'desc'
+        ? 'NEWEST'
+        : 'OLDEST';
+
+  function changeAnalysisTimeOrder(order: AnalysisTimeOrder) {
+    table.setSort(
+      order === ALL
+        ? INITIAL_CLAIM_SORT
+        : { key: 'analyzedAt', direction: order === 'NEWEST' ? 'desc' : 'asc' },
+    );
+  }
 
   const selectedClaims = claims.filter((claim) =>
     selectedClaimIds.has(claim.id),
@@ -227,6 +256,7 @@ export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
     setFacilityFilter(ALL);
     setAnalysisFilter(ALL);
     setSignalFilter(ALL);
+    table.setSort(INITIAL_CLAIM_SORT);
   }
 
   return (
@@ -248,6 +278,12 @@ export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
           value={analysisFilter}
           options={ANALYSIS_FILTER_OPTIONS}
           onChange={changeFilter(setAnalysisFilter)}
+        />
+        <TableFilterSelect
+          label="Waktu analisis"
+          value={analysisTimeOrder}
+          options={ANALYSIS_TIME_ORDER_OPTIONS}
+          onChange={changeAnalysisTimeOrder}
         />
         <TableFilterSelect
           label="Tanda"

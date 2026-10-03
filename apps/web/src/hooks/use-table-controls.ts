@@ -7,11 +7,14 @@ export interface TableSort<SortKey extends string> {
   direction: SortDirection;
 }
 
+type SortValue = number | string | null;
+
 interface TableControlsOptions<Row, SortKey extends string> {
   rows: Row[];
   /** Text the search box matches against, case-insensitively. */
   toSearchText: (row: Row) => string;
-  sortValues: Record<SortKey, (row: Row) => number | string>;
+  /** A null value means the row has nothing to sort by; it always sorts last. */
+  sortValues: Record<SortKey, (row: Row) => SortValue>;
   initialSort: TableSort<NoInfer<SortKey>>;
   pageSize: number;
 }
@@ -46,11 +49,14 @@ export function useTableControls<Row, SortKey extends string>({
   const readSortValue = sortValues[sort.key];
   const directionFactor = sort.direction === 'asc' ? 1 : -1;
   // Array sort is stable, so ties keep the server's priority order.
-  const sortedRows = [...matchingRows].sort(
-    (first, second) =>
-      compareSortValues(readSortValue(first), readSortValue(second)) *
-      directionFactor,
-  );
+  const sortedRows = [...matchingRows].sort((first, second) => {
+    const firstValue = readSortValue(first);
+    const secondValue = readSortValue(second);
+    if (firstValue === null || secondValue === null) {
+      return Number(firstValue === null) - Number(secondValue === null);
+    }
+    return compareSortValues(firstValue, secondValue) * directionFactor;
+  });
 
   const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
   const currentPageIndex = Math.min(pageIndex, pageCount - 1);
@@ -72,6 +78,10 @@ export function useTableControls<Row, SortKey extends string>({
             }
           : { key, direction: 'asc' },
       );
+      setPageIndex(0);
+    },
+    setSort: (nextSort: TableSort<SortKey>) => {
+      setSort(nextSort);
       setPageIndex(0);
     },
     resetPage: () => setPageIndex(0),
