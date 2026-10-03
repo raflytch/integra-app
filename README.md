@@ -58,6 +58,10 @@ Development data for the INTEGRA demo, run from the repository root:
 - `npm run seed:demo` creates 12 fictional facilities and 300 template-based raw claims (April–September 2026, about 1,950 clinical documents) without calling the LLM. Documents stay unextracted, with no findings or decisions, and every claim waits for a decision. In the app, nothing is analyzed until you choose it: tick claims in Antrean Klaim (or use the Pilih menu for this page, the top 5/10/25 unanalyzed, or every claim in the table) and click "Analisis AI", use the Analisis button on a row, or "Analisis dengan AI" on a Kartu Klaim. Each unread document is one paid LLM call (about 6 per claim); a confirmation shows the count first, a full-screen loader shows progress and can stop the run, and verifiers then record decisions themselves. Use `npm run seed:demo -- --count=800` for another size (up to 5,000). Rerunning it resets the demo: it replaces `KLM-DEMO-*` claims, with their findings and decisions, and `RM-DEMO-*` patients.
 - `npm run seed:fixture` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
 
+## Deployment
+
+Production runs with Docker Compose on one VPS behind Caddy (automatic HTTPS), with images built by GitHub Actions and pushed to GHCR. One root `Dockerfile` builds the `api`, `web`, and `migrate` targets; the stack lives in `deploy/`. See [docs/deployment.md](docs/deployment.md) for the full server setup, secrets, and operations.
+
 ## Design and engineering guidance
 
 The Genesis-inspired editorial visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses General Sans and DM Sans, an indigo accent reserved for interactive elements, Lucide icons through `react-icons/lu`, a shadcn sidebar, an Ikhtisar page with token-colored charts, searchable and sortable tables, and surfaces framed by 1px borders with small, low-opacity shadows. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.

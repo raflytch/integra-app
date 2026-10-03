@@ -10,6 +10,9 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
+  // Behind a reverse proxy, the rate limiter must key on the forwarded client IP.
+  app.set('trust proxy', config.get('TRUST_PROXY_HOPS', { infer: true }));
+
   // Claim import files (up to 2 MB) travel as JSON text; the Express default is 100 KB.
   app.useBodyParser('json', { limit: '3mb' });
 
