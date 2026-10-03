@@ -2,7 +2,14 @@
 # the CI/CD workflow uploads this file and sets IMAGE_TAG to the deployed commit.
 name: integra
 
-x-database-url: &database-url postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+# Shared by api and migrate: seed scripts run in the migrate image and validate
+# the same environment contract as the API.
+x-api-environment: &api-environment
+  NODE_ENV: production
+  PORT: 3001
+  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  WEB_ORIGIN: https://${DOMAIN}
+  TRUST_PROXY_HOPS: 1
 
 services:
   postgres:
@@ -24,8 +31,7 @@ services:
   migrate:
     image: ${IMAGE_PREFIX}-migrate:${IMAGE_TAG:-latest}
     env_file: .env
-    environment:
-      DATABASE_URL: *database-url
+    environment: *api-environment
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,12 +41,7 @@ services:
     image: ${IMAGE_PREFIX}-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      DATABASE_URL: *database-url
-      WEB_ORIGIN: https://${DOMAIN}
-      TRUST_PROXY_HOPS: 1
+    environment: *api-environment
     depends_on:
       migrate:
         condition: service_completed_successfully
