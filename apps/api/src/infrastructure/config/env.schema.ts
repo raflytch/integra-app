@@ -5,6 +5,8 @@ export const envSchema = z.object({
   DATABASE_URL: z.url(),
   PORT: z.coerce.number().int().positive().default(3001),
   WEB_ORIGIN: z.url(),
+  /** Number of reverse-proxy hops to trust for the client IP (Express `trust proxy`); 0 when exposed directly. */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   JWT_SECRET: z.string().min(32),
   TOTP_ENCRYPTION_KEY: z
     .base64()
