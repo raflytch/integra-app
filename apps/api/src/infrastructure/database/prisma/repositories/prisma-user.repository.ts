@@ -1,7 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import type { User, UserCredentials } from '../../../../domain/users/user';
+import type {
+  NewUser,
+  User,
+  UserCredentials,
+} from '../../../../domain/users/user';
 import { UserRepository } from '../../../../domain/users/user.repository';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
+
+const UNIQUE_VIOLATION_CODE = 'P2002';
+/** Placeholder until the secret, bound to the generated id, is written. */
+const PENDING_TOTP_SECRET = 'pending';
 
 const PUBLIC_USER_FIELDS = {
   id: true,
@@ -45,5 +54,40 @@ export class PrismaUserRepository extends UserRepository {
       data: { totpLastStep: timeStep },
     });
     return count === 1;
+  }
+
+  async existsByEmail(normalizedEmail: string): Promise<boolean> {
+    const matchingUserCount = await this.prisma.user.count({
+      where: { email: normalizedEmail },
+    });
+    return matchingUserCount > 0;
+  }
+
+  async createWithTotp(
+    newUser: NewUser,
+    encryptTotpSecret: (userId: string) => string,
+    totpLastStep: number,
+  ): Promise<User | null> {
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const { id } = await transaction.user.create({
+          data: { ...newUser, totpSecretEnc: PENDING_TOTP_SECRET },
+          select: { id: true },
+        });
+        return transaction.user.update({
+          where: { id },
+          data: { totpSecretEnc: encryptTotpSecret(id), totpLastStep },
+          select: PUBLIC_USER_FIELDS,
+        });
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === UNIQUE_VIOLATION_CODE
+      ) {
+        return null;
+      }
+      throw error;
+    }
   }
 }

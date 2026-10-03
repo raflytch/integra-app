@@ -1,6 +1,10 @@
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
-import type { CurrentUser } from '@/types/auth.types';
+import type {
+  CurrentUser,
+  EmailStatus,
+  EnrollmentChallenge,
+} from '@/types/auth.types';
 
 export async function logIn(credentials: {
   email: string;
@@ -9,6 +13,35 @@ export async function logIn(credentials: {
   const response = await apiClient.post<CurrentUser>(
     '/auth/login',
     credentials,
+  );
+  return response.data;
+}
+
+export async function checkEmailStatus(email: string): Promise<EmailStatus> {
+  const response = await apiClient.post<EmailStatus>('/auth/email-status', {
+    email,
+  });
+  return response.data;
+}
+
+export async function startEnrollment(account: {
+  email: string;
+  name: string;
+}): Promise<EnrollmentChallenge> {
+  const response = await apiClient.post<EnrollmentChallenge>(
+    '/auth/enrollments',
+    account,
+  );
+  return response.data;
+}
+
+export async function confirmEnrollment(confirmation: {
+  enrollmentToken: string;
+  code: string;
+}): Promise<CurrentUser> {
+  const response = await apiClient.post<CurrentUser>(
+    '/auth/enrollments/confirm',
+    confirmation,
   );
   return response.data;
 }
@@ -32,4 +65,9 @@ export function isForbiddenError(error: unknown): boolean {
 
 export function isTooManyRequestsError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 429;
+}
+
+/** HTTP status of a failed API call, or undefined when the server was not reached. */
+export function getErrorStatus(error: unknown): number | undefined {
+  return isAxiosError(error) ? error.response?.status : undefined;
 }

@@ -4,6 +4,7 @@ import type { UserRepository } from '../../domain/users/user.repository';
 import type { SecretCipher } from '../ports/secret-cipher.port';
 import type { SessionTokenService } from '../ports/session-token.port';
 import type { TotpVerifier } from '../ports/totp-verifier.port';
+import { normalizeEmail } from './normalize-email';
 
 export interface LogInInput {
   email: string;
@@ -25,7 +26,7 @@ export class LogInUseCase {
 
   async execute({ email, code }: LogInInput): Promise<LogInResult> {
     const credentials = await this.userRepository.findCredentialsByEmail(
-      email.trim().toLowerCase(),
+      normalizeEmail(email),
     );
     if (!credentials) throw new InvalidLoginError();
 

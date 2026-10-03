@@ -11,3 +11,9 @@ export interface UserCredentials extends User {
   totpSecretEnc: string;
   totpLastStep: number | null;
 }
+
+export interface NewUser {
+  name: string;
+  email: string;
+  role: UserRole;
+}
