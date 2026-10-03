@@ -114,3 +114,49 @@ export interface ClaimQueueItem {
   documentCount: number;
   extractedDocumentCount: number;
 }
+
+export type ClaimQueueSortKey =
+  | 'priority'
+  | 'claimNo'
+  | 'facility'
+  | 'admittedAt'
+  | 'findings'
+  | 'potentialGap'
+  | 'status'
+  | 'analyzedAt';
+
+export interface ClaimQueueParams {
+  status?: ClaimStatus;
+  facilityId?: string;
+  search?: string;
+  analysis?: 'ANALYZED' | 'NOT_ANALYZED';
+  signal?: 'FLAGGED' | 'CLEAN';
+  sortBy: ClaimQueueSortKey;
+  sortDirection: 'asc' | 'desc';
+  /** 1-based. */
+  page: number;
+  pageSize: number;
+}
+
+export interface ClaimQueuePage {
+  items: ClaimQueueItem[];
+  /** Claims matching the params across every page. */
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ClaimStatistics {
+  totalCount: number;
+  analyzedCount: number;
+  flaggedCount: number;
+  totalPotentialGap: number;
+  statusCounts: Record<ClaimStatus, number>;
+  /** Per admission month (`YYYY-MM`), oldest first. */
+  monthlyCounts: {
+    month: string;
+    notAnalyzed: number;
+    clean: number;
+    flagged: number;
+  }[];
+}

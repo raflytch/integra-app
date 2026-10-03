@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import Image from 'next/image';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
@@ -7,15 +8,22 @@ import {
 } from '@/components/ui/sidebar';
 import { OnboardingProvider } from '@/providers/onboarding-provider';
 
-export default function WorkspaceLayout({
+/** Written by the sidebar when it is collapsed or expanded on desktop. */
+const SIDEBAR_STATE_COOKIE = 'sidebar_state';
+
+export default async function WorkspaceLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const isSidebarOpen =
+    cookieStore.get(SIDEBAR_STATE_COOKIE)?.value !== 'false';
+
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={isSidebarOpen}>
       <OnboardingProvider>
         <AppSidebar />
         <SidebarInset className="min-w-0 bg-canvas">
-          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-hairline bg-surface/80 px-4 shadow-xs backdrop-blur-md md:hidden">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-hairline bg-surface px-4 shadow-xs lg:hidden">
             <SidebarTrigger aria-label="Buka menu" />
             <Image src="/integra-mark.png" alt="" width={24} height={24} />
             <span className="font-display text-base font-semibold tracking-display text-ink">

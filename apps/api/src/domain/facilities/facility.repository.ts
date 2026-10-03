@@ -1,5 +1,12 @@
-import type { FacilitySummary } from './facility-summary';
+import type { FacilityOption } from './facility-option';
+import type {
+  FacilitySummaryPage,
+  FacilitySummaryQuery,
+} from './facility-summary';
 
 export abstract class FacilityRepository {
-  abstract findSummaries(): Promise<FacilitySummary[]>;
+  abstract findSummaryPage(
+    query: FacilitySummaryQuery,
+  ): Promise<FacilitySummaryPage>;
+  abstract findOptions(): Promise<FacilityOption[]>;
 }

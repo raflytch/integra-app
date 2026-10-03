@@ -38,11 +38,11 @@ export function useTourTarget(targetId: string | undefined) {
     }
 
     function findTarget() {
-      const candidate = document.querySelector<HTMLElement>(
-        `[data-tour="${targetId}"]`,
-      );
-      const isVisible = Boolean(candidate?.getClientRects().length);
-      if (candidate && isVisible) {
+      // A target can render twice (table row and mobile card); use the visible one.
+      const candidate = Array.from(
+        document.querySelectorAll<HTMLElement>(`[data-tour="${targetId}"]`),
+      ).find((element) => element.getClientRects().length > 0);
+      if (candidate) {
         element = candidate;
         const isTallTarget =
           candidate.getBoundingClientRect().height >

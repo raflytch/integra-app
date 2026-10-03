@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
 import { LuFileSearch, LuGavel, LuQuote } from 'react-icons/lu';
 import Image from 'next/image';
+import { DOT_GRID_CLASS_NAME } from '@/lib/dot-grid';
 
 const PRODUCT_PRINCIPLES: {
   icon: IconType;
@@ -27,10 +28,6 @@ const PRODUCT_PRINCIPLES: {
       'Label sistem selalu perlu klarifikasi, tidak pernah tuduhan fraud.',
   },
 ];
-
-/** The dot grid is the only decorative element DESIGN.md allows. */
-const DOT_GRID_CLASS_NAME =
-  'bg-[radial-gradient(circle,var(--color-hairline)_1px,transparent_1px)] bg-size-[20px_20px]';
 
 function BrandPanel() {
   return (
@@ -92,7 +89,7 @@ export function AuthPageShell({
   children: ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
+    <main className="grid min-h-dvh bg-canvas lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
       <BrandPanel />
       <section className="flex items-center justify-center bg-surface px-4 py-16 sm:px-8">
         <div className="flex w-full max-w-sm flex-col gap-8">

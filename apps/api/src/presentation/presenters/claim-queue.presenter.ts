@@ -1,13 +1,16 @@
-import type { ClaimQueueItem } from '../../domain/claims/claim-queue-item';
+import type { ClaimQueuePage } from '../../domain/claims/claim-queue-item';
 import { toDateOnly } from './date-only';
 
-export function presentClaimQueue(claimQueue: ClaimQueueItem[]) {
-  return claimQueue.map((claim) => ({
-    ...claim,
-    admittedAt: toDateOnly(claim.admittedAt),
-    dischargedAt: toDateOnly(claim.dischargedAt),
-    analyzedAt: claim.analyzedAt?.toISOString() ?? null,
-  }));
+export function presentClaimQueuePage(claimQueuePage: ClaimQueuePage) {
+  return {
+    ...claimQueuePage,
+    items: claimQueuePage.items.map((claim) => ({
+      ...claim,
+      admittedAt: toDateOnly(claim.admittedAt),
+      dischargedAt: toDateOnly(claim.dischargedAt),
+      analyzedAt: claim.analyzedAt?.toISOString() ?? null,
+    })),
+  };
 }
 
-export type ClaimQueueResponse = ReturnType<typeof presentClaimQueue>;
+export type ClaimQueuePageResponse = ReturnType<typeof presentClaimQueuePage>;

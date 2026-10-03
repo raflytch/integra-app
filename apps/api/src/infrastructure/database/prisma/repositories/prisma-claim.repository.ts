@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import type {
   ClaimDetail,
+  ClaimStatus,
   FindingCitation,
 } from '../../../../domain/claims/claim-detail';
 import type {
-  ClaimQueueFilter,
-  ClaimQueueItem,
+  ClaimQueuePage,
+  ClaimQueueQuery,
+  ClaimQueueSortKey,
+  ClaimStatistics,
+  MonthlyClaimCounts,
+  SortDirection,
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
 import { Prisma } from '../../../../generated/prisma/client';
@@ -32,6 +37,90 @@ function toFindingCitations(storedCitations: unknown): FindingCitation[] {
     : [];
 }
 
+const QUEUE_ITEM_FIELDS = {
+  id: true,
+  claimNo: true,
+  status: true,
+  admittedAt: true,
+  dischargedAt: true,
+  inacbgCode: true,
+  severityLevel: true,
+  tariffAmount: true,
+  potentialGap: true,
+  priorityScore: true,
+  analyzedAt: true,
+  facility: { select: { id: true, name: true, type: true } },
+  diagnoses: {
+    where: { isPrimary: true },
+    select: { icd10Code: true, name: true },
+    take: 1,
+  },
+  findings: { select: { testType: true } },
+  _count: { select: { documents: true } },
+} satisfies Prisma.ClaimSelect;
+
+const QUEUE_ORDER_BY: Record<
+  ClaimQueueSortKey,
+  (direction: SortDirection) => Prisma.ClaimOrderByWithRelationInput
+> = {
+  priority: (direction) => ({ priorityScore: direction }),
+  claimNo: (direction) => ({ claimNo: direction }),
+  facility: (direction) => ({ facility: { name: direction } }),
+  admittedAt: (direction) => ({ admittedAt: direction }),
+  findings: (direction) => ({ findings: { _count: direction } }),
+  potentialGap: (direction) => ({ potentialGap: direction }),
+  status: (direction) => ({ status: direction }),
+  analyzedAt: (direction) => ({
+    analyzedAt: { sort: direction, nulls: 'last' },
+  }),
+};
+
+/** Ties follow the default queue order; the id keeps pages from overlapping. */
+const QUEUE_TIEBREAKERS: Prisma.ClaimOrderByWithRelationInput[] = [
+  { priorityScore: 'desc' },
+  { potentialGap: 'desc' },
+  { id: 'asc' },
+];
+
+function toQueueWhere(query: ClaimQueueQuery): Prisma.ClaimWhereInput {
+  const conditions: Prisma.ClaimWhereInput[] = [];
+  if (query.analysis) {
+    conditions.push({
+      analyzedAt: query.analysis === 'ANALYZED' ? { not: null } : null,
+    });
+  }
+  if (query.signal) {
+    conditions.push({
+      analyzedAt: { not: null },
+      findings: query.signal === 'FLAGGED' ? { some: {} } : { none: {} },
+    });
+  }
+  const search = query.search?.trim();
+  if (search) {
+    const contains = { contains: search, mode: 'insensitive' as const };
+    conditions.push({
+      OR: [
+        { claimNo: contains },
+        { inacbgCode: contains },
+        { facility: { name: contains } },
+        {
+          diagnoses: {
+            some: {
+              isPrimary: true,
+              OR: [{ name: contains }, { icd10Code: contains }],
+            },
+          },
+        },
+      ],
+    });
+  }
+  return {
+    status: query.status,
+    facilityId: query.facilityId,
+    AND: conditions,
+  };
+}
+
 @Injectable()
 export class PrismaClaimRepository extends ClaimRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -45,36 +134,25 @@ export class PrismaClaimRepository extends ClaimRepository {
     return matchingClaimCount > 0;
   }
 
-  async findQueue(filter: ClaimQueueFilter): Promise<ClaimQueueItem[]> {
-    const claims = await this.prisma.claim.findMany({
-      where: { status: filter.status },
-      orderBy: [{ priorityScore: 'desc' }, { potentialGap: 'desc' }],
-      select: {
-        id: true,
-        claimNo: true,
-        status: true,
-        admittedAt: true,
-        dischargedAt: true,
-        inacbgCode: true,
-        severityLevel: true,
-        tariffAmount: true,
-        potentialGap: true,
-        priorityScore: true,
-        analyzedAt: true,
-        facility: { select: { id: true, name: true, type: true } },
-        diagnoses: {
-          where: { isPrimary: true },
-          select: { icd10Code: true, name: true },
-          take: 1,
-        },
-        findings: { select: { testType: true } },
-        _count: { select: { documents: true } },
-      },
-    });
+  async findQueuePage(query: ClaimQueueQuery): Promise<ClaimQueuePage> {
+    const where = toQueueWhere(query);
+    const [total, claims] = await this.prisma.$transaction([
+      this.prisma.claim.count({ where }),
+      this.prisma.claim.findMany({
+        where,
+        orderBy: [
+          QUEUE_ORDER_BY[query.sortBy](query.sortDirection),
+          ...QUEUE_TIEBREAKERS,
+        ],
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: QUEUE_ITEM_FIELDS,
+      }),
+    ]);
     const extractedDocumentCounts = await this.prisma.clinicalDocument.groupBy({
       by: ['claimId'],
       where: {
-        claim: { status: filter.status },
+        claimId: { in: claims.map((claim) => claim.id) },
         NOT: { extracted: { equals: Prisma.DbNull } },
       },
       _count: { _all: true },
@@ -86,7 +164,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       ]),
     );
 
-    return claims.map(({ diagnoses, findings, _count, ...claim }) => ({
+    const items = claims.map(({ diagnoses, findings, _count, ...claim }) => ({
       ...claim,
       tariffAmount: claim.tariffAmount.toNumber(),
       potentialGap: claim.potentialGap.toNumber(),
@@ -96,6 +174,57 @@ export class PrismaClaimRepository extends ClaimRepository {
       extractedDocumentCount:
         extractedDocumentCountByClaimId.get(claim.id) ?? 0,
     }));
+    return { items, total, page: query.page, pageSize: query.pageSize };
+  }
+
+  async getStatistics(): Promise<ClaimStatistics> {
+    const [
+      totalCount,
+      analyzedCount,
+      flaggedCount,
+      gapSum,
+      statusGroups,
+      monthlyCounts,
+    ] = await Promise.all([
+      this.prisma.claim.count(),
+      this.prisma.claim.count({ where: { analyzedAt: { not: null } } }),
+      this.prisma.claim.count({ where: { findings: { some: {} } } }),
+      this.prisma.claim.aggregate({ _sum: { potentialGap: true } }),
+      this.prisma.claim.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.$queryRaw<MonthlyClaimCounts[]>`
+        SELECT
+          to_char(c.admitted_at, 'YYYY-MM') AS "month",
+          count(*) FILTER (WHERE c.analyzed_at IS NULL)::int AS "notAnalyzed",
+          count(*) FILTER (
+            WHERE c.analyzed_at IS NOT NULL
+              AND NOT EXISTS (SELECT 1 FROM findings f WHERE f.claim_id = c.id)
+          )::int AS "clean",
+          count(*) FILTER (
+            WHERE c.analyzed_at IS NOT NULL
+              AND EXISTS (SELECT 1 FROM findings f WHERE f.claim_id = c.id)
+          )::int AS "flagged"
+        FROM claims c
+        GROUP BY 1
+        ORDER BY 1`,
+    ]);
+
+    const statusCounts: Record<ClaimStatus, number> = {
+      PENDING: 0,
+      APPROVED: 0,
+      CLARIFICATION_REQUESTED: 0,
+      ESCALATED: 0,
+    };
+    statusGroups.forEach((group) => {
+      statusCounts[group.status] = group._count._all;
+    });
+    return {
+      totalCount,
+      analyzedCount,
+      flaggedCount,
+      totalPotentialGap: gapSum._sum.potentialGap?.toNumber() ?? 0,
+      statusCounts,
+      monthlyCounts,
+    };
   }
 
   async findDetailById(claimId: string): Promise<ClaimDetail | null> {

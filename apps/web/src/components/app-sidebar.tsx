@@ -3,12 +3,14 @@
 import { useQueryClient } from '@tanstack/react-query';
 import type { IconType } from 'react-icons';
 import {
-  LuBuilding2,
   LuCircleHelp,
   LuFileUp,
+  LuHospital,
   LuLayoutDashboard,
   LuListOrdered,
   LuLogOut,
+  LuPanelLeftClose,
+  LuPanelLeftOpen,
   LuShieldAlert,
 } from 'react-icons/lu';
 import Image from 'next/image';
@@ -29,6 +31,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { LOGIN_PATH } from '@/lib/api-client';
@@ -64,13 +68,14 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { href: '/overview', label: 'Ikhtisar', icon: LuLayoutDashboard },
       { href: '/escalations', label: 'Eskalasi', icon: LuShieldAlert },
-      { href: '/facilities', label: 'Ringkasan Faskes', icon: LuBuilding2 },
+      { href: '/facilities', label: 'Ringkasan Faskes', icon: LuHospital },
     ],
   },
 ];
 
+/** The 2px green bar marks the active page; DESIGN.md allows green there. */
 const MENU_BUTTON_CLASS_NAME =
-  'h-9 text-sm font-medium text-ink-secondary hover:bg-subtle hover:text-ink data-[active=true]:bg-primary-wash data-[active=true]:text-primary-hover [&>svg]:text-current';
+  'relative h-9 text-sm font-medium text-ink-secondary before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-200 hover:bg-subtle hover:text-ink data-[active=true]:bg-primary-wash data-[active=true]:text-primary-hover data-[active=true]:before:opacity-100 [&>svg]:text-current';
 
 function toInitials(name: string): string {
   return name
@@ -86,13 +91,20 @@ export function AppSidebar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const startTour = useStartTour();
+  const { state, isMobile, setOpenMobile, toggleSidebar } = useSidebar();
   const currentUserQuery = useCurrentUser();
   const [isLogOutConfirmOpen, setIsLogOutConfirmOpen] = useState(false);
   const currentUser = currentUserQuery.data;
+  const isCollapsed = state === 'collapsed' && !isMobile;
   const visibleMenuGroups = MENU_GROUPS.filter(
     (menuGroup) =>
       currentUser && menuGroup.allowedRoles.includes(currentUser.role),
   );
+
+  /** The sheet below `lg` closes once a page is chosen. */
+  function closeMobileSheet() {
+    if (isMobile) setOpenMobile(false);
+  }
 
   async function handleLogOut() {
     await logOut();
@@ -101,17 +113,22 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-hairline">
-      <SidebarHeader className="border-b border-hairline px-4 py-4">
-        <Link href="/claims" className="flex items-center gap-2.5">
+    <Sidebar collapsible="icon" className="border-hairline">
+      <SidebarHeader className="border-b border-hairline p-3 group-data-[collapsible=icon]:px-2">
+        <Link
+          href="/claims"
+          onClick={closeMobileSheet}
+          className="flex items-center gap-2.5 overflow-hidden rounded-md"
+        >
           <Image
             src="/integra-mark.png"
             alt=""
             width={32}
             height={32}
             priority
+            className="size-8 shrink-0"
           />
-          <span className="flex flex-col">
+          <span className="flex flex-col whitespace-nowrap">
             <span className="font-display text-base leading-tight font-semibold tracking-display text-ink">
               INTEGRA
             </span>
@@ -123,9 +140,9 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent data-tour="main-nav" className="py-2">
         {currentUserQuery.isPending ? (
-          <div className="flex flex-col gap-2 p-4">
-            <Skeleton className="h-8 bg-subtle" />
-            <Skeleton className="h-8 bg-subtle" />
+          <div className="flex flex-col gap-2 p-3">
+            <Skeleton className="h-9 bg-subtle" />
+            <Skeleton className="h-9 bg-subtle" />
           </div>
         ) : (
           visibleMenuGroups.map((menuGroup) => (
@@ -140,9 +157,10 @@ export function AppSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={pathname.startsWith(menuItem.href)}
+                        tooltip={menuItem.label}
                         className={MENU_BUTTON_CLASS_NAME}
                       >
-                        <Link href={menuItem.href}>
+                        <Link href={menuItem.href} onClick={closeMobileSheet}>
                           <menuItem.icon aria-hidden="true" />
                           <span>{menuItem.label}</span>
                         </Link>
@@ -155,15 +173,18 @@ export function AppSidebar() {
           ))
         )}
       </SidebarContent>
-      <SidebarFooter className="gap-2 border-t border-hairline p-3">
+      <SidebarFooter className="gap-2 border-t border-hairline p-3 group-data-[collapsible=icon]:px-2">
         {currentUser && (
-          <div className="flex items-center gap-2.5 rounded-lg border border-hairline bg-canvas p-2.5">
-            <Avatar className="size-8">
-              <AvatarFallback className="bg-surface text-caption font-medium text-ink">
+          <div
+            title={isCollapsed ? currentUser.name : undefined}
+            className="flex items-center gap-2.5 overflow-hidden rounded-lg border border-hairline bg-canvas p-2 transition-[padding,background-color,border-color] duration-300 ease-out group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 motion-reduce:transition-none"
+          >
+            <Avatar className="size-8 shrink-0">
+              <AvatarFallback className="bg-subtle text-caption font-medium text-ink">
                 {toInitials(currentUser.name)}
               </AvatarFallback>
             </Avatar>
-            <span className="flex min-w-0 flex-col leading-tight">
+            <span className="flex min-w-0 flex-col leading-tight whitespace-nowrap">
               <span className="truncate text-small font-medium text-ink">
                 {currentUser.name}
               </span>
@@ -176,16 +197,38 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={startTour}
+              onClick={() => {
+                closeMobileSheet();
+                startTour();
+              }}
+              tooltip="Panduan"
               className={MENU_BUTTON_CLASS_NAME}
             >
               <LuCircleHelp aria-hidden="true" />
               <span>Panduan</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {!isMobile && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={toggleSidebar}
+                tooltip="Perluas menu (Ctrl+B)"
+                aria-expanded={!isCollapsed}
+                className={MENU_BUTTON_CLASS_NAME}
+              >
+                {isCollapsed ? (
+                  <LuPanelLeftOpen aria-hidden="true" />
+                ) : (
+                  <LuPanelLeftClose aria-hidden="true" />
+                )}
+                <span>{isCollapsed ? 'Perluas menu' : 'Ciutkan menu'}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => setIsLogOutConfirmOpen(true)}
+              tooltip="Keluar"
               className={MENU_BUTTON_CLASS_NAME}
             >
               <LuLogOut aria-hidden="true" />
@@ -194,6 +237,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
       <ConfirmDialog
         open={isLogOutConfirmOpen}
         onOpenChange={setIsLogOutConfirmOpen}

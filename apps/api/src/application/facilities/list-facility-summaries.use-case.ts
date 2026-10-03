@@ -1,10 +1,13 @@
-import type { FacilitySummary } from '../../domain/facilities/facility-summary';
+import type {
+  FacilitySummaryPage,
+  FacilitySummaryQuery,
+} from '../../domain/facilities/facility-summary';
 import type { FacilityRepository } from '../../domain/facilities/facility.repository';
 
 export class ListFacilitySummariesUseCase {
   constructor(private readonly facilityRepository: FacilityRepository) {}
 
-  execute(): Promise<FacilitySummary[]> {
-    return this.facilityRepository.findSummaries();
+  execute(query: FacilitySummaryQuery): Promise<FacilitySummaryPage> {
+    return this.facilityRepository.findSummaryPage(query);
   }
 }

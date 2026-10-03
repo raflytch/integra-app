@@ -29,7 +29,7 @@ export function TablePagination({
         {matchingRowCount.toLocaleString('id-ID')} {rowNoun}
       </span>
       {pageCount > 1 && (
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
           <Button
             variant="outline"
             size="sm"

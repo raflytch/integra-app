@@ -17,6 +17,7 @@ import {
   ChartPanel,
   DashboardSkeleton,
   StatTile,
+  StatTileGrid,
 } from '@/components/dashboard-panels';
 import { LoadError } from '@/components/load-error';
 import {
@@ -25,11 +26,10 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { isClaimAnalyzed, isClaimFlagged } from '@/lib/claim-analysis';
 import { CLAIM_STATUS_LABELS } from '@/lib/claim-labels';
 import { formatMonth, formatPercent, formatRupiah } from '@/lib/format';
-import { fetchClaimQueue } from '@/services/claim.service';
-import type { ClaimQueueItem, ClaimStatus } from '@/types/claim.types';
+import { fetchClaimStatistics } from '@/services/claim.service';
+import type { ClaimStatus } from '@/types/claim.types';
 
 const STATUS_ORDER: ClaimStatus[] = [
   'PENDING',
@@ -64,49 +64,23 @@ const STATUS_CHART_CONFIG = Object.fromEntries(
   ]),
 ) satisfies ChartConfig;
 
-function toMonthlySeries(claim: ClaimQueueItem): MonthlySeries {
-  if (!isClaimAnalyzed(claim)) return 'notAnalyzed';
-  return isClaimFlagged(claim) ? 'flagged' : 'clean';
-}
-
-function summarizeByAdmissionMonth(claims: ClaimQueueItem[]) {
-  const monthlyCounts = new Map<string, Record<MonthlySeries, number>>();
-  for (const claim of claims) {
-    const monthKey = claim.admittedAt.slice(0, 7);
-    const counts = monthlyCounts.get(monthKey) ?? {
-      notAnalyzed: 0,
-      clean: 0,
-      flagged: 0,
-    };
-    counts[toMonthlySeries(claim)] += 1;
-    monthlyCounts.set(monthKey, counts);
-  }
-  return [...monthlyCounts]
-    .sort(([firstMonth], [secondMonth]) =>
-      firstMonth.localeCompare(secondMonth),
-    )
-    .map(([monthKey, counts]) => ({
-      month: formatMonth(`${monthKey}-01`),
-      ...counts,
-    }));
-}
-
+/** Aggregates from the API, so this page never downloads the whole queue. */
 export function ClaimOverview() {
-  const allClaimsQuery = useQuery({
-    queryKey: ['claims', 'queue', 'ALL'],
-    queryFn: () => fetchClaimQueue(),
+  const statisticsQuery = useQuery({
+    queryKey: ['claims', 'statistics'],
+    queryFn: fetchClaimStatistics,
   });
 
-  if (allClaimsQuery.isPending) return <DashboardSkeleton tileCount={4} />;
-  if (allClaimsQuery.isError) {
+  if (statisticsQuery.isPending) return <DashboardSkeleton tileCount={4} />;
+  if (statisticsQuery.isError) {
     return (
       <LoadError
         title="Ringkasan klaim gagal dimuat"
-        onRetry={() => allClaimsQuery.refetch()}
+        onRetry={() => statisticsQuery.refetch()}
       />
     );
   }
-  if (allClaimsQuery.data.length === 0) {
+  if (statisticsQuery.data.totalCount === 0) {
     return (
       <p className="text-small text-ink-secondary">
         Belum ada klaim. Grafik muncul setelah data klaim dimuat.
@@ -114,33 +88,35 @@ export function ClaimOverview() {
     );
   }
 
-  const claims = allClaimsQuery.data;
-  const analyzedClaimCount = claims.filter(isClaimAnalyzed).length;
-  const flaggedClaimCount = claims.filter(isClaimFlagged).length;
-  const pendingClaimCount = claims.filter(
-    (claim) => claim.status === 'PENDING',
-  ).length;
-  const totalPotentialGap = claims.reduce(
-    (gapTotal, claim) => gapTotal + claim.potentialGap,
-    0,
-  );
-  const monthlyData = summarizeByAdmissionMonth(claims);
+  const {
+    totalCount,
+    analyzedCount: analyzedClaimCount,
+    flaggedCount: flaggedClaimCount,
+    totalPotentialGap,
+    statusCounts,
+    monthlyCounts,
+  } = statisticsQuery.data;
+  const pendingClaimCount = statusCounts.PENDING;
+  const monthlyData = monthlyCounts.map(({ month, ...counts }) => ({
+    month: formatMonth(`${month}-01`),
+    ...counts,
+  }));
   const statusData = STATUS_ORDER.map((status) => ({
     status,
-    count: claims.filter((claim) => claim.status === status).length,
+    count: statusCounts[status],
   }));
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatTileGrid>
         <StatTile
           label="Menunggu keputusan"
           value={pendingClaimCount.toLocaleString('id-ID')}
-          hint={`dari ${claims.length.toLocaleString('id-ID')} klaim rawat inap`}
+          hint={`dari ${totalCount.toLocaleString('id-ID')} klaim rawat inap`}
         />
         <StatTile
           label="Dianalisis AI"
-          value={formatPercent(analyzedClaimCount / claims.length)}
+          value={formatPercent(analyzedClaimCount / totalCount)}
           hint={`${analyzedClaimCount.toLocaleString('id-ID')} klaim sudah dibaca AI`}
         />
         <StatTile
@@ -157,13 +133,13 @@ export function ClaimOverview() {
           value={formatRupiah(totalPotentialGap)}
           hint="Jika diagnosis tanpa bukti dikeluarkan"
         />
-      </div>
+      </StatTileGrid>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-3">
         <ChartPanel
           title="Klaim per bulan rawat inap"
           description="Jumlah klaim menurut bulan masuk dan hasil analisis AI."
-          className="lg:col-span-2"
+          className="xl:col-span-2"
         >
           <ChartContainer
             config={MONTHLY_CHART_CONFIG}

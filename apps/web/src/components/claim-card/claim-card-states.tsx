@@ -16,7 +16,7 @@ export function ClaimCardSkeleton() {
     <div className="flex flex-col gap-6" aria-busy="true" aria-live="polite">
       <span className="sr-only">Memuat Kartu Klaim</span>
       <Skeleton className="h-44 rounded-xl bg-subtle" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-4">
           <Skeleton className="h-40 rounded-xl bg-subtle" />
           <Skeleton className="h-28 rounded-xl bg-subtle" />
