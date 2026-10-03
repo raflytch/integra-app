@@ -16,21 +16,11 @@ import {
   chooseTourCardPlacement,
 } from './tour-card-placement';
 import { TourStepCard } from './tour-step-card';
-import {
-  OPEN_FIRST_CLAIM_STEP_ID,
-  TOUR_STEPS,
-  type TourPage,
-} from './tour-steps';
+import { TOUR_STEPS } from './tour-steps';
 
 const QUEUE_PATH = '/claims';
 const SPOTLIGHT_PADDING_PX = 6;
 const FINAL_STEP_INDEX = TOUR_STEPS.length - 1;
-
-function getCurrentTourPage(pathname: string): TourPage | null {
-  if (pathname === QUEUE_PATH) return 'queue';
-  if (pathname.startsWith(`${QUEUE_PATH}/`)) return 'claim';
-  return null;
-}
 
 function buildClickBlockers(spotlightRect: DOMRect): CSSProperties[] {
   const spotlightTop = spotlightRect.top - SPOTLIGHT_PADDING_PX;
@@ -68,14 +58,13 @@ export function OnboardingTour({
   const { hasCompletedOnboarding, markOnboardingCompleted } =
     useOnboardingStatus();
   const [activeStepIndex, setActiveStepIndex] = useState(0);
-  const [isClaimPageUnavailable, setIsClaimPageUnavailable] = useState(false);
 
   const isTourOpen = isRestartRequested || !hasCompletedOnboarding;
   const activeStep = TOUR_STEPS[activeStepIndex];
-  const isOnStepPage =
-    !activeStep.page || getCurrentTourPage(pathname) === activeStep.page;
-  const { targetElement, targetRect, isTargetMissing, isTargetCurrent } =
-    useTourTarget(isTourOpen && isOnStepPage ? activeStep.target : undefined);
+  const isOnStepPage = !activeStep.page || pathname === QUEUE_PATH;
+  const { targetRect, isTargetMissing } = useTourTarget(
+    isTourOpen && isOnStepPage ? activeStep.target : undefined,
+  );
 
   useEffect(() => {
     if (isTourOpen && activeStep.page === 'queue' && !isOnStepPage) {
@@ -83,38 +72,14 @@ export function OnboardingTour({
     }
   }, [isTourOpen, activeStep.page, isOnStepPage, router]);
 
-  useEffect(() => {
-    if (!activeStep.advancesOnTargetClick || !isTargetCurrent) return;
-    if (!targetElement) return;
-    const advanceToNextStep = () => setActiveStepIndex(activeStepIndex + 1);
-    targetElement.addEventListener('click', advanceToNextStep);
-    return () => targetElement.removeEventListener('click', advanceToNextStep);
-  }, [
-    activeStep.advancesOnTargetClick,
-    activeStepIndex,
-    isTargetCurrent,
-    targetElement,
-  ]);
-
   function finishTour() {
     markOnboardingCompleted();
     onTourClosed();
     setActiveStepIndex(0);
-    setIsClaimPageUnavailable(false);
   }
 
   function goToNextStep() {
     if (activeStepIndex === FINAL_STEP_INDEX) return finishTour();
-    if (activeStep.id === OPEN_FIRST_CLAIM_STEP_ID) {
-      const firstClaimHref = isTargetCurrent
-        ? targetElement?.dataset.tourHref
-        : undefined;
-      if (!firstClaimHref) {
-        setIsClaimPageUnavailable(true);
-        return setActiveStepIndex(FINAL_STEP_INDEX);
-      }
-      router.push(firstClaimHref);
-    }
     setActiveStepIndex(activeStepIndex + 1);
   }
 
@@ -132,10 +97,7 @@ export function OnboardingTour({
     onBack: goToPreviousStep,
     onNext: goToNextStep,
   };
-  const isStepPageUnavailable =
-    isClaimPageUnavailable && activeStep.page === 'claim';
-  const isSpotlightStep =
-    Boolean(activeStep.target) && !isTargetMissing && !isStepPageUnavailable;
+  const isSpotlightStep = Boolean(activeStep.target) && !isTargetMissing;
 
   if (!isSpotlightStep) {
     return (
@@ -150,7 +112,7 @@ export function OnboardingTour({
           <TourStepCard
             {...stepCardProps}
             TitleElement={DialogTitle}
-            isTargetMissing={isTargetMissing || isStepPageUnavailable}
+            isTargetMissing={isTargetMissing}
           />
         </DialogContent>
       </Dialog>

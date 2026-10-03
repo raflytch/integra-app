@@ -15,7 +15,6 @@ export function ClaimDiagnoses({
   return (
     <section
       aria-labelledby="claim-diagnoses-heading"
-      data-tour="claim-diagnoses"
       className="rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
       <h2

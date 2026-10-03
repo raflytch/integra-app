@@ -6,9 +6,10 @@ import type {
   EnrollmentChallenge,
 } from '@/types/auth.types';
 
+/** Omit `code` only for demo accounts whose email status says no code is required. */
 export async function logIn(credentials: {
   email: string;
-  code: string;
+  code?: string;
 }): Promise<CurrentUser> {
   const response = await apiClient.post<CurrentUser>(
     '/auth/login',

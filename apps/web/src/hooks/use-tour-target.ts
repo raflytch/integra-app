@@ -85,9 +85,7 @@ export function useTourTarget(targetId: string | undefined) {
     isCurrentTarget || canKeepPreviousTarget ? targetState : null;
 
   return {
-    targetElement: visibleTargetState?.element ?? null,
     targetRect: visibleTargetState?.rect ?? null,
     isTargetMissing: isCurrentTarget && Boolean(targetState?.isMissing),
-    isTargetCurrent: isCurrentTarget && !targetState?.isMissing,
   };
 }

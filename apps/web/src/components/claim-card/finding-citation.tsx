@@ -6,7 +6,6 @@ function DocumentSource({ document }: { document: ClaimDocument | undefined }) {
   if (!document) return null;
   return (
     <a
-      data-tour="claim-citation-source"
       href={`#document-${document.id}`}
       className="text-caption text-primary-hover hover:underline"
     >
