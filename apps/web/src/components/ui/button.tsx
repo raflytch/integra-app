@@ -13,9 +13,9 @@ const buttonVariants = cva(
         destructive:
           'border border-error bg-transparent text-error-ink hover:bg-error/10 focus-visible:ring-destructive/20',
         outline:
-          'border border-hairline bg-surface text-ink shadow-xs hover:border-ink-muted hover:bg-subtle',
+          'border border-primary bg-surface text-primary shadow-xs hover:bg-primary-wash hover:text-primary-hover',
         secondary: 'bg-subtle text-ink hover:bg-hairline',
-        ghost: 'text-ink-secondary hover:bg-subtle hover:text-ink',
+        ghost: 'text-ink-secondary hover:bg-subtle hover:text-primary-hover',
         link: 'text-primary-hover underline-offset-4 hover:underline motion-safe:hover:translate-y-0',
       },
       size: {

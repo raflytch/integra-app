@@ -27,7 +27,7 @@ import type {
   TestType,
 } from '@/types/claim.types';
 
-/** Chip tones from DESIGN.md. Indigo is reserved for interactive elements, so no chip uses it. */
+/** Chip tones from DESIGN.md. INTEGRA green is reserved for interactive elements, so no status chip uses it. */
 const PILL_TONE_CLASS_NAMES = {
   outline: 'border-hairline bg-surface text-ink-secondary',
   neutral: 'border-transparent bg-subtle text-ink-secondary',
