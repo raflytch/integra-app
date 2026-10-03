@@ -186,7 +186,7 @@ All commands run in `/opt/integra`.
 | Status                    | `docker compose ps`                                                                                                          |
 | Logs                      | `docker compose logs -f --tail=200 api` (or `web`, `caddy`, `migrate`, `postgres`)                                           |
 | Restart after `.env` edit | `docker compose up -d`                                                                                                       |
-| Roll back to a commit     | `IMAGE_TAG=<commit-sha> docker compose up -d` (migrations are forward-only)                                                  |
+| Roll back to a commit     | `sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=<commit-sha>/' .env && docker compose up -d` (migrations are forward-only)                |
 | Free demo seed            | `docker compose run --rm migrate npm run seed:demo`                                                                          |
 | Backup database           | `docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > integra-$(date +%F).dump`          |
 | Restore database          | `docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean' < integra-YYYY-MM-DD.dump` |
