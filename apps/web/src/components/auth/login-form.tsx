@@ -195,7 +195,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} noValidate>
       <FieldGroup className="gap-6">
-        <Field data-invalid={emailState === 'invalid'}>
+        <Field data-invalid={emailState === 'invalid'} data-tour="login-email">
           <FieldLabel htmlFor="login-email" className="text-small text-ink">
             Email kerja
           </FieldLabel>
@@ -232,7 +232,7 @@ export function LoginForm() {
           </div>
         </Field>
         {emailState !== 'unregistered' && emailState !== 'demo' && (
-          <Field>
+          <Field data-tour="login-code">
             <FieldLabel htmlFor="login-code" className="text-small text-ink">
               Kode authenticator
             </FieldLabel>
