@@ -51,6 +51,7 @@ type EmailState =
   | 'invalid'
   | 'checking'
   | 'registered'
+  | 'demo'
   | 'unregistered'
   | 'unknown';
 
@@ -78,6 +79,14 @@ function EmailStatusHint({ emailState }: { emailState: EmailState }) {
       <FieldDescription className="flex items-center gap-1.5 text-caption text-success-ink">
         <LuCircleCheck className="size-3.5" aria-hidden="true" />
         Akun ditemukan. Masukkan kode authenticator.
+      </FieldDescription>
+    );
+  }
+  if (emailState === 'demo') {
+    return (
+      <FieldDescription className="flex items-center gap-1.5 text-caption text-success-ink">
+        <LuCircleCheck className="size-3.5" aria-hidden="true" />
+        Akun demo. Masuk tanpa kode authenticator.
       </FieldDescription>
     );
   }
@@ -139,9 +148,11 @@ export function LoginForm() {
           ? 'checking'
           : emailStatusQuery.isError
             ? 'unknown'
-            : emailStatusQuery.data.registered
-              ? 'registered'
-              : 'unregistered';
+            : !emailStatusQuery.data.registered
+              ? 'unregistered'
+              : emailStatusQuery.data.requiresCode
+                ? 'registered'
+                : 'demo';
   const isSignupPromptOpen =
     emailState === 'unregistered' &&
     signupDeclinedFor !== normalizedEmail &&
@@ -174,7 +185,9 @@ export function LoginForm() {
       setIsSignupPromptRequested(true);
       return;
     }
-    if (isCodeComplete) {
+    if (emailState === 'demo') {
+      logInMutation.mutate({ email: normalizedEmail });
+    } else if (isCodeComplete) {
       logInMutation.mutate({ email: normalizedEmail, code: authenticatorCode });
     }
   }
@@ -218,7 +231,7 @@ export function LoginForm() {
             )}
           </div>
         </Field>
-        {emailState !== 'unregistered' && (
+        {emailState !== 'unregistered' && emailState !== 'demo' && (
           <Field>
             <FieldLabel htmlFor="login-code" className="text-small text-ink">
               Kode authenticator
@@ -244,13 +257,15 @@ export function LoginForm() {
             type="submit"
             size="lg"
             disabled={
-              !isCodeComplete || !isEmailFormatValid || logInMutation.isPending
+              (!isCodeComplete && emailState !== 'demo') ||
+              !isEmailFormatValid ||
+              logInMutation.isPending
             }
           >
             {logInMutation.isPending ? (
               <>
                 <Spinner aria-hidden="true" />
-                Memeriksa kode
+                {emailState === 'demo' ? 'Masuk' : 'Memeriksa kode'}
               </>
             ) : (
               <>

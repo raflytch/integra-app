@@ -9,6 +9,8 @@ export interface CurrentUser {
 
 export interface EmailStatus {
   registered: boolean;
+  /** False for demo accounts that may sign in without an authenticator code. */
+  requiresCode: boolean;
 }
 
 /** A pending sign-up: the account is created only after the code is confirmed. */

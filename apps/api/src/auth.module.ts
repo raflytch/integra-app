@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { CheckEmailStatusUseCase } from './application/auth/check-email-status.use-case';
 import { ConfirmEnrollmentUseCase } from './application/auth/confirm-enrollment.use-case';
+import { DemoLoginPolicy } from './application/auth/demo-login-policy';
 import { GetCurrentUserUseCase } from './application/auth/get-current-user.use-case';
 import { LogInUseCase } from './application/auth/log-in.use-case';
 import { StartEnrollmentUseCase } from './application/auth/start-enrollment.use-case';
@@ -10,6 +12,7 @@ import { SecretCipher } from './application/ports/secret-cipher.port';
 import { SessionTokenService } from './application/ports/session-token.port';
 import { TotpVerifier } from './application/ports/totp-verifier.port';
 import { UserRepository } from './domain/users/user.repository';
+import type { Env } from './infrastructure/config/env.schema';
 import { SessionTokenModule } from './infrastructure/auth/session-token.module';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { PrismaUserRepository } from './infrastructure/database/prisma/repositories/prisma-user.repository';
@@ -27,20 +30,34 @@ import { AuthController } from './presentation/controllers/auth.controller';
   providers: [
     { provide: UserRepository, useClass: PrismaUserRepository },
     {
+      provide: DemoLoginPolicy,
+      useFactory: (config: ConfigService<Env, true>) =>
+        new DemoLoginPolicy(config.get('DEMO_LOGIN_ENABLED', { infer: true })),
+      inject: [ConfigService],
+    },
+    {
       provide: LogInUseCase,
       useFactory: (
         userRepository: UserRepository,
         secretCipher: SecretCipher,
         totpVerifier: TotpVerifier,
         sessionTokenService: SessionTokenService,
+        demoLoginPolicy: DemoLoginPolicy,
       ) =>
         new LogInUseCase(
           userRepository,
           secretCipher,
           totpVerifier,
           sessionTokenService,
+          demoLoginPolicy,
         ),
-      inject: [UserRepository, SecretCipher, TotpVerifier, SessionTokenService],
+      inject: [
+        UserRepository,
+        SecretCipher,
+        TotpVerifier,
+        SessionTokenService,
+        DemoLoginPolicy,
+      ],
     },
     {
       provide: GetCurrentUserUseCase,
@@ -50,9 +67,11 @@ import { AuthController } from './presentation/controllers/auth.controller';
     },
     {
       provide: CheckEmailStatusUseCase,
-      useFactory: (userRepository: UserRepository) =>
-        new CheckEmailStatusUseCase(userRepository),
-      inject: [UserRepository],
+      useFactory: (
+        userRepository: UserRepository,
+        demoLoginPolicy: DemoLoginPolicy,
+      ) => new CheckEmailStatusUseCase(userRepository, demoLoginPolicy),
+      inject: [UserRepository, DemoLoginPolicy],
     },
     {
       provide: StartEnrollmentUseCase,
