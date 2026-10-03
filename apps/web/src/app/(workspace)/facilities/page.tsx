@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { FacilitySummary } from '@/components/facility-summary/facility-summary';
+import { FacilitySummaryTable } from '@/components/facility-summary/facility-summary-table';
 import { PageHeader } from '@/components/page-header';
 
 export const metadata: Metadata = { title: 'Ringkasan Faskes · INTEGRA' };
@@ -11,7 +11,7 @@ export default function FacilitySummaryPage() {
         title="Ringkasan Faskes"
         description="Jumlah tanda dan potensi selisih tarif per faskes untuk menentukan prioritas pembinaan."
       />
-      <FacilitySummary />
+      <FacilitySummaryTable />
     </div>
   );
 }

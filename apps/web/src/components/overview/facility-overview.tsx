@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import {
   CHART_TOOLTIP_CLASS_NAME,
@@ -7,8 +8,13 @@ import {
   ChartPanel,
   DashboardSkeleton,
   StatTile,
+  StatTileGrid,
 } from '@/components/dashboard-panels';
-import { FacilitySummaryGate } from '@/components/facility-summary/facility-summary';
+import {
+  FacilitySummaryEmpty,
+  FacilitySummaryForbidden,
+} from '@/components/facility-summary/facility-summary-states';
+import { LoadError } from '@/components/load-error';
 import {
   type ChartConfig,
   ChartContainer,
@@ -17,7 +23,15 @@ import {
 } from '@/components/ui/chart';
 import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
 import { formatCompactRupiah, formatPercent, formatRupiah } from '@/lib/format';
-import type { FacilitySummary } from '@/types/facility.types';
+import { fetchClaimStatistics } from '@/services/claim.service';
+import { isForbiddenError } from '@/services/auth.service';
+import { fetchFacilitySummaryPage } from '@/services/facility.service';
+import type { ClaimStatistics } from '@/types/claim.types';
+import type {
+  FacilitySummary,
+  FacilitySummaryPage,
+  FacilitySummaryParams,
+} from '@/types/facility.types';
 
 const BAR_ROW_HEIGHT = 36;
 const CHART_VERTICAL_PADDING = 24;
@@ -64,62 +78,82 @@ function chartHeight(rowCount: number): number {
   return rowCount * BAR_ROW_HEIGHT + CHART_VERTICAL_PADDING;
 }
 
+/** Charts show at most this many facilities, largest potential gap first. */
+const CHARTED_FACILITY_LIMIT = 100;
+
+const CHARTED_FACILITY_PARAMS: FacilitySummaryParams = {
+  sortBy: 'totalPotentialGap',
+  sortDirection: 'desc',
+  page: 1,
+  pageSize: CHARTED_FACILITY_LIMIT,
+};
+
 export function FacilityOverviewPanel() {
+  const summaryQuery = useQuery({
+    queryKey: ['facilities', 'summary', CHARTED_FACILITY_PARAMS],
+    queryFn: () => fetchFacilitySummaryPage(CHARTED_FACILITY_PARAMS),
+  });
+  const statisticsQuery = useQuery({
+    queryKey: ['claims', 'statistics'],
+    queryFn: fetchClaimStatistics,
+  });
+
+  if (summaryQuery.isPending || statisticsQuery.isPending) {
+    return <DashboardSkeleton tileCount={4} />;
+  }
+  if (summaryQuery.isError && isForbiddenError(summaryQuery.error)) {
+    return <FacilitySummaryForbidden />;
+  }
+  if (summaryQuery.isError || statisticsQuery.isError) {
+    return (
+      <LoadError
+        title="Ringkasan faskes gagal dimuat"
+        onRetry={() => {
+          void summaryQuery.refetch();
+          void statisticsQuery.refetch();
+        }}
+      />
+    );
+  }
+  if (summaryQuery.data.total === 0) return <FacilitySummaryEmpty />;
+
   return (
-    <FacilitySummaryGate loadingFallback={<DashboardSkeleton tileCount={4} />}>
-      {(facilitySummaries) => (
-        <FacilityOverview facilitySummaries={facilitySummaries} />
-      )}
-    </FacilitySummaryGate>
+    <FacilityOverview
+      summaryPage={summaryQuery.data}
+      statistics={statisticsQuery.data}
+    />
   );
 }
 
 function FacilityOverview({
-  facilitySummaries,
+  summaryPage,
+  statistics,
 }: {
-  facilitySummaries: FacilitySummary[];
+  summaryPage: FacilitySummaryPage;
+  statistics: ClaimStatistics;
 }) {
-  const claimCount = facilitySummaries.reduce(
-    (total, summary) => total + summary.claimCount,
-    0,
-  );
-  const flaggedClaimCount = facilitySummaries.reduce(
-    (total, summary) => total + summary.flaggedClaimCount,
-    0,
-  );
-  const totalPotentialGap = facilitySummaries.reduce(
-    (total, summary) => total + summary.totalPotentialGap,
-    0,
-  );
-  const chartData = facilitySummaries
-    .map((summary) => ({
-      code: summary.facility.code,
-      name: summary.facility.name,
-      claimCount: summary.claimCount,
-      flaggedClaimCount: summary.flaggedClaimCount,
-      totalPotentialGap: summary.totalPotentialGap,
-      ...summary.findingCounts,
-    }))
-    .sort(
-      (first, second) => second.totalPotentialGap - first.totalPotentialGap,
-    );
-  const highestRiskFacility = facilitySummaries.reduce<
-    FacilitySummary | undefined
-  >(
-    (highest, summary) =>
-      !highest || summary.totalPotentialGap > highest.totalPotentialGap
-        ? summary
-        : highest,
-    undefined,
-  );
+  const facilitySummaries = summaryPage.items;
+  // Every claim belongs to one facility, so claim totals are facility totals.
+  const claimCount = statistics.totalCount;
+  const flaggedClaimCount = statistics.flaggedCount;
+  const totalPotentialGap = statistics.totalPotentialGap;
+  const chartData = facilitySummaries.map((summary) => ({
+    code: summary.facility.code,
+    name: summary.facility.name,
+    claimCount: summary.claimCount,
+    flaggedClaimCount: summary.flaggedClaimCount,
+    totalPotentialGap: summary.totalPotentialGap,
+    ...summary.findingCounts,
+  }));
+  const highestRiskFacility: FacilitySummary | undefined = facilitySummaries[0];
   const height = chartHeight(chartData.length);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatTileGrid>
         <StatTile
           label="Faskes"
-          value={facilitySummaries.length.toLocaleString('id-ID')}
+          value={summaryPage.total.toLocaleString('id-ID')}
           hint={`${claimCount.toLocaleString('id-ID')} klaim diajukan`}
         />
         <StatTile
@@ -137,7 +171,7 @@ function FacilityOverview({
           value={highestRiskFacility?.facility.code ?? '—'}
           hint={highestRiskFacility?.facility.name}
         />
-      </div>
+      </StatTileGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartPanel

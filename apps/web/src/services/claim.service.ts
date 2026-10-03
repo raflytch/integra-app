@@ -3,17 +3,22 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ClaimDecision,
   ClaimDetail,
-  ClaimQueueItem,
-  ClaimStatus,
+  ClaimQueuePage,
+  ClaimQueueParams,
+  ClaimStatistics,
   DecisionAction,
 } from '@/types/claim.types';
 
-export async function fetchClaimQueue(
-  status?: ClaimStatus,
-): Promise<ClaimQueueItem[]> {
-  const response = await apiClient.get<ClaimQueueItem[]>('/claims', {
-    params: { status },
-  });
+/** One page of the queue; the API filters, searches, and sorts. */
+export async function fetchClaimQueuePage(
+  params: ClaimQueueParams,
+): Promise<ClaimQueuePage> {
+  const response = await apiClient.get<ClaimQueuePage>('/claims', { params });
+  return response.data;
+}
+
+export async function fetchClaimStatistics(): Promise<ClaimStatistics> {
+  const response = await apiClient.get<ClaimStatistics>('/claims/statistics');
   return response.data;
 }
 

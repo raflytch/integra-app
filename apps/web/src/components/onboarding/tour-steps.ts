@@ -7,7 +7,8 @@ export interface TourStep {
   missingTargetDescription?: string;
   page?: TourPage;
   target?: string;
-  points?: { label: string; detail: string }[];
+  /** `copyable` adds a copy button for values the user types, such as demo emails. */
+  points?: { label: string; detail: string; copyable?: boolean }[];
   nextLabel?: string;
   advancesOnTargetClick?: boolean;
   showsLogo?: boolean;
@@ -39,7 +40,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'run-analysis',
     title: 'Pilih klaim, lalu analisis dengan AI',
     description:
-      'Centang klaim atau gunakan menu Pilih, lalu klik Analisis AI. AI hanya membaca klaim yang Anda pilih, karena setiap dokumen memakai token berbayar. Cari, saring, dan urutkan klaim lewat kolom di atas tabel.',
+      'Centang beberapa klaim, atau centang kotak di kepala tabel untuk memilih semua klaim di halaman ini, lalu klik Analisis AI. Tombol Analisis di setiap baris menganalisis satu klaim. AI hanya membaca klaim yang Anda pilih, karena setiap dokumen memakai token berbayar.',
     missingTargetDescription:
       'Tombol Analisis AI ada di atas tabel Antrean Klaim. AI hanya membaca klaim yang Anda pilih.',
   },

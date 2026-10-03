@@ -10,7 +10,7 @@ export default function ClaimQueuePage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Antrean Klaim"
-        description="Klaim diurutkan dari sinyal terkuat dan potensi selisih tarif terbesar. Pilih klaim yang ingin dianalisis AI; hanya klaim terpilih yang memakai token."
+        description="Klaim diurutkan dari sinyal terkuat dan potensi selisih tarif terbesar. Centang klaim (atau satu halaman sekaligus) lalu klik Analisis AI; hanya klaim terpilih yang memakai token."
       />
       <ClaimQueue filterOptions={REVIEW_QUEUE_FILTERS} />
     </div>
