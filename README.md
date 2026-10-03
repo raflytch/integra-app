@@ -48,7 +48,7 @@ Targeted `build:client`, `build:server`, `lint:client`, `lint:server`, `typechec
 Development data for the INTEGRA demo, run from the repository root:
 
 - `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/load-contract-fixture.ts` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
-- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/seed-users.ts` creates the demo verifier and supervisor accounts and prints each TOTP setup key (add `--rotate` for a new key).
+- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/seed-users.ts` creates the demo verifier and supervisor accounts and prints each TOTP setup key with a scannable QR code; the QR is also saved as a PNG in the gitignored `apps/api/.totp-qr/` (add `--rotate` for a new key).
 
 ## Design and engineering guidance
 
