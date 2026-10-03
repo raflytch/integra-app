@@ -32,7 +32,8 @@
     "seed:demo": "npm run seed:demo --workspace=@app/api --",
     "data:generate": "npm run data:generate --workspace=@app/api --",
     "data:seed": "npm run data:seed --workspace=@app/api",
-    "eval:similarity": "npm run eval:similarity --workspace=@app/api"
+    "eval:similarity": "npm run eval:similarity --workspace=@app/api",
+    "eval:detection": "npm run eval:detection --workspace=@app/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
