@@ -1,4 +1,4 @@
-import { ListOrdered } from 'lucide-react';
+import { LuListOrdered } from 'react-icons/lu';
 import {
   Empty,
   EmptyDescription,
@@ -13,12 +13,12 @@ const SKELETON_ROW_COUNT = 5;
 export function ClaimQueueSkeleton() {
   return (
     <div
-      className="flex flex-col gap-2 rounded-xl border border-linen-border bg-eggshell-canvas p-4"
+      className="flex flex-col gap-2 rounded-xl border border-hairline bg-surface shadow-xs p-4"
       aria-busy="true"
     >
       <span className="sr-only">Memuat antrean klaim</span>
       {Array.from({ length: SKELETON_ROW_COUNT }, (_, rowIndex) => (
-        <Skeleton key={rowIndex} className="h-14 rounded-md bg-cloud-surface" />
+        <Skeleton key={rowIndex} className="h-14 rounded-md bg-subtle" />
       ))}
     </div>
   );
@@ -32,13 +32,13 @@ export function ClaimQueueEmpty({
   description: string;
 }) {
   return (
-    <Empty className="rounded-xl border border-dashed border-linen-border bg-cloud-surface">
+    <Empty className="rounded-xl border border-hairline bg-surface shadow-xs">
       <EmptyHeader>
-        <EmptyMedia variant="icon" className="bg-paper-beige text-graphite">
-          <ListOrdered />
+        <EmptyMedia variant="icon" className="bg-subtle text-ink">
+          <LuListOrdered />
         </EmptyMedia>
-        <EmptyTitle className="text-graphite">{title}</EmptyTitle>
-        <EmptyDescription className="text-quiet-gray">
+        <EmptyTitle className="text-ink">{title}</EmptyTitle>
+        <EmptyDescription className="text-ink-secondary">
           {description}
         </EmptyDescription>
       </EmptyHeader>

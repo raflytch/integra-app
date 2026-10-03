@@ -19,10 +19,13 @@
     "tariffAmount": 9850000,
     "potentialGap": 4120000,
     "priorityScore": 0.8255,
+    "analyzedAt": "2026-10-03T08:20:41.512Z",
     "findingCounts": {
       "EXISTENCE": 1,
       "CONSISTENCY": 0,
       "SIMILARITY": 0
-    }
+    },
+    "documentCount": 5,
+    "extractedDocumentCount": 5
   }
 ]

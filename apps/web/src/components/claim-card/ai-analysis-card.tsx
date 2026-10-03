@@ -1,13 +1,15 @@
+import type { IconType } from 'react-icons';
 import {
-  Lightbulb,
-  type LucideIcon,
-  Scale,
-  Sparkles,
-  UserCheck,
-} from 'lucide-react';
-import { IntegraAiPill } from '@/components/claim-pills';
+  LuClock,
+  LuLightbulb,
+  LuScale,
+  LuSparkles,
+  LuUserCheck,
+} from 'react-icons/lu';
+import { IntegraAiPill, Pill } from '@/components/claim-pills';
+import { AnalyzeClaimButton } from './analyze-claim-button';
 import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
-import { formatRupiah } from '@/lib/format';
+import { formatDateTime, formatRupiah } from '@/lib/format';
 import type { ClaimDetail } from '@/types/claim.types';
 
 interface AnalysisNarrative {
@@ -27,7 +29,16 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
       headline: 'Rekam medis belum selesai dibaca AI',
       explanation: `${extractedDocumentCount} dari ${documentCount} dokumen sudah diekstraksi. Uji baru bisa menilai klaim setelah semua dokumen dibaca.`,
       suggestion:
-        'Jalankan analisis dari Antrean Klaim setelah ekstraksi selesai.',
+        'Klik Analisis dengan AI agar AI membaca rekam medis klaim ini dan aturan klinis mengujinya.',
+    };
+  }
+
+  if (!claim.analyzedAt) {
+    return {
+      headline: 'Rekam medis sudah dibaca AI, uji belum dijalankan',
+      explanation: `Semua ${documentCount} dokumen sudah diekstraksi, tetapi aturan klinis belum menilai klaim ini.`,
+      suggestion:
+        'Klik Analisis dengan AI untuk menjalankan uji. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
     };
   }
 
@@ -36,8 +47,7 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
     return {
       headline: 'Belum ada tanda pada klaim ini',
       explanation: `${readingSentence} Aturan klinis belum menemukan bukti yang kurang, tidak konsisten, atau tersalin.`,
-      suggestion:
-        'Periksa ringkasan klaim, lalu putuskan. Jika analisis belum dijalankan, jalankan dari Antrean Klaim.',
+      suggestion: 'Periksa ringkasan klaim, lalu putuskan.',
     };
   }
 
@@ -73,19 +83,19 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
   };
 }
 
-const ANALYSIS_STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
+const ANALYSIS_STEPS: { icon: IconType; title: string; detail: string }[] = [
   {
-    icon: Sparkles,
+    icon: LuSparkles,
     title: 'AI membaca rekam medis',
     detail: 'Mengekstrak bukti beserta kutipan aslinya.',
   },
   {
-    icon: Scale,
+    icon: LuScale,
     title: 'Aturan klinis menilai',
     detail: 'Pedoman klinis yang bisa diaudit, bukan skor tanpa alasan.',
   },
   {
-    icon: UserCheck,
+    icon: LuUserCheck,
     title: 'Anda memutuskan',
     detail: 'Setujui, minta klarifikasi, atau eskalasi.',
   },
@@ -93,49 +103,68 @@ const ANALYSIS_STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
 
 export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
   const { headline, explanation, suggestion } = describeAnalysis(claim);
+  const unreadDocumentCount = claim.documents.filter(
+    (document) => !document.isExtracted,
+  ).length;
 
   return (
     <section
       aria-labelledby="ai-analysis-heading"
       data-tour="claim-ai-analysis"
-      className="flex flex-col gap-4 rounded-xl border border-linen-border bg-eggshell-canvas p-6"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-6 shadow-xs"
     >
       <div className="flex flex-col items-start gap-2">
-        <IntegraAiPill />
+        <div className="flex flex-wrap items-center gap-2">
+          <IntegraAiPill />
+          {claim.analyzedAt ? (
+            <Pill tone="neutral" icon={LuClock}>
+              Dianalisis{' '}
+              <time dateTime={claim.analyzedAt}>
+                {formatDateTime(claim.analyzedAt)}
+              </time>
+            </Pill>
+          ) : (
+            <Pill tone="outline">Belum dianalisis AI</Pill>
+          )}
+        </div>
         <h2
           id="ai-analysis-heading"
-          className="text-base font-medium text-graphite"
+          className="text-body font-semibold tracking-display text-ink"
         >
           {headline}
         </h2>
-        <p className="text-sm leading-normal text-charcoal-copy">
-          {explanation}
-        </p>
+        <p className="text-body text-ink-secondary">{explanation}</p>
       </div>
-      <div className="flex gap-3 rounded-lg bg-paper-beige px-4 py-3">
-        <Lightbulb
-          className="mt-0.5 size-4 shrink-0 text-integra-deep"
+      <AnalyzeClaimButton
+        claimId={claim.id}
+        claimNo={claim.claimNo}
+        unreadDocumentCount={unreadDocumentCount}
+        isAnalyzed={claim.analyzedAt !== null}
+      />
+      <div className="flex gap-3 rounded-lg border border-hairline bg-canvas px-4 py-3">
+        <LuLightbulb
+          className="mt-0.5 size-4 shrink-0 text-ink"
           aria-hidden="true"
         />
-        <p className="text-sm text-graphite">
-          <span className="font-semibold">Saran langkah berikutnya. </span>
+        <p className="text-small text-ink">
+          <span className="font-medium">Saran langkah berikutnya. </span>
           {suggestion}
         </p>
       </div>
       <ol className="grid gap-3 sm:grid-cols-3">
         {ANALYSIS_STEPS.map((analysisStep, stepIndex) => (
           <li key={analysisStep.title} className="flex gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-integra-wash text-integra-deep">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-hairline bg-canvas text-ink">
               <analysisStep.icon className="size-4" aria-hidden="true" />
             </span>
             <span className="flex flex-col gap-0.5">
-              <span className="text-xs text-quiet-gray">
+              <span className="text-caption text-ink-secondary">
                 Langkah {stepIndex + 1}
               </span>
-              <span className="text-sm font-medium text-graphite">
+              <span className="text-small font-medium text-ink">
                 {analysisStep.title}
               </span>
-              <span className="text-xs text-quiet-gray">
+              <span className="text-caption text-ink-secondary">
                 {analysisStep.detail}
               </span>
             </span>

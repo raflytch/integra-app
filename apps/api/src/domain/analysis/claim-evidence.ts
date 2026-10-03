@@ -1,4 +1,5 @@
 import type {
+  DocumentType,
   EvidenceType,
   FindingCitation,
   TestType,
@@ -24,6 +25,20 @@ export interface ClaimEvidence {
     isPrimary: boolean;
   }[];
   documents: { id: string; extracted: ClinicalExtraction | null }[];
+}
+
+/** Detectors only judge a claim once the AI has read every document. */
+export function isFullyExtracted(claim: ClaimEvidence): boolean {
+  return (
+    claim.documents.length > 0 &&
+    claim.documents.every((document) => document.extracted !== null)
+  );
+}
+
+export interface DocumentToExtract {
+  id: string;
+  type: DocumentType;
+  content: string;
 }
 
 export interface NewFinding {

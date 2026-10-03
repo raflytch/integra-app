@@ -1,17 +1,21 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
+import type { IconType } from 'react-icons';
 import {
-  Building2,
-  CircleHelp,
-  ListOrdered,
-  LogOut,
-  type LucideIcon,
-  ShieldAlert,
-} from 'lucide-react';
+  LuBuilding2,
+  LuCircleHelp,
+  LuLayoutDashboard,
+  LuListOrdered,
+  LuLogOut,
+  LuShieldAlert,
+} from 'react-icons/lu';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Sidebar,
@@ -35,7 +39,7 @@ import type { UserRole } from '@/types/auth.types';
 interface MenuItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: IconType;
 }
 
 interface MenuGroup {
@@ -48,20 +52,30 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Verifikasi',
     allowedRoles: ['VERIFIER', 'SUPERVISOR'],
-    items: [{ href: '/claims', label: 'Antrean Klaim', icon: ListOrdered }],
+    items: [{ href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered }],
   },
   {
     label: 'Supervisor',
     allowedRoles: ['SUPERVISOR'],
     items: [
-      { href: '/escalations', label: 'Eskalasi', icon: ShieldAlert },
-      { href: '/facilities', label: 'Ringkasan Faskes', icon: Building2 },
+      { href: '/overview', label: 'Ikhtisar', icon: LuLayoutDashboard },
+      { href: '/escalations', label: 'Eskalasi', icon: LuShieldAlert },
+      { href: '/facilities', label: 'Ringkasan Faskes', icon: LuBuilding2 },
     ],
   },
 ];
 
 const MENU_BUTTON_CLASS_NAME =
-  'text-charcoal-copy data-[active=true]:bg-integra-wash data-[active=true]:text-integra-deep';
+  'h-9 text-sm font-medium text-ink-secondary hover:bg-subtle hover:text-ink data-[active=true]:bg-primary-wash data-[active=true]:text-primary-hover [&>svg]:text-current';
+
+function toInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]!.toUpperCase())
+    .join('');
+}
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -69,9 +83,11 @@ export function AppSidebar() {
   const queryClient = useQueryClient();
   const startTour = useStartTour();
   const currentUserQuery = useCurrentUser();
-  const currentRole = currentUserQuery.data?.role;
+  const [isLogOutConfirmOpen, setIsLogOutConfirmOpen] = useState(false);
+  const currentUser = currentUserQuery.data;
   const visibleMenuGroups = MENU_GROUPS.filter(
-    (menuGroup) => currentRole && menuGroup.allowedRoles.includes(currentRole),
+    (menuGroup) =>
+      currentUser && menuGroup.allowedRoles.includes(currentUser.role),
   );
 
   async function handleLogOut() {
@@ -81,9 +97,9 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-linen-border">
-      <SidebarHeader className="px-4 py-4">
-        <Link href="/claims" className="flex items-center gap-2">
+    <Sidebar className="border-hairline">
+      <SidebarHeader className="border-b border-hairline px-4 py-4">
+        <Link href="/claims" className="flex items-center gap-2.5">
           <Image
             src="/integra-mark.png"
             alt=""
@@ -92,25 +108,25 @@ export function AppSidebar() {
             priority
           />
           <span className="flex flex-col">
-            <span className="text-base leading-tight font-semibold tracking-tight text-integra-deep">
+            <span className="font-display text-base leading-tight font-semibold tracking-display text-ink">
               INTEGRA
             </span>
-            <span className="text-xs text-quiet-gray">
+            <span className="text-caption text-ink-secondary">
               Detect with evidence
             </span>
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarContent data-tour="sidebar-menu">
+      <SidebarContent data-tour="main-nav" className="py-2">
         {currentUserQuery.isPending ? (
           <div className="flex flex-col gap-2 p-4">
-            <Skeleton className="h-8 bg-cloud-surface" />
-            <Skeleton className="h-8 bg-cloud-surface" />
+            <Skeleton className="h-8 bg-subtle" />
+            <Skeleton className="h-8 bg-subtle" />
           </div>
         ) : (
           visibleMenuGroups.map((menuGroup) => (
             <SidebarGroup key={menuGroup.label}>
-              <SidebarGroupLabel className="text-quiet-gray">
+              <SidebarGroupLabel className="text-overline font-medium tracking-wider text-ink-secondary uppercase">
                 {menuGroup.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -123,7 +139,7 @@ export function AppSidebar() {
                         className={MENU_BUTTON_CLASS_NAME}
                       >
                         <Link href={menuItem.href}>
-                          <menuItem.icon />
+                          <menuItem.icon aria-hidden="true" />
                           <span>{menuItem.label}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -135,14 +151,21 @@ export function AppSidebar() {
           ))
         )}
       </SidebarContent>
-      <SidebarFooter className="gap-2 border-t border-linen-border">
-        {currentUserQuery.data && (
-          <div className="flex flex-col px-2 pt-1">
-            <span className="truncate text-sm font-medium text-graphite">
-              {currentUserQuery.data.name}
-            </span>
-            <span className="text-xs text-quiet-gray">
-              {USER_ROLE_LABELS[currentUserQuery.data.role]}
+      <SidebarFooter className="gap-2 border-t border-hairline p-3">
+        {currentUser && (
+          <div className="flex items-center gap-2.5 rounded-lg border border-hairline bg-canvas p-2.5">
+            <Avatar className="size-8">
+              <AvatarFallback className="bg-surface text-caption font-medium text-ink">
+                {toInitials(currentUser.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="flex min-w-0 flex-col leading-tight">
+              <span className="truncate text-small font-medium text-ink">
+                {currentUser.name}
+              </span>
+              <span className="truncate text-caption text-ink-secondary">
+                {USER_ROLE_LABELS[currentUser.role]}
+              </span>
             </span>
           </div>
         )}
@@ -152,21 +175,30 @@ export function AppSidebar() {
               onClick={startTour}
               className={MENU_BUTTON_CLASS_NAME}
             >
-              <CircleHelp />
+              <LuCircleHelp aria-hidden="true" />
               <span>Panduan</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogOut}
+              onClick={() => setIsLogOutConfirmOpen(true)}
               className={MENU_BUTTON_CLASS_NAME}
             >
-              <LogOut />
+              <LuLogOut aria-hidden="true" />
               <span>Keluar</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ConfirmDialog
+        open={isLogOutConfirmOpen}
+        onOpenChange={setIsLogOutConfirmOpen}
+        icon={LuLogOut}
+        title="Keluar dari INTEGRA?"
+        description="Untuk masuk lagi, Anda perlu email dan kode dari aplikasi autentikator."
+        confirmLabel="Ya, keluar"
+        onConfirm={handleLogOut}
+      />
     </Sidebar>
   );
 }

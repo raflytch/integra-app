@@ -1,23 +1,63 @@
+/* Declared first so lottie-react's default 100% sizing ranks below Tailwind utilities. */
+@layer lottie-react;
+
 @import 'tailwindcss';
 
+/* Small, low-opacity shadow scale; borders still define every edge (DESIGN.md). */
+@theme {
+  --shadow-*: initial;
+  --shadow-2xs: 0 1px 1px 0 rgb(10 10 10 / 0.03);
+  --shadow-xs: 0 1px 2px 0 rgb(10 10 10 / 0.04);
+  --shadow-sm:
+    0 1px 3px 0 rgb(10 10 10 / 0.06), 0 1px 2px -1px rgb(10 10 10 / 0.04);
+  --shadow-md:
+    0 4px 8px -2px rgb(10 10 10 / 0.06), 0 2px 4px -2px rgb(10 10 10 / 0.04);
+  --shadow-lg:
+    0 8px 16px -4px rgb(10 10 10 / 0.08), 0 2px 4px -2px rgb(10 10 10 / 0.04);
+  --shadow-xl:
+    0 8px 16px -4px rgb(10 10 10 / 0.08), 0 2px 4px -2px rgb(10 10 10 / 0.04);
+  --shadow-2xl:
+    0 8px 16px -4px rgb(10 10 10 / 0.08), 0 2px 4px -2px rgb(10 10 10 / 0.04);
+}
+
+/* Not inline: charts read these as CSS variables, e.g. var(--color-warning). */
+@theme {
+  --color-chart-neutral: #d4d4d8;
+  --color-canvas: #fafafa;
+  --color-surface: #ffffff;
+  --color-subtle: #f4f4f5;
+  --color-hairline: #e8e8ec;
+  --color-ink: #0a0a0a;
+  --color-ink-secondary: #6b6b6b;
+  --color-ink-muted: #9c9c9c;
+  --color-primary-hover: #4f46e5;
+  --color-primary-wash: #eef2ff;
+  --color-success: #10b981;
+  --color-success-ink: #047857;
+  --color-warning: #f59e0b;
+  --color-warning-ink: #b45309;
+  --color-error: #ef4444;
+  --color-error-ink: #b91c1c;
+}
+
 @theme inline {
-  --color-eggshell-canvas: #fdfcfb;
-  --color-cloud-surface: #f7f7f7;
-  --color-paper-beige: #f0f0ea;
-  --color-whiteboard-gray: #eeeded;
-  --color-linen-border: #e4ded3;
-  --color-graphite: #2e2e2e;
-  --color-charcoal-copy: #454545;
-  --color-quiet-gray: #6a6972;
-  --color-disabled-ash: #a8a8a8;
-  --color-integra-deep: #075c59;
-  --color-integra-teal: #048173;
-  --color-integra-mint: #39c097;
-  --color-integra-wash: #e8f5f0;
-  --font-jakarta-sans: var(--font-jakarta-sans-next), system-ui, sans-serif;
-  --font-sans: var(--font-jakarta-sans-next), system-ui, sans-serif;
-  --font-ui-monospace: ui-monospace, SFMono-Regular, monospace;
+  --font-display:
+    'General Sans', var(--font-dm-sans-next), system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans-next), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono-next), ui-monospace, monospace;
+  --text-overline: 11px;
+  --text-caption: 12px;
+  --text-small: 13px;
+  --text-body: 15px;
+  --text-subhead: 24px;
+  --text-section: 32px;
+  --text-section--line-height: 1.2;
+  --text-headline: 60px;
+  --text-headline--line-height: 1.05;
+  --text-subhead--line-height: 1.25;
+  --tracking-display: -0.03em;
   --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-xl: 12px;
   --radius-full: 9999px;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -31,33 +71,33 @@
 }
 
 :root {
-  --background: #fdfcfb;
-  --foreground: #2e2e2e;
-  --card: #fdfcfb;
-  --card-foreground: #2e2e2e;
-  --popover: #fdfcfb;
-  --popover-foreground: #2e2e2e;
-  --primary: #075c59;
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #6366f1;
   --primary-foreground: #ffffff;
-  --secondary: #f7f7f7;
-  --secondary-foreground: #2e2e2e;
-  --muted: #f0f0ea;
-  --muted-foreground: #6a6972;
-  --accent: #f0f0ea;
-  --accent-foreground: #2e2e2e;
-  --destructive: #b42318;
-  --border: #e4ded3;
-  --input: #e4ded3;
-  --ring: #048173;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f4f4f5;
+  --muted-foreground: #6b6b6b;
+  --accent: #f4f4f5;
+  --accent-foreground: #0a0a0a;
+  --destructive: #ef4444;
+  --border: #e8e8ec;
+  --input: #e8e8ec;
+  --ring: #6366f1;
   --radius: 0.375rem;
-  --sidebar: #fdfcfb;
-  --sidebar-foreground: #2e2e2e;
-  --sidebar-primary: #075c59;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0f0ea;
-  --sidebar-accent-foreground: #2e2e2e;
-  --sidebar-border: #e4ded3;
-  --sidebar-ring: #048173;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e8e8ec;
+  --sidebar-ring: #6366f1;
 }
 
 @theme inline {
@@ -79,18 +119,28 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-lg: 8px;
+  --radius-sm: 4px;
 }
 
 @layer base {
   * {
     border-color: var(--border);
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
   body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-jakarta-sans-next), system-ui, sans-serif;
+    font-family: var(--font-dm-sans-next), system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family:
+      'General Sans', var(--font-dm-sans-next), system-ui, sans-serif;
   }
   :focus-visible {
     outline: 2px solid var(--ring);

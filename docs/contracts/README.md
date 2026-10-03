@@ -25,6 +25,8 @@ Example: [`clinical-extraction.example.json`](clinical-extraction.example.json).
 
 `isPresent: false` records an explicit negation such as "pasien tidak sesak", which Uji Konsisten needs (UC-2).
 
+M-03 extraction (`ExtractClaimDocumentsUseCase`) sends one document per LLM call at temperature 0 with the output schema in `application/analysis/clinical-extraction.schema.ts`. Before saving, `groundExtraction` drops every item whose `quote` is not an exact substring of the document and maps explicit synonyms to the canonical terms in `domain/analysis/clinical-vocabulary.ts`. A document whose call fails transiently stays `extracted = null` and is retried on the next run.
+
 ## `findings.citations` (detectors write, Kartu Klaim reads)
 
 An array of citation objects, discriminated by `kind`:
@@ -41,7 +43,7 @@ Example: [`claim-detail.example.json`](claim-detail.example.json). Returns `404 
 
 ## `GET /claims` (M-07 antrean)
 
-Example: [`claim-list.example.json`](claim-list.example.json). Optional `?status=PENDING|APPROVED|CLARIFICATION_REQUESTED|ESCALATED`. Ordered by `priorityScore` descending, then `potentialGap` descending. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud".
+Example: [`claim-list.example.json`](claim-list.example.json). Optional `?status=PENDING|APPROVED|CLARIFICATION_REQUESTED|ESCALATED`. Ordered by `priorityScore` descending, then `potentialGap` descending. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud". `documentCount` and `extractedDocumentCount` show how many documents the AI has read. `analyzedAt` is the ISO timestamp of the last completed analysis (every document extracted and the tests run), or `null` while the claim is unanalyzed; `GET /claims/:id` returns it too.
 
 ## `GET /facilities/summary` (M-10 Ringkasan Faskes)
 
@@ -63,8 +65,8 @@ Every endpoint except `GET /health`, `POST /auth/login`, and `POST /auth/logout`
 
 Body `{ action: APPROVE | REQUEST_CLARIFICATION | ESCALATE, reason }` with a trimmed reason of 10 to 1000 characters. `verifier_id` comes from the session, never the body. The claim status becomes `APPROVED`, `CLARIFICATION_REQUESTED`, or `ESCALATED` in the same transaction. Returns the decision in the `decisions` item shape.
 
-## `POST /analysis/run` (T21)
+## `POST /analysis/claims/:id` (T21)
 
-Runs every available test over claims whose documents all have `extracted`, rewrites their findings, and recalculates `potential_gap` (sum of `tariffGap`) and `priority_score` (`0.7 × strongest finding strength + 0.3 × min(potentialGap / tariffAmount, 1)`). Returns `{ analyzedClaimCount, skippedClaimCount, flaggedClaimCount, findingCount }`; skipped claims are waiting for M-03 extraction.
+Runs M-03 extraction (paid LLM calls) on the claim's documents that are still unextracted, then, once every document is extracted, runs every available test on the claim, rewrites its findings, sets `analyzed_at` to now, and recalculates `potential_gap` (sum of `tariffGap`) and `priority_score` (`0.7 × strongest finding strength + 0.3 × min(potentialGap / tariffAmount, 1)`). A claim that is already extracted is only re-tested, without LLM calls. There is no bulk endpoint: the web app calls this once per claim the verifier selected, two at a time, so a run can be stopped between claims. Returns `{ extractedDocumentCount, failedDocumentCount, isAnalyzed, findingCount, potentialGap }`; `isAnalyzed` is false while some documents still failed. `404 CLAIM_NOT_FOUND` for an unknown id; `503 EXTRACTION_UNAVAILABLE` when the LLM is misconfigured or every remaining document failed.
 
 Uji Ada (M-04) rules: a secondary diagnosis is flagged when at least half of its `evidence_rules` are not found. A rule is found when an extracted item of the same evidence type contains `expected` (case-insensitive). `FINDING` only counts items with `isPresent: true`; `VITAL_SIGN` also matches present findings such as "hipotensi". Each flagged diagnosis lowers severity by one level, and `tariffGap` is the tariff difference between those levels from the `TariffSchedule` port.

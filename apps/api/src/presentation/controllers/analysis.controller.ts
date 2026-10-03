@@ -1,16 +1,26 @@
-import { Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
-  type AnalysisRunSummary,
-  RunAnalysisUseCase,
-} from '../../application/analysis/run-analysis.use-case';
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
+import {
+  AnalyzeClaimUseCase,
+  type ClaimAnalysisResult,
+} from '../../application/analysis/analyze-claim.use-case';
 
 @Controller('analysis')
 export class AnalysisController {
-  constructor(private readonly runAnalysis: RunAnalysisUseCase) {}
+  constructor(private readonly analyzeClaim: AnalyzeClaimUseCase) {}
 
-  @Post('run')
+  /** The web app calls this once per claim the verifier selected, so AI cost stays opt-in. */
+  @Post('claims/:claimId')
   @HttpCode(HttpStatus.OK)
-  run(): Promise<AnalysisRunSummary> {
-    return this.runAnalysis.execute();
+  analyze(
+    @Param('claimId', ParseUUIDPipe) claimId: string,
+  ): Promise<ClaimAnalysisResult> {
+    return this.analyzeClaim.execute(claimId);
   }
 }

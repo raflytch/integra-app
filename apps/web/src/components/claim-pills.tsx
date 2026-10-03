@@ -1,17 +1,17 @@
+import type { IconType } from 'react-icons';
 import {
-  CircleAlert,
-  CircleCheck,
-  CircleDashed,
-  Copy,
-  FileSearch,
-  Flag,
-  Gauge,
-  GitCompareArrows,
-  type LucideIcon,
-  MessageSquareText,
-  ShieldAlert,
-  Sparkles,
-} from 'lucide-react';
+  LuCircleAlert,
+  LuCircleCheck,
+  LuCircleDashed,
+  LuCopy,
+  LuFileSearch,
+  LuFlag,
+  LuGauge,
+  LuGitCompareArrows,
+  LuMessageSquareText,
+  LuShieldAlert,
+  LuSparkles,
+} from 'react-icons/lu';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -27,13 +27,14 @@ import type {
   TestType,
 } from '@/types/claim.types';
 
+/** Chip tones from DESIGN.md. Indigo is reserved for interactive elements, so no chip uses it. */
 const PILL_TONE_CLASS_NAMES = {
-  neutral: 'border-linen-border bg-eggshell-canvas text-charcoal-copy',
-  muted: 'border-transparent bg-cloud-surface text-quiet-gray',
-  warm: 'border-transparent bg-paper-beige text-graphite',
-  brand: 'border-transparent bg-integra-wash text-integra-deep',
-  brandStrong: 'border-transparent bg-integra-deep text-white',
-  strong: 'border-transparent bg-graphite text-white',
+  outline: 'border-hairline bg-surface text-ink-secondary',
+  neutral: 'border-transparent bg-subtle text-ink-secondary',
+  success: 'border-success/30 bg-success/10 text-success-ink',
+  warning: 'border-warning/30 bg-warning/10 text-warning-ink',
+  error: 'border-error/30 bg-error/10 text-error-ink',
+  inverse: 'border-transparent bg-ink text-surface',
 } as const;
 
 type PillTone = keyof typeof PILL_TONE_CLASS_NAMES;
@@ -42,33 +43,33 @@ const SEVERITY_LEVEL_NUMERALS = ['I', 'II', 'III'];
 
 const CLAIM_STATUS_APPEARANCE: Record<
   ClaimStatus,
-  { tone: PillTone; icon: LucideIcon }
+  { tone: PillTone; icon: IconType }
 > = {
-  PENDING: { tone: 'neutral', icon: CircleDashed },
-  CLARIFICATION_REQUESTED: { tone: 'warm', icon: MessageSquareText },
-  ESCALATED: { tone: 'strong', icon: ShieldAlert },
-  APPROVED: { tone: 'brand', icon: CircleCheck },
+  PENDING: { tone: 'outline', icon: LuCircleDashed },
+  CLARIFICATION_REQUESTED: { tone: 'warning', icon: LuMessageSquareText },
+  ESCALATED: { tone: 'error', icon: LuShieldAlert },
+  APPROVED: { tone: 'success', icon: LuCircleCheck },
 };
 
 const DECISION_ACTION_APPEARANCE: Record<
   DecisionAction,
-  { tone: PillTone; icon: LucideIcon }
+  { tone: PillTone; icon: IconType }
 > = {
   APPROVE: CLAIM_STATUS_APPEARANCE.APPROVED,
   REQUEST_CLARIFICATION: CLAIM_STATUS_APPEARANCE.CLARIFICATION_REQUESTED,
   ESCALATE: CLAIM_STATUS_APPEARANCE.ESCALATED,
 };
 
-const TEST_TYPE_ICONS: Record<TestType, LucideIcon> = {
-  EXISTENCE: FileSearch,
-  CONSISTENCY: GitCompareArrows,
-  SIMILARITY: Copy,
+const TEST_TYPE_ICONS: Record<TestType, IconType> = {
+  EXISTENCE: LuFileSearch,
+  CONSISTENCY: LuGitCompareArrows,
+  SIMILARITY: LuCopy,
 };
 
 const PRIORITY_LEVELS: { minScore: number; label: string; tone: PillTone }[] = [
-  { minScore: 0.7, label: 'Prioritas tinggi', tone: 'brandStrong' },
-  { minScore: 0.4, label: 'Prioritas sedang', tone: 'brand' },
-  { minScore: 0, label: 'Prioritas rendah', tone: 'muted' },
+  { minScore: 0.7, label: 'Prioritas tinggi', tone: 'error' },
+  { minScore: 0.4, label: 'Prioritas sedang', tone: 'warning' },
+  { minScore: 0, label: 'Prioritas rendah', tone: 'neutral' },
 ];
 
 export function Pill({
@@ -78,14 +79,18 @@ export function Pill({
   children,
 }: {
   tone: PillTone;
-  icon?: LucideIcon;
+  icon?: IconType;
   className?: string;
   children: ReactNode;
 }) {
   return (
     <Badge
       variant="outline"
-      className={cn(PILL_TONE_CLASS_NAMES[tone], className)}
+      className={cn(
+        'rounded-full px-2.5 py-0.5 text-caption',
+        PILL_TONE_CLASS_NAMES[tone],
+        className,
+      )}
     >
       {Icon && <Icon aria-hidden="true" />}
       {children}
@@ -113,15 +118,23 @@ export function DecisionActionPill({ action }: { action: DecisionAction }) {
 
 export function NeedsClarificationPill() {
   return (
-    <Pill tone="brand" icon={Flag}>
+    <Pill tone="warning" icon={LuFlag}>
       Perlu klarifikasi
+    </Pill>
+  );
+}
+
+export function NotAnalyzedPill() {
+  return (
+    <Pill tone="outline" icon={LuCircleDashed}>
+      Belum dianalisis AI
     </Pill>
   );
 }
 
 export function MissingEvidencePill() {
   return (
-    <Pill tone="brand" icon={CircleAlert}>
+    <Pill tone="warning" icon={LuCircleAlert}>
       Belum ada bukti
     </Pill>
   );
@@ -133,7 +146,7 @@ export function PriorityPill({ priorityScore }: { priorityScore: number }) {
     PRIORITY_LEVELS.find((level) => priorityScore >= level.minScore) ??
     PRIORITY_LEVELS[PRIORITY_LEVELS.length - 1];
   return (
-    <Pill tone={priorityLevel.tone} icon={Gauge}>
+    <Pill tone={priorityLevel.tone} icon={LuGauge}>
       {priorityLevel.label}
     </Pill>
   );
@@ -149,7 +162,7 @@ export function TestSignalPill({
   const hasFindings = findingCount > 0;
   return (
     <Pill
-      tone={hasFindings ? 'brand' : 'muted'}
+      tone={hasFindings ? 'warning' : 'neutral'}
       icon={TEST_TYPE_ICONS[testType]}
     >
       {TEST_TYPE_DETAILS[testType].title}
@@ -160,7 +173,7 @@ export function TestSignalPill({
 
 export function SeverityPill({ severityLevel }: { severityLevel: number }) {
   return (
-    <Pill tone="neutral">
+    <Pill tone="outline">
       Severity {SEVERITY_LEVEL_NUMERALS[severityLevel - 1] ?? severityLevel}
     </Pill>
   );
@@ -171,12 +184,12 @@ export function FacilityTypePill({
 }: {
   facilityType: FacilityType;
 }) {
-  return <Pill tone="muted">Tipe {facilityType}</Pill>;
+  return <Pill tone="neutral">Tipe {facilityType}</Pill>;
 }
 
 export function IntegraAiPill() {
   return (
-    <Pill tone="brandStrong" icon={Sparkles}>
+    <Pill tone="inverse" icon={LuSparkles}>
       INTEGRA AI
     </Pill>
   );
@@ -184,7 +197,7 @@ export function IntegraAiPill() {
 
 export function ReadByAiPill() {
   return (
-    <Pill tone="brand" icon={Sparkles}>
+    <Pill tone="neutral" icon={LuSparkles}>
       Dibaca AI
     </Pill>
   );

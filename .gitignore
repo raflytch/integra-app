@@ -7,5 +7,6 @@ coverage/
 .env.*.local
 *.log
 apps/api/src/generated/
+apps/api/.totp-qr/
 apps/web/next-env.d.ts
 *.tsbuildinfo

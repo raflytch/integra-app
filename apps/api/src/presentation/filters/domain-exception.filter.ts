@@ -13,6 +13,7 @@ import { DomainError } from '../../domain/shared/domain-error';
  */
 const STATUS_BY_CODE: Readonly<Record<string, HttpStatus>> = {
   CLAIM_NOT_FOUND: HttpStatus.NOT_FOUND,
+  EXTRACTION_UNAVAILABLE: HttpStatus.SERVICE_UNAVAILABLE,
   INVALID_LOGIN: HttpStatus.UNAUTHORIZED,
   SESSION_EXPIRED: HttpStatus.UNAUTHORIZED,
 };

@@ -3,8 +3,12 @@ import { generateSecret, generateURI, verify } from 'otplib';
 import { TotpVerifier } from '../../application/ports/totp-verifier.port';
 
 const ISSUER = 'INTEGRA';
-/** Accept one 30 s step either side to absorb phone clock drift. */
-const EPOCH_TOLERANCE_SECONDS = 30;
+/**
+ * [past, future] seconds. Phones that lag the server (common) produce codes
+ * from earlier steps, so the past window is wider; replay protection and the
+ * login rate limit still apply.
+ */
+const EPOCH_TOLERANCE_SECONDS: [number, number] = [90, 30];
 const CODE_PATTERN = /^\d{6}$/;
 
 /** RFC 6238 TOTP (SHA-1, 6 digits, 30 s) via otplib, compatible with common authenticator apps. */

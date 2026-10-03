@@ -25,8 +25,6 @@ import {
 const QUEUE_PATH = '/claims';
 const SPOTLIGHT_PADDING_PX = 6;
 const FINAL_STEP_INDEX = TOUR_STEPS.length - 1;
-const OVERLAY_SHADOW =
-  'shadow-[0_0_0_1px_rgba(0,0,0,.04),0_14px_32px_rgba(0,0,0,.10),0_28px_70px_rgba(0,0,0,.14)]';
 
 function getCurrentTourPage(pathname: string): TourPage | null {
   if (pathname === QUEUE_PATH) return 'queue';
@@ -144,7 +142,7 @@ export function OnboardingTour({
       <Dialog open onOpenChange={(isOpen) => !isOpen && finishTour()}>
         <DialogContent
           showCloseButton={false}
-          className={`rounded-xl border-linen-border bg-eggshell-canvas p-6 sm:max-w-md ${OVERLAY_SHADOW}`}
+          className="rounded-xl border-hairline bg-surface p-6 sm:max-w-md"
         >
           <DialogDescription className="sr-only">
             Panduan penggunaan INTEGRA
@@ -177,13 +175,13 @@ export function OnboardingTour({
             <div
               key={blockerIndex}
               aria-hidden="true"
-              className="fixed z-50"
+              className="fixed z-50 bg-ink/55"
               style={blockerStyle}
             />
           ))}
           <div
             aria-hidden="true"
-            className="pointer-events-none fixed z-50 rounded-lg shadow-[0_0_0_9999px_rgba(46,46,46,.55)] ring-2 ring-integra-mint motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out"
+            className="pointer-events-none fixed z-50 rounded-lg border-2 border-primary motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out"
             style={{
               top: targetRect.top - SPOTLIGHT_PADDING_PX,
               left: targetRect.left - SPOTLIGHT_PADDING_PX,
@@ -193,9 +191,9 @@ export function OnboardingTour({
           />
         </>
       ) : (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/55">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55">
           <Spinner
-            className="size-6 text-eggshell-canvas"
+            className="size-6 text-surface"
             aria-label="Memuat langkah panduan"
           />
         </div>
@@ -207,7 +205,7 @@ export function OnboardingTour({
           aria-labelledby={titleId}
           onKeyDown={(event) => event.key === 'Escape' && finishTour()}
           style={cardPosition}
-          className={`fixed z-[60] max-h-[calc(100vh-32px)] w-[min(360px,calc(100vw-32px))] overflow-y-auto rounded-xl border border-linen-border bg-eggshell-canvas p-5 motion-safe:transition-[top,left,right,bottom] motion-safe:duration-300 motion-safe:ease-out ${OVERLAY_SHADOW}`}
+          className="fixed z-[60] max-h-[calc(100vh-32px)] w-[min(360px,calc(100vw-32px))] overflow-y-auto rounded-xl border border-hairline bg-surface p-5 shadow-lg motion-safe:transition-[top,left,right,bottom] motion-safe:duration-300 motion-safe:ease-out"
         >
           <TourStepCard
             {...stepCardProps}

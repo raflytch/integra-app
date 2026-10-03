@@ -42,17 +42,24 @@ Edit the copied environment files for your machine. `apps/api/.env.example` prov
 | `npm run prisma:migrate`  | Create/apply a local migration after adding a model |
 | `npm run prisma:deploy`   | Apply committed migrations                          |
 | `npm run prisma:studio`   | Open Prisma Studio                                  |
+| `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)     |
+| `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR  |
+| `npm run seed:demo`       | Reset `KLM-DEMO-*` claims to raw, unanalyzed data   |
+| `npm run seed:fixture`    | Load the UC-1 contract fixture claim                |
+| `npm run data:generate`   | Generate the LLM dataset (paid LLM calls)           |
+| `npm run data:seed`       | Load the generated LLM dataset                      |
 
 Targeted `build:client`, `build:server`, `lint:client`, `lint:server`, `typecheck:client`, and `typecheck:server` are also available.
 
 Development data for the INTEGRA demo, run from the repository root:
 
-- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/load-contract-fixture.ts` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
-- `npx tsx --tsconfig apps/api/tsconfig.json apps/api/scripts/seed-users.ts` creates the demo verifier and supervisor accounts and prints each TOTP setup key (add `--rotate` for a new key).
+- `npm run seed:users` creates the demo verifier and supervisor accounts and prints each TOTP setup key with a scannable QR code; the QR is also saved as a PNG in the gitignored `apps/api/.totp-qr/` (add `-- --rotate` for a new key).
+- `npm run seed:demo` creates 12 fictional facilities and 300 template-based raw claims (April–September 2026, about 1,950 clinical documents) without calling the LLM. Documents stay unextracted, with no findings or decisions, and every claim waits for a decision. In the app, nothing is analyzed until you choose it: tick claims in Antrean Klaim (or use the Pilih menu for this page, the top 5/10/25 unanalyzed, or every claim in the table) and click "Analisis AI", use the Analisis button on a row, or "Analisis dengan AI" on a Kartu Klaim. Each unread document is one paid LLM call (about 6 per claim); a confirmation shows the count first, a full-screen loader shows progress and can stop the run, and verifiers then record decisions themselves. Use `npm run seed:demo -- --count=800` for another size (up to 5,000). Rerunning it resets the demo: it replaces `KLM-DEMO-*` claims, with their findings and decisions, and `RM-DEMO-*` patients.
+- `npm run seed:fixture` loads the UC-1 claim, its AI extraction, and evidence rules from `docs/contracts`.
 
 ## Design and engineering guidance
 
-The Heptabase-inspired light visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses warm paper surfaces, the INTEGRA teal palette from the logo for primary actions, compact spacing, and flat cards. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
+The Genesis-inspired editorial visual system is documented in [apps/web/DESIGN.md](apps/web/DESIGN.md). It uses General Sans and DM Sans, an indigo accent reserved for interactive elements, Lucide icons through `react-icons/lu`, a shadcn sidebar, an Ikhtisar page with token-colored charts, searchable and sortable tables, and surfaces framed by 1px borders with small, low-opacity shadows. Reuse shadcn primitives and Tailwind tokens for consistency. [AGENTS.md](AGENTS.md) records dependency rules and conventions for future coding agents.
 
 ## Troubleshooting
 

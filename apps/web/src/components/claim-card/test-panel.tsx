@@ -19,13 +19,13 @@ function FindingItem({
 }) {
   return (
     <article className="flex flex-col gap-3">
-      <p className="text-sm text-graphite">{finding.summary}</p>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-quiet-gray">
+      <p className="text-body text-ink">{finding.summary}</p>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-secondary">
         <span>Kekuatan sinyal {formatPercent(finding.strength)}</span>
         {finding.tariffGap !== null && (
           <span>
             Selisih tarif{' '}
-            <span className="font-medium text-integra-deep">
+            <span className="font-medium text-ink">
               {formatRupiah(finding.tariffGap)}
             </span>
           </span>
@@ -37,7 +37,7 @@ function FindingItem({
       {finding.relatedClaim && (
         <Link
           href={`/claims/${finding.relatedClaim.id}`}
-          className="w-fit text-sm text-integra-teal hover:underline"
+          className="w-fit text-small text-primary-hover hover:underline"
         >
           Klaim mirip {finding.relatedClaim.claimNo} ·{' '}
           {finding.relatedClaim.facilityName}
@@ -75,23 +75,28 @@ export function TestPanelShell({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-xl border border-linen-border bg-eggshell-canvas"
+      className="rounded-xl border border-hairline bg-surface shadow-xs"
     >
-      <header className="flex items-start justify-between gap-4 border-b border-linen-border px-6 py-4">
+      <header className="flex items-start justify-between gap-4 border-b border-hairline px-6 py-4">
         <div className="flex flex-col gap-0.5">
-          <h2 id={headingId} className="text-base font-medium text-graphite">
+          <h2
+            id={headingId}
+            className="text-body font-semibold tracking-display text-ink"
+          >
             {testDetails.title}
           </h2>
-          <p className="text-sm text-quiet-gray">{testDetails.description}</p>
+          <p className="text-small text-ink-secondary">
+            {testDetails.description}
+          </p>
         </div>
-        <Pill tone={hasFindings ? 'brand' : 'muted'}>
+        <Pill tone={hasFindings ? 'warning' : 'neutral'}>
           {hasFindings ? `${findingCount} tanda` : 'Tidak ada tanda'}
         </Pill>
       </header>
       {hasFindings ? (
         children
       ) : (
-        <p className="px-6 py-4 text-sm text-quiet-gray">
+        <p className="px-6 py-4 text-small text-ink-secondary">
           {testDetails.emptyMessage}
         </p>
       )}
@@ -110,7 +115,7 @@ export function TestPanel({
 }) {
   return (
     <TestPanelShell testType={testType} findingCount={findings.length}>
-      <ul className="divide-y divide-linen-border">
+      <ul className="divide-y divide-hairline">
         {findings.map((finding) => (
           <li key={finding.id} className="px-6 py-4">
             <FindingItem finding={finding} documentsById={documentsById} />

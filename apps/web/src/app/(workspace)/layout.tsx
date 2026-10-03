@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { AppSidebar } from '@/components/app-sidebar';
 import {
   SidebarInset,
@@ -13,16 +14,17 @@ export default function WorkspaceLayout({
     <SidebarProvider>
       <OnboardingProvider>
         <AppSidebar />
-        <SidebarInset className="min-w-0 bg-eggshell-canvas">
-          <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-linen-border bg-eggshell-canvas px-4 md:hidden">
+        <SidebarInset className="min-w-0 bg-canvas">
+          <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-hairline bg-surface/80 px-4 shadow-xs backdrop-blur-md md:hidden">
             <SidebarTrigger aria-label="Buka menu" />
-            <span className="text-sm font-semibold text-integra-deep">
+            <Image src="/integra-mark.png" alt="" width={24} height={24} />
+            <span className="font-display text-base font-semibold tracking-display text-ink">
               INTEGRA
             </span>
           </header>
-          <div className="mx-auto w-full max-w-7xl px-4 py-8 md:px-6">
+          <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-10">
             {children}
-          </div>
+          </main>
         </SidebarInset>
       </OnboardingProvider>
     </SidebarProvider>

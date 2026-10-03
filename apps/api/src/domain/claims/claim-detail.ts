@@ -88,6 +88,7 @@ export interface ClaimDetail {
   tariffAmount: number;
   potentialGap: number;
   priorityScore: number;
+  analyzedAt: Date | null;
   facility: ClaimFacility;
   patient: ClaimPatient;
   diagnoses: ClaimDiagnosis[];

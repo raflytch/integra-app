@@ -25,9 +25,9 @@ function SummaryItem({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-xs text-quiet-gray">{label}</dt>
-      <dd className="truncate font-medium text-graphite">{value}</dd>
-      <dd className="truncate text-xs text-charcoal-copy">{detail}</dd>
+      <dt className="text-caption text-ink-secondary">{label}</dt>
+      <dd className="truncate font-medium text-ink">{value}</dd>
+      <dd className="truncate text-caption text-ink-secondary">{detail}</dd>
     </div>
   );
 }
@@ -52,11 +52,11 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
   return (
     <section
       aria-label="Ringkasan klaim"
-      className="flex flex-col gap-6 rounded-xl border border-linen-border bg-eggshell-canvas p-6 lg:flex-row lg:items-start lg:justify-between"
+      className="flex flex-col gap-6 rounded-xl border border-hairline bg-surface shadow-xs p-6 lg:flex-row lg:items-start lg:justify-between"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-xs text-quiet-gray">
+          <span className="font-mono text-caption text-ink-secondary">
             {claim.claimNo}
           </span>
           <ClaimStatusPill status={claim.status} />
@@ -64,10 +64,10 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           <PriorityPill priorityScore={claim.priorityScore} />
           <FacilityTypePill facilityType={claim.facility.type} />
         </div>
-        <h1 className="text-2xl font-medium tracking-tight text-graphite">
+        <h1 className="font-display text-section font-semibold tracking-display text-ink">
           {primaryDiagnosis?.name ?? claim.inacbgCode}
         </h1>
-        <dl className="grid gap-4 text-sm sm:grid-cols-3">
+        <dl className="grid gap-4 text-small sm:grid-cols-3">
           <SummaryItem
             label="Faskes"
             value={claim.facility.name}
@@ -87,29 +87,31 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
       </div>
       <div
         data-tour="claim-potential-gap"
-        className="flex shrink-0 flex-col gap-4 rounded-lg bg-paper-beige p-4 lg:w-72"
+        className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72"
       >
         <div className="flex flex-col gap-1">
-          <p className="text-xs text-quiet-gray">Potensi selisih tarif</p>
-          <p className="text-2xl font-semibold tracking-tight text-integra-deep">
+          <p className="text-caption text-ink-secondary">
+            Potensi selisih tarif
+          </p>
+          <p className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
             {formatRupiah(claim.potentialGap)}
           </p>
-          <p className="text-xs text-charcoal-copy">
+          <p className="text-caption text-ink-secondary">
             {unsupportedDiagnosisCount > 0
               ? `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif setelah koreksi ${formatRupiah(claim.tariffAmount - claim.potentialGap)}.`
               : 'Belum ada diagnosis tanpa bukti.'}
           </p>
         </div>
-        <dl className="grid grid-cols-2 gap-2 text-sm">
+        <dl className="grid grid-cols-2 gap-2 text-small">
           <div className="flex flex-col gap-0.5">
-            <dt className="text-xs text-quiet-gray">Tarif klaim</dt>
-            <dd className="font-medium text-graphite">
+            <dt className="text-caption text-ink-secondary">Tarif klaim</dt>
+            <dd className="font-medium text-ink">
               {formatRupiah(claim.tariffAmount)}
             </dd>
           </div>
           <div className="flex flex-col gap-0.5">
-            <dt className="text-xs text-quiet-gray">INA-CBG</dt>
-            <dd className="font-mono text-xs font-medium text-graphite">
+            <dt className="text-caption text-ink-secondary">INA-CBG</dt>
+            <dd className="font-mono text-caption font-medium text-ink">
               {claim.inacbgCode}
             </dd>
             <dd>
