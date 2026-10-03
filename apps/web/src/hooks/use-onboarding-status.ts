@@ -1,11 +1,16 @@
 import { useSyncExternalStore } from 'react';
 
-const ONBOARDING_STORAGE_KEY = 'integra:onboarding-completed';
+const ONBOARDING_DISMISSED_AT_STORAGE_KEY = 'integra:onboarding-dismissed-at';
+/** The tour stays hidden this long after it is finished or skipped, then shows again. */
+const ONBOARDING_SNOOZE_MS = 24 * 60 * 60 * 1000;
 const statusListeners = new Set<() => void>();
 
-function readHasCompletedOnboarding(): boolean {
+function readIsOnboardingSnoozed(): boolean {
   try {
-    return window.localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+    const dismissedAt = Number(
+      window.localStorage.getItem(ONBOARDING_DISMISSED_AT_STORAGE_KEY),
+    );
+    return dismissedAt > 0 && Date.now() - dismissedAt < ONBOARDING_SNOOZE_MS;
   } catch {
     return false;
   }
@@ -20,18 +25,22 @@ function subscribeToOnboardingStatus(onStatusChange: () => void) {
   };
 }
 
-function markOnboardingCompleted() {
+function snoozeOnboarding() {
   try {
-    window.localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    window.localStorage.setItem(
+      ONBOARDING_DISMISSED_AT_STORAGE_KEY,
+      String(Date.now()),
+    );
   } catch {}
   statusListeners.forEach((notifyListener) => notifyListener());
 }
 
+/** Shows the tour on any visit at least 24 hours after it was last closed. */
 export function useOnboardingStatus() {
-  const hasCompletedOnboarding = useSyncExternalStore(
+  const isOnboardingSnoozed = useSyncExternalStore(
     subscribeToOnboardingStatus,
-    readHasCompletedOnboarding,
+    readIsOnboardingSnoozed,
     () => true,
   );
-  return { hasCompletedOnboarding, markOnboardingCompleted };
+  return { isOnboardingSnoozed, snoozeOnboarding };
 }
