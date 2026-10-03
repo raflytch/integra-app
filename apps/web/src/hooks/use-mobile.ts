@@ -1,6 +1,7 @@
 import * as React from 'react';
 
-const MOBILE_BREAKPOINT = 768;
+/** Matches Tailwind `lg`: below it the sidebar becomes a sheet, so tablets keep the full width. */
+const MOBILE_BREAKPOINT = 1024;
 
 export function useIsMobile() {
   return React.useSyncExternalStore(

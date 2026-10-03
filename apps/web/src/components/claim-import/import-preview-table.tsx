@@ -9,8 +9,11 @@ import { TablePagination } from '@/components/data-table/table-pagination';
 import {
   type FilterOption,
   NoMatchingRows,
+  NoMatchingRowsNotice,
+  type SortOption,
   TableFilterSelect,
   TableSearch,
+  TableSortSelect,
   TableToolbar,
 } from '@/components/data-table/table-toolbar';
 import {
@@ -25,7 +28,7 @@ import { useTableControls } from '@/hooks/use-table-controls';
 import { formatDate } from '@/lib/format';
 import type { ClaimPreviewRow, ClaimPreviewStatus } from '@/types/import.types';
 
-const ROWS_PER_PAGE = 20;
+const ROWS_PER_PAGE = 10;
 const COLUMN_COUNT = 6;
 const ALL = 'ALL';
 
@@ -60,6 +63,35 @@ const PREVIEW_SORT_VALUES = {
   admittedAt: (row: ClaimPreviewRow) => row.claim?.admittedAt ?? '',
   status: (row: ClaimPreviewRow) => STATUS_ORDER[row.status],
 };
+
+type PreviewSortKey = keyof typeof PREVIEW_SORT_VALUES;
+
+/** Sorting for the phone card list, which has no column headers. */
+const PREVIEW_SORT_OPTIONS: SortOption<PreviewSortKey>[] = [
+  { key: 'index', direction: 'asc', label: 'Urutan file' },
+  { key: 'status', direction: 'asc', label: 'Bermasalah dulu' },
+  { key: 'claimNo', direction: 'asc', label: 'Nomor klaim' },
+  { key: 'admittedAt', direction: 'desc', label: 'Rawat inap terbaru' },
+];
+
+function formatAdmission({ claim }: ClaimPreviewRow): string {
+  return claim
+    ? `${formatDate(claim.admittedAt)} – ${formatDate(claim.dischargedAt)}`
+    : '-';
+}
+
+function PreviewIssues({ issues }: { issues: string[] }) {
+  if (issues.length === 0) {
+    return <span className="text-small text-ink-secondary">-</span>;
+  }
+  return (
+    <ul className="flex list-disc flex-col gap-0.5 pl-4 text-small text-ink-secondary">
+      {issues.map((issue) => (
+        <li key={issue}>{issue}</li>
+      ))}
+    </ul>
+  );
+}
 
 function toPreviewSearchText({ claimNo, claim, issues }: ClaimPreviewRow) {
   return [
@@ -96,6 +128,11 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
     pageSize: ROWS_PER_PAGE,
   });
 
+  function resetSearchAndFilter() {
+    table.setSearchQuery('');
+    setStatusFilter(ALL);
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-xs">
       <TableToolbar>
@@ -113,102 +150,132 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
             table.resetPage();
           }}
         />
+        <TableSortSelect
+          sort={table.sort}
+          options={PREVIEW_SORT_OPTIONS}
+          onChange={table.setSort}
+        />
       </TableToolbar>
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <SortableTableHead
-              sortKey="index"
-              sort={table.sort}
-              onSort={table.toggleSort}
-            >
-              No
-            </SortableTableHead>
-            <SortableTableHead
-              sortKey="claimNo"
-              sort={table.sort}
-              onSort={table.toggleSort}
-            >
-              Nomor klaim
-            </SortableTableHead>
-            <TableHead>Faskes dan pasien</TableHead>
-            <SortableTableHead
-              sortKey="admittedAt"
-              sort={table.sort}
-              onSort={table.toggleSort}
-            >
-              Rawat inap
-            </SortableTableHead>
-            <SortableTableHead
-              sortKey="status"
-              sort={table.sort}
-              onSort={table.toggleSort}
-            >
-              Status
-            </SortableTableHead>
-            <TableHead>Masalah</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {table.pageRows.length === 0 && (
-            <NoMatchingRows
-              columnCount={COLUMN_COUNT}
-              onReset={() => {
-                table.setSearchQuery('');
-                setStatusFilter(ALL);
-              }}
-            />
-          )}
-          {table.pageRows.map((row) => (
-            <TableRow key={row.index} className="align-top">
-              <TableCell className="text-ink-secondary tabular-nums">
-                {row.index + 1}
-              </TableCell>
-              <TableCell className="font-mono text-small text-ink">
+      <div className="hidden lg:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <SortableTableHead
+                sortKey="index"
+                sort={table.sort}
+                onSort={table.toggleSort}
+              >
+                No
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="claimNo"
+                sort={table.sort}
+                onSort={table.toggleSort}
+              >
+                Nomor klaim
+              </SortableTableHead>
+              <TableHead>Faskes dan pasien</TableHead>
+              <SortableTableHead
+                sortKey="admittedAt"
+                sort={table.sort}
+                onSort={table.toggleSort}
+              >
+                Rawat inap
+              </SortableTableHead>
+              <SortableTableHead
+                sortKey="status"
+                sort={table.sort}
+                onSort={table.toggleSort}
+              >
+                Status
+              </SortableTableHead>
+              <TableHead>Masalah</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {table.pageRows.length === 0 && (
+              <NoMatchingRows
+                columnCount={COLUMN_COUNT}
+                onReset={resetSearchAndFilter}
+              />
+            )}
+            {table.pageRows.map((row) => (
+              <TableRow key={row.index} className="align-top">
+                <TableCell className="text-ink-secondary tabular-nums">
+                  {row.index + 1}
+                </TableCell>
+                <TableCell className="font-mono text-small text-ink">
+                  {row.claimNo ?? (
+                    <span className="font-sans text-ink-secondary">
+                      Tanpa nomor
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {row.claim ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-small text-ink">
+                        {row.claim.facility.name}
+                      </span>
+                      <span className="text-caption text-ink-secondary">
+                        {row.claim.patient.name} · {row.claim.documents.length}{' '}
+                        dokumen
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-small text-ink-secondary">-</span>
+                  )}
+                </TableCell>
+                <TableCell className="text-small whitespace-nowrap text-ink-secondary tabular-nums">
+                  {formatAdmission(row)}
+                </TableCell>
+                <TableCell>
+                  <ImportPreviewStatusPill status={row.status} />
+                </TableCell>
+                <TableCell className="min-w-56 whitespace-normal">
+                  <PreviewIssues issues={row.issues} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <ul className="divide-y divide-hairline lg:hidden">
+        {table.pageRows.length === 0 && (
+          <li>
+            <NoMatchingRowsNotice onReset={resetSearchAndFilter} />
+          </li>
+        )}
+        {table.pageRows.map((row) => (
+          <li key={row.index} className="flex flex-col gap-2 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <span className="min-w-0 font-mono text-small break-all text-ink">
                 {row.claimNo ?? (
                   <span className="font-sans text-ink-secondary">
                     Tanpa nomor
                   </span>
                 )}
-              </TableCell>
-              <TableCell>
-                {row.claim ? (
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-small text-ink">
-                      {row.claim.facility.name}
-                    </span>
-                    <span className="text-caption text-ink-secondary">
-                      {row.claim.patient.name} · {row.claim.documents.length}{' '}
-                      dokumen
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-small text-ink-secondary">-</span>
-                )}
-              </TableCell>
-              <TableCell className="text-small whitespace-nowrap text-ink-secondary tabular-nums">
-                {row.claim
-                  ? `${formatDate(row.claim.admittedAt)} – ${formatDate(row.claim.dischargedAt)}`
-                  : '-'}
-              </TableCell>
-              <TableCell>
-                <ImportPreviewStatusPill status={row.status} />
-              </TableCell>
-              <TableCell className="min-w-56 whitespace-normal">
-                {row.issues.length > 0 ? (
-                  <ul className="flex list-disc flex-col gap-0.5 pl-4 text-small text-ink-secondary">
-                    {row.issues.map((issue) => (
-                      <li key={issue}>{issue}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="text-small text-ink-secondary">-</span>
-                )}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </span>
+              <span className="shrink-0 text-caption text-ink-secondary tabular-nums">
+                #{row.index + 1}
+              </span>
+            </div>
+            <ImportPreviewStatusPill status={row.status} />
+            {row.claim && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-small text-ink">
+                  {row.claim.facility.name}
+                </span>
+                <span className="text-caption text-ink-secondary">
+                  {row.claim.patient.name} · {row.claim.documents.length}{' '}
+                  dokumen · {formatAdmission(row)}
+                </span>
+              </div>
+            )}
+            {row.issues.length > 0 && <PreviewIssues issues={row.issues} />}
+          </li>
+        ))}
+      </ul>
       {table.matchingRowCount > 0 && (
         <TablePagination
           firstRowIndex={table.firstRowIndex}

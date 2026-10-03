@@ -12,14 +12,26 @@ export function StatTile({
   hint?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-hairline bg-surface p-5 shadow-xs">
+    <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-hairline bg-surface p-5 shadow-xs">
       <span className="text-overline font-medium tracking-wider text-ink-secondary uppercase">
         {label}
       </span>
-      <span className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
+      <span className="font-display text-subhead font-semibold tracking-display break-words text-ink tabular-nums">
         {value}
       </span>
       {hint && <span className="text-caption text-ink-secondary">{hint}</span>}
+    </div>
+  );
+}
+
+/**
+ * Four tiles only fit side by side from `xl`; narrower, a rupiah headline
+ * figure would overflow its tile.
+ */
+export function StatTileGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {children}
     </div>
   );
 }
@@ -86,11 +98,11 @@ export function DashboardSkeleton({ tileCount }: { tileCount: number }) {
   return (
     <div className="flex flex-col gap-4" aria-busy="true">
       <span className="sr-only">Memuat ringkasan</span>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <StatTileGrid>
         {Array.from({ length: tileCount }, (_, tileIndex) => (
           <Skeleton key={tileIndex} className="h-24 rounded-xl bg-subtle" />
         ))}
-      </div>
+      </StatTileGrid>
       <Skeleton className="h-72 rounded-xl bg-subtle" />
     </div>
   );

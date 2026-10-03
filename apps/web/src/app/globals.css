@@ -20,6 +20,20 @@
     0 8px 16px -4px rgb(10 10 10 / 0.08), 0 2px 4px -2px rgb(10 10 10 / 0.04);
 }
 
+/* Fast start, long gentle stop: the mobile sidebar sheet and its overlay (`ease-drawer`). */
+@theme {
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* vaul injects unlayered drawer motion, so reduced motion has to override it here. */
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer],
+  [data-vaul-overlay] {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
 /* Not inline: charts read these as CSS variables, e.g. var(--color-warning). */
 @theme {
   --color-chart-neutral: #d4d4d8;

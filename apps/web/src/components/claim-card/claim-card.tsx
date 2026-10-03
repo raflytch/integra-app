@@ -61,7 +61,7 @@ export function ClaimCard({ claimId }: { claimId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <ClaimSummary claim={claim} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-4">
           <AiAnalysisCard claim={claim} />
           <div data-tour="claim-test-panels" className="flex flex-col gap-4">

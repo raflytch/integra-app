@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { DM_Sans, JetBrains_Mono } from 'next/font/google';
 import { QueryProvider } from '@/providers/query-provider';
 import './globals.css';
@@ -22,6 +22,12 @@ const GENERAL_SANS_STYLESHEET =
 export const metadata: Metadata = {
   title: 'INTEGRA',
   description: 'Detect with evidence. Decide with integrity.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#FFFFFF',
 };
 
 export default function RootLayout({
