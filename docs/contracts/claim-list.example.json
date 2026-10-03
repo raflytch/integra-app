@@ -1,0 +1,28 @@
+[
+  {
+    "id": "01920000-0000-7000-8000-000000000101",
+    "claimNo": "KLM-2026-08-0101",
+    "status": "PENDING",
+    "admittedAt": "2026-08-03",
+    "dischargedAt": "2026-08-07",
+    "facility": {
+      "id": "01920000-0000-7000-8000-000000000001",
+      "name": "RSU Sehat Sentosa",
+      "type": "C"
+    },
+    "primaryDiagnosis": {
+      "icd10Code": "A91",
+      "name": "Demam berdarah dengue"
+    },
+    "inacbgCode": "A-4-14-III",
+    "severityLevel": 3,
+    "tariffAmount": 9850000,
+    "potentialGap": 4120000,
+    "priorityScore": 0.8255,
+    "findingCounts": {
+      "EXISTENCE": 1,
+      "CONSISTENCY": 0,
+      "SIMILARITY": 0
+    }
+  }
+]

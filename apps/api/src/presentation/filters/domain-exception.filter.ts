@@ -11,7 +11,11 @@ import { DomainError } from '../../domain/shared/domain-error';
  * HTTP status per domain error code. Feature modules register their codes
  * here; unlisted codes are treated as a generic business rule violation.
  */
-const STATUS_BY_CODE: Readonly<Record<string, HttpStatus>> = {};
+const STATUS_BY_CODE: Readonly<Record<string, HttpStatus>> = {
+  CLAIM_NOT_FOUND: HttpStatus.NOT_FOUND,
+  INVALID_LOGIN: HttpStatus.UNAUTHORIZED,
+  SESSION_EXPIRED: HttpStatus.UNAUTHORIZED,
+};
 
 /**
  * Translates domain errors to HTTP responses. Only `DomainError` is caught:

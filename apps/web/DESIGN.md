@@ -1,25 +1,28 @@
 # Resik visual system
 
-This is the visual source of truth for `apps/web`. The reference direction is a Heptabase-inspired **sunlit research desk**: calm, compact, document-oriented, and professional. Product interfaces should feel like organized paper and workspace surfaces. Use warm neutrals, Graphite controls, and isolated Research Blue accents. Avoid the look of a generic blue SaaS dashboard.
+This is the visual source of truth for `apps/web`. The reference direction is a Heptabase-inspired **sunlit research desk**: calm, compact, document-oriented, and professional. Product interfaces should feel like organized paper and workspace surfaces. Use warm neutrals, Graphite copy, and the INTEGRA teal family taken from the logo (`public/integra-logo.png`). Avoid the look of a generic SaaS dashboard.
 
 ## Visual hierarchy and surfaces
 
 The light theme is the default. Eggshell Canvas is the page and primary card surface. Cloud Surface is for muted panels and segmented tracks. Paper Beige is for explanatory insets. Whiteboard Gray is a workspace canvas. Linen Border separates content gently. Standard cards are flat; use borders, spacing, and surface changes before shadows. Keep application density compact.
 
-| Token           | Value     | Use                                           |
-| --------------- | --------- | --------------------------------------------- |
-| Eggshell Canvas | `#fdfcfb` | Page, navigation, cards, light controls       |
-| Cloud Surface   | `#f7f7f7` | Secondary panels and tracks                   |
-| Paper Beige     | `#f0f0ea` | Warm inset and feature boxes                  |
-| Whiteboard Gray | `#eeeded` | Workspace canvas                              |
-| Linen Border    | `#e4ded3` | Borders, dividers, outlined badges            |
-| Graphite        | `#2e2e2e` | Primary copy, buttons, important icons        |
-| Charcoal Copy   | `#454545` | Secondary copy and icons                      |
-| Quiet Gray      | `#6a6972` | Metadata and helper text                      |
-| Disabled Ash    | `#a8a8a8` | Disabled controls                             |
-| Research Blue   | `#207dff` | Editorial links, references, selected accents |
+| Token           | Value     | Use                                         |
+| --------------- | --------- | ------------------------------------------- |
+| Eggshell Canvas | `#fdfcfb` | Page, navigation, cards, light controls     |
+| Cloud Surface   | `#f7f7f7` | Secondary panels and tracks                 |
+| Paper Beige     | `#f0f0ea` | Warm inset and feature boxes                |
+| Whiteboard Gray | `#eeeded` | Workspace canvas                            |
+| Linen Border    | `#e4ded3` | Borders, dividers, outlined badges          |
+| Graphite        | `#2e2e2e` | Primary copy, buttons, important icons      |
+| Charcoal Copy   | `#454545` | Secondary copy and icons                    |
+| Quiet Gray      | `#6a6972` | Metadata and helper text                    |
+| Disabled Ash    | `#a8a8a8` | Disabled controls                           |
+| Integra Deep    | `#075c59` | Primary buttons, brand wordmark, active nav |
+| Integra Teal    | `#048173` | Links, focus ring, references               |
+| Integra Mint    | `#39c097` | Small decorative highlights, never text     |
+| Integra Wash    | `#e8f5f0` | Selected and active surfaces, icon tiles    |
 
-Research Blue is never the universal primary color. Primary application actions use Graphite. Avoid a repeated sequence of blue buttons, badges, tabs, cards, and icons.
+Primary application actions use Integra Deep; body copy stays Graphite. Use the teal family with restraint: one primary action per area, not a wall of teal buttons, badges, tabs, and icons. The logo gradient lives only in the logo asset; UI surfaces stay flat.
 
 ## Typography
 
@@ -55,10 +58,10 @@ Standard cards have no shadow. A floating preview may use `0 0 4px rgba(0,0,0,.0
 - **Standard content card:** Eggshell background, 12px radius, 24px padding, no shadow, optional `1px rgba(0,0,0,.08)` border. It should read as paper, not a floating tile.
 - **Compact workspace card:** `rgba(252,252,252,.5)` background, 6px radius, 16px padding, no shadow, subtle dividers as needed.
 - **Paper feature box:** Paper Beige background, 8px radius, `16px 17px` padding for supporting explanation.
-- **Primary button:** Graphite background, white Plus Jakarta Sans 16px medium or semibold text, 6px radius. Public campaign CTAs may use a pill radius where justified.
+- **Primary button:** Integra Deep background, white Plus Jakarta Sans 16px medium or semibold text, 6px radius. Public campaign CTAs may use a pill radius where justified.
 - **Outlined button:** Transparent, `1px solid rgba(0,0,0,.13)`, Graphite text, 6px radius, compact padding.
-- **Segmented control:** Cloud track and pill radius; Plus Jakarta Sans 13px medium. Selected segment is Eggshell with Graphite text and optional tiny shadow; inactive text is Quiet Gray.
-- **Editorial link:** Research Blue text without a pill, gradient, or button treatment. Underline only when needed for affordance.
+- **Segmented control:** Cloud track and pill radius; Plus Jakarta Sans 13px medium. Selected segment is Eggshell with Integra Deep text and optional tiny shadow; inactive text is Quiet Gray.
+- **Editorial link:** Integra Teal text without a pill, gradient, or button treatment. Underline only when needed for affordance.
 - **Table:** Semantic table with restrained row separators, warm surfaces, compact rows, Graphite key values, Quiet Gray metadata. Avoid boxing every cell. Allow horizontal scrolling or compact representations on narrow screens.
 - **Form:** Prefer shadcn form primitives. Use 6px radius, subtle borders, explicit labels, accessible concise errors adjacent to fields, and no heavy field shadows.
 - **Loading:** Use shadcn Skeleton for known cards, rows, lists, and panels to preserve geometry. Avoid replacing structured pages with a single spinner.
@@ -76,10 +79,10 @@ Use semantic HTML, explicit labels, visible focus rings, keyboard-operable contr
 
 ## CSS and Tailwind v4 contract
 
-`src/app/globals.css` defines both semantic shadcn variables (`--background`, `--primary`, `--border`, etc.) and Tailwind v4 `@theme inline` utilities. The named palette is exposed as `--color-eggshell-canvas`, `--color-cloud-surface`, `--color-paper-beige`, `--color-whiteboard-gray`, `--color-linen-border`, `--color-graphite`, `--color-charcoal-copy`, `--color-quiet-gray`, `--color-disabled-ash`, and `--color-research-blue`. Font tokens are `--font-jakarta-sans`, `--font-sans`, and `--font-ui-monospace`; radius tokens include `--radius-md`, `--radius-xl`, and `--radius-full`. Reuse these utilities and the 4px spacing scale instead of scattering hex values or arbitrary spacing in components.
+`src/app/globals.css` defines both semantic shadcn variables (`--background`, `--primary`, `--border`, etc.) and Tailwind v4 `@theme inline` utilities. The named palette is exposed as `--color-eggshell-canvas`, `--color-cloud-surface`, `--color-paper-beige`, `--color-whiteboard-gray`, `--color-linen-border`, `--color-graphite`, `--color-charcoal-copy`, `--color-quiet-gray`, `--color-disabled-ash`, `--color-integra-deep`, `--color-integra-teal`, `--color-integra-mint`, and `--color-integra-wash`. Font tokens are `--font-jakarta-sans`, `--font-sans`, and `--font-ui-monospace`; radius tokens include `--radius-md`, `--radius-xl`, and `--radius-full`. Reuse these utilities and the 4px spacing scale instead of scattering hex values or arbitrary spacing in components.
 
 ## Do and don't
 
-**Do:** use Eggshell as the page base, Graphite for primary actions, restrained borders, flat cards, compact spacing, Plus Jakarta Sans throughout the interface, existing shadcn components, visible focus, and selective Research Blue links.
+**Do:** use Eggshell as the page base, Integra Deep for primary actions, restrained borders, flat cards, compact spacing, Plus Jakarta Sans throughout the interface, existing shadcn components, visible focus, selective Integra Teal links, and the logo mark (`public/integra-mark.png`) for brand placement.
 
-**Don't:** make every control blue, use gradients or glassmorphism, overuse shadows, use pure white everywhere, make every shape a pill, add arbitrary colors or spacing, create oversized dashboard cards, or add decorative motion without purpose.
+**Don't:** make every control teal, recolor or stretch the logo, use gradients or glassmorphism, overuse shadows, use pure white everywhere, make every shape a pill, add arbitrary colors or spacing, create oversized dashboard cards, or add decorative motion without purpose.
