@@ -55,6 +55,14 @@ export interface DemoClaim {
  * - `GENUINE_*`: secondary diagnosis with complete evidence.
  * - `SHOCK_NONSTANDARD`: real shock written without standard terms; flagged but valid.
  * - `EXAM_MANIPULATION`: exam note contradicted by the next daily note.
+ * - `CLONING`: never drawn at random. After the base claims exist, normal
+ *   claims in two facilities become clusters (6 in RS-SIM-011, 5 in
+ *   RS-SIM-006, each within 60 days, different patients; a short cluster
+ *   borrows normal claims of other facilities from the same window, and a
+ *   facility with fewer than 3 is skipped with a warning) whose DBD documents
+ *   are copied word for word from one source claim in the cluster, numbers
+ *   included. Only `recordedAt` follows each claim's stay and the exam note's
+ *   vital-sign sentence gets new numbers (Uji Bukan Salinan flags them).
  */
 export type ClaimProfile =
   | 'NORMAL_DBD'
@@ -65,7 +73,8 @@ export type ClaimProfile =
   | 'SHOCK_UPCODING'
   | 'RESP_FAILURE_UPCODING'
   | 'SHOCK_NONSTANDARD'
-  | 'EXAM_MANIPULATION';
+  | 'EXAM_MANIPULATION'
+  | 'CLONING';
 
 const PROFILE_DETAILS: Record<
   ClaimProfile,
@@ -130,10 +139,18 @@ const PROFILE_DETAILS: Record<
     injectedCase: ['EXAM_MANIPULATION'],
     isSuspicious: true,
   },
+  CLONING: {
+    disease: 'DBD',
+    secondary: null,
+    injectedCase: ['CLONING'],
+    isSuspicious: true,
+  },
 };
 
+type RandomProfile = Exclude<ClaimProfile, 'CLONING'>;
+
 /** Base weights before a facility's risk multiplier is applied to suspicious profiles. */
-const PROFILE_WEIGHTS: Record<ClaimProfile, number> = {
+const PROFILE_WEIGHTS: Record<RandomProfile, number> = {
   NORMAL_DBD: 20,
   NORMAL_PNEUMONIA: 18,
   NORMAL_GE: 16,
@@ -352,16 +369,24 @@ function temperature(random: Random, min: number, max: number): string {
   return `${(random.int(min * 10, max * 10) / 10).toFixed(1).replace('.', ',')} °C`;
 }
 
+function vitalSignSentence(
+  random: Random,
+  bloodPressureValue: string,
+  temperatureRange: [number, number],
+): string {
+  const pulse = `${random.int(82, 108)} x/menit`;
+  const bodyTemperature = temperature(random, ...temperatureRange);
+  return `TD ${bloodPressureValue}, nadi ${pulse}, suhu ${bodyTemperature}.`;
+}
+
 function addVitals(
   builder: DocumentBuilder,
   random: Random,
   bloodPressureValue: string,
   temperatureRange: [number, number],
 ): void {
-  const pulse = `${random.int(82, 108)} x/menit`;
-  const bodyTemperature = temperature(random, ...temperatureRange);
   builder.sentence(
-    `TD ${bloodPressureValue}, nadi ${pulse}, suhu ${bodyTemperature}.`,
+    vitalSignSentence(random, bloodPressureValue, temperatureRange),
   );
 }
 
@@ -554,10 +579,221 @@ function buildMedicalResume(
   return builder;
 }
 
+type ClaimContent = Pick<
+  DemoClaim,
+  | 'inacbgCode'
+  | 'severityLevel'
+  | 'tariffAmount'
+  | 'diagnoses'
+  | 'documents'
+  | 'dischargedAt'
+>;
+
+/** Coding, tariff, and documents of one stay, drawn in a fixed order so the dataset stays reproducible. */
+function buildClaimContent(
+  profile: ClaimProfile,
+  random: Random,
+  tariffSchedule: SyntheticTariffSchedule,
+  admittedAt: Date,
+  lengthOfStay: number,
+): ClaimContent {
+  const { disease, secondary } = PROFILE_DETAILS[profile];
+  const diseaseSpec = DISEASES[disease];
+  const dischargedAt = addDays(admittedAt, lengthOfStay);
+  const severityLevel = secondary ? 3 : random.chance(0.35) ? 2 : 1;
+  const tariffAmount =
+    tariffSchedule.findTariff(diseaseSpec.inacbgGroupCode, severityLevel) ?? 0;
+  const diagnoses = [
+    { ...diseaseSpec.primaryDiagnosis, isPrimary: true },
+    ...(secondary ? [{ ...secondary, isPrimary: false }] : []),
+  ];
+
+  const examTime = atJakartaTime(
+    admittedAt,
+    random.int(8, 20),
+    random.pick([0, 15, 30, 45]),
+  );
+  const documents: DemoDocument[] = [
+    buildExamNote(profile, random).build('EXAM_NOTE', examTime),
+  ];
+  const prescriptionTime = new Date(examTime.getTime() + 90 * 60 * 1000);
+  documents.push(
+    buildPrescription(profile).build('PRESCRIPTION', prescriptionTime),
+  );
+  const procedureTime = new Date(examTime.getTime() + 3 * 60 * 60 * 1000);
+  const procedureNote = buildProcedureNote(profile, random);
+  if (procedureNote)
+    documents.push(procedureNote.build('PROCEDURE', procedureTime));
+  const dailyNoteCount = Math.min(lengthOfStay - 1, 3);
+  for (let careDay = 1; careDay <= dailyNoteCount; careDay += 1) {
+    const noteTime = atJakartaTime(addDays(admittedAt, careDay), 8);
+    documents.push(
+      buildDailyNote(profile, random, careDay).build('DAILY_NOTE', noteTime),
+    );
+  }
+  const resumeTime = atJakartaTime(dischargedAt, 11);
+  documents.push(
+    buildMedicalResume(diagnoses, random).build('MEDICAL_RESUME', resumeTime),
+  );
+
+  return {
+    inacbgCode: `${diseaseSpec.inacbgGroupCode}-${SEVERITY_NUMERALS[severityLevel - 1]}`,
+    severityLevel,
+    tariffAmount,
+    diagnoses,
+    documents,
+    dischargedAt,
+  };
+}
+
+const CLONING_CLUSTERS = [
+  { facilityCode: 'RS-SIM-011', size: 6 },
+  { facilityCode: 'RS-SIM-006', size: 5 },
+] as const;
+const CLONING_CLUSTER_DAY_SPAN = 60;
+const MIN_CLONING_CLUSTER_SIZE = 3;
+const EXAM_VITAL_SIGN_PATTERN =
+  /TD \d+\/\d+ mmHg, nadi \d+ x\/menit, suhu \d+,\d °C\./;
+
+function isNormalProfile(profile: ClaimProfile): boolean {
+  return profile.startsWith('NORMAL_');
+}
+
+/** Normal claims of a facility inside the 60-day window that holds the most of them. */
+function pickClusterMembers(
+  claims: DemoClaim[],
+  facilityCode: string,
+  size: number,
+): DemoClaim[] {
+  const eligibleClaims = claims.filter(
+    (claim) =>
+      claim.facilityCode === facilityCode && isNormalProfile(claim.profile),
+  );
+  let bestWindow: DemoClaim[] = [];
+  for (const windowStart of eligibleClaims) {
+    const windowEnd = addDays(windowStart.admittedAt, CLONING_CLUSTER_DAY_SPAN);
+    const windowClaims = eligibleClaims.filter(
+      (claim) =>
+        claim.admittedAt >= windowStart.admittedAt &&
+        claim.admittedAt < windowEnd,
+    );
+    if (windowClaims.length > bestWindow.length) bestWindow = windowClaims;
+  }
+  return bestWindow.slice(0, size);
+}
+
+/**
+ * High-risk facilities have few normal claims, so a short cluster is topped
+ * up with normal claims from other facilities admitted in the same window.
+ */
+function pickBorrowedClaims(
+  claims: DemoClaim[],
+  members: DemoClaim[],
+  missingCount: number,
+  random: Random,
+): DemoClaim[] {
+  if (missingCount <= 0) return [];
+  const windowStart = members[0].admittedAt;
+  const windowEnd = addDays(windowStart, CLONING_CLUSTER_DAY_SPAN);
+  const pool = claims.filter(
+    (claim) =>
+      !members.includes(claim) &&
+      isNormalProfile(claim.profile) &&
+      claim.admittedAt >= windowStart &&
+      claim.admittedAt < windowEnd,
+  );
+  const borrowedClaims: DemoClaim[] = [];
+  while (borrowedClaims.length < missingCount && pool.length > 0) {
+    const [borrowedClaim] = pool.splice(random.int(0, pool.length - 1), 1);
+    borrowedClaims.push(borrowedClaim);
+  }
+  return borrowedClaims.sort(
+    (first, second) => first.admittedAt.getTime() - second.admittedAt.getTime(),
+  );
+}
+
+/**
+ * Turns normal claims into cloning clusters in place. The source keeps its
+ * stay and gets fresh DBD documents; every other member copies them.
+ */
+function injectCloningClusters(
+  claims: DemoClaim[],
+  random: Random,
+  tariffSchedule: SyntheticTariffSchedule,
+): string[] {
+  const warnings: string[] = [];
+  for (const { facilityCode, size } of CLONING_CLUSTERS) {
+    const members = pickClusterMembers(claims, facilityCode, size);
+    if (members.length < MIN_CLONING_CLUSTER_SIZE) {
+      warnings.push(
+        `Kluster kloning ${facilityCode} dilewati: hanya ${members.length} klaim normal dalam ${CLONING_CLUSTER_DAY_SPAN} hari (minimal ${MIN_CLONING_CLUSTER_SIZE}).`,
+      );
+      continue;
+    }
+    const borrowedClaims = pickBorrowedClaims(
+      claims,
+      members,
+      size - members.length,
+      random,
+    );
+    for (const borrowedClaim of borrowedClaims) {
+      borrowedClaim.facilityCode = facilityCode;
+      members.push(borrowedClaim);
+    }
+    if (borrowedClaims.length > 0) {
+      warnings.push(
+        `Kluster kloning ${facilityCode}: ${borrowedClaims.length} klaim normal dari faskes lain dipindahkan ke faskes ini agar kluster berisi ${members.length} klaim.`,
+      );
+    }
+
+    const source = random.pick(members);
+    const sourceLengthOfStay = Math.round(
+      (source.dischargedAt.getTime() - source.admittedAt.getTime()) /
+        MILLISECONDS_PER_DAY,
+    );
+    const sourceContent = buildClaimContent(
+      'CLONING',
+      random,
+      tariffSchedule,
+      source.admittedAt,
+      sourceLengthOfStay,
+    );
+    for (const member of members) {
+      const shiftMs = member.admittedAt.getTime() - source.admittedAt.getTime();
+      const documents =
+        member === source
+          ? sourceContent.documents
+          : sourceContent.documents.map((document) => ({
+              ...document,
+              recordedAt: new Date(document.recordedAt.getTime() + shiftMs),
+              content:
+                document.type === 'EXAM_NOTE'
+                  ? document.content.replace(
+                      EXAM_VITAL_SIGN_PATTERN,
+                      vitalSignSentence(
+                        random,
+                        bloodPressure(random),
+                        [38.2, 39.6],
+                      ),
+                    )
+                  : document.content,
+            }));
+      Object.assign(member, {
+        ...sourceContent,
+        profile: 'CLONING',
+        injectedCase: PROFILE_DETAILS.CLONING.injectedCase,
+        dischargedAt: addDays(member.admittedAt, sourceLengthOfStay),
+        documents,
+      } satisfies Partial<DemoClaim>);
+    }
+  }
+  return warnings;
+}
+
 export function generateDemoClaims(
   claimCount: number,
   seed: number,
-): DemoClaim[] {
+): { claims: DemoClaim[]; warnings: string[] } {
   const random = createRandom(seed);
   const tariffSchedule = new SyntheticTariffSchedule();
   const facilityWeights = Object.fromEntries(
@@ -570,27 +806,25 @@ export function generateDemoClaims(
     random.int(0, DATASET_DAY_SPAN),
   ).sort((first, second) => first - second);
 
-  return admissionOffsets.map((admissionOffset, claimIndex) => {
+  const claims = admissionOffsets.map((admissionOffset, claimIndex) => {
     const sequence = String(claimIndex + 1).padStart(4, '0');
     const facilityCode = random.weighted(facilityWeights);
     const risk = FACILITY_RISK[facilityCode] ?? 1;
     const profile = random.weighted(
       Object.fromEntries(
-        (Object.keys(PROFILE_WEIGHTS) as ClaimProfile[]).map((key) => [
+        (Object.keys(PROFILE_WEIGHTS) as RandomProfile[]).map((key) => [
           key,
           PROFILE_WEIGHTS[key] * (PROFILE_DETAILS[key].isSuspicious ? risk : 1),
         ]),
-      ) as Record<ClaimProfile, number>,
+      ) as Record<RandomProfile, number>,
     );
-    const { disease, secondary, injectedCase } = PROFILE_DETAILS[profile];
-    const diseaseSpec = DISEASES[disease];
+    const { secondary, injectedCase } = PROFILE_DETAILS[profile];
 
     const gender = random.chance(0.5) ? 'M' : 'F';
     const admittedAt = new Date(
       DATASET_START + admissionOffset * MILLISECONDS_PER_DAY,
     );
     const lengthOfStay = random.int(3, secondary ? 7 : 5);
-    const dischargedAt = addDays(admittedAt, lengthOfStay);
     const age = random.int(18, 72);
     const patient: DemoPatient = {
       medicalRecordNo: `${DEMO_RECORD_NO_PREFIX}${sequence.padStart(6, '0')}`,
@@ -599,56 +833,24 @@ export function generateDemoClaims(
       birthDate: addDays(admittedAt, -(age * 365 + random.int(0, 364))),
     };
 
-    const severityLevel = secondary ? 3 : random.chance(0.35) ? 2 : 1;
-    const tariffAmount =
-      tariffSchedule.findTariff(diseaseSpec.inacbgGroupCode, severityLevel) ??
-      0;
-    const diagnoses = [
-      { ...diseaseSpec.primaryDiagnosis, isPrimary: true },
-      ...(secondary ? [{ ...secondary, isPrimary: false }] : []),
-    ];
-
-    const examTime = atJakartaTime(
-      admittedAt,
-      random.int(8, 20),
-      random.pick([0, 15, 30, 45]),
-    );
-    const documents: DemoDocument[] = [
-      buildExamNote(profile, random).build('EXAM_NOTE', examTime),
-    ];
-    const prescriptionTime = new Date(examTime.getTime() + 90 * 60 * 1000);
-    documents.push(
-      buildPrescription(profile).build('PRESCRIPTION', prescriptionTime),
-    );
-    const procedureTime = new Date(examTime.getTime() + 3 * 60 * 60 * 1000);
-    const procedureNote = buildProcedureNote(profile, random);
-    if (procedureNote)
-      documents.push(procedureNote.build('PROCEDURE', procedureTime));
-    const dailyNoteCount = Math.min(lengthOfStay - 1, 3);
-    for (let careDay = 1; careDay <= dailyNoteCount; careDay += 1) {
-      const noteTime = atJakartaTime(addDays(admittedAt, careDay), 8);
-      documents.push(
-        buildDailyNote(profile, random, careDay).build('DAILY_NOTE', noteTime),
-      );
-    }
-    const resumeTime = atJakartaTime(dischargedAt, 11);
-    documents.push(
-      buildMedicalResume(diagnoses, random).build('MEDICAL_RESUME', resumeTime),
-    );
-
-    return {
+    const claim: DemoClaim = {
       claimNo: `${DEMO_CLAIM_NO_PREFIX}${sequence}`,
       profile,
       facilityCode,
       patient,
       admittedAt,
-      dischargedAt,
-      inacbgCode: `${diseaseSpec.inacbgGroupCode}-${SEVERITY_NUMERALS[severityLevel - 1]}`,
-      severityLevel,
-      tariffAmount,
       injectedCase,
-      diagnoses,
-      documents,
+      ...buildClaimContent(
+        profile,
+        random,
+        tariffSchedule,
+        admittedAt,
+        lengthOfStay,
+      ),
     };
+    return claim;
   });
+
+  const warnings = injectCloningClusters(claims, random, tariffSchedule);
+  return { claims, warnings };
 }

@@ -27,7 +27,7 @@ import type {
   TestType,
 } from '@/types/claim.types';
 
-/** Chip tones from DESIGN.md. Indigo is reserved for interactive elements, so no chip uses it. */
+/** Chip tones from DESIGN.md. INTEGRA green is reserved for interactive elements, so no status chip uses it. */
 const PILL_TONE_CLASS_NAMES = {
   outline: 'border-hairline bg-surface text-ink-secondary',
   neutral: 'border-transparent bg-subtle text-ink-secondary',
@@ -191,6 +191,15 @@ export function IntegraAiPill() {
   return (
     <Pill tone="inverse" icon={LuSparkles}>
       INTEGRA AI
+    </Pill>
+  );
+}
+
+/** Imported file rearranged into the INTEGRA format by the AI; same mark as INTEGRA AI. */
+export function AiAdjustedPill() {
+  return (
+    <Pill tone="inverse" icon={LuSparkles}>
+      Disesuaikan AI
     </Pill>
   );
 }

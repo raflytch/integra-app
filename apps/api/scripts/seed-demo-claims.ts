@@ -57,7 +57,11 @@ function readClaimCount(): number {
 
 async function main(): Promise<void> {
   const logger = new Logger('SeedDemoClaims');
-  const claims = generateDemoClaims(readClaimCount(), DATASET_SEED);
+  const { claims, warnings } = generateDemoClaims(
+    readClaimCount(),
+    DATASET_SEED,
+  );
+  for (const warning of warnings) logger.warn(warning);
   const app = await NestFactory.createApplicationContext(SeedDemoClaimsModule, {
     logger: ['log', 'error', 'warn'],
   });

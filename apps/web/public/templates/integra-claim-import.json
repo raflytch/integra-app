@@ -1,0 +1,109 @@
+{
+  "format": "integra-claims/v1",
+  "claims": [
+    {
+      "claimNo": "KLM-2026-10-0001",
+      "facility": {
+        "code": "RS-SIM-001",
+        "name": "RS Sintetis Nusantara Utama",
+        "type": "A",
+        "city": "Kota Simulasi Barat"
+      },
+      "patient": {
+        "medicalRecordNo": "RM-IMPOR-000001",
+        "name": "Rina Wijaya",
+        "gender": "F",
+        "birthDate": "1991-05-14"
+      },
+      "admittedAt": "2026-10-01",
+      "dischargedAt": "2026-10-04",
+      "inacbgCode": "A-4-14-I",
+      "severityLevel": 1,
+      "tariffAmount": 4200000,
+      "diagnoses": [
+        {
+          "icd10Code": "A91",
+          "name": "Demam berdarah dengue",
+          "isPrimary": true
+        }
+      ],
+      "documents": [
+        {
+          "type": "EXAM_NOTE",
+          "recordedAt": "2026-10-01T10:30:00+07:00",
+          "content": "Pasien datang ke IGD dengan keluhan demam tinggi sejak 3 hari. Tampak petekie di kedua lengan. TD 112/74 mmHg, nadi 96 x/menit, suhu 38,9 °C. Trombosit 78.000/µL."
+        },
+        {
+          "type": "PRESCRIPTION",
+          "recordedAt": "2026-10-01T12:00:00+07:00",
+          "content": "Infus RL 20 tetes/menit, parasetamol 3 x 500 mg per oral."
+        },
+        {
+          "type": "PROCEDURE",
+          "recordedAt": "2026-10-01T13:30:00+07:00",
+          "content": "Pemeriksaan hematokrit serial: Ht 45% menjadi 40%."
+        },
+        {
+          "type": "DAILY_NOTE",
+          "recordedAt": "2026-10-02T08:00:00+07:00",
+          "content": "Hari rawat ke-2. Demam mulai turun, nyeri otot berkurang. Akral hangat. Trombosit 95.000/µL. TD 114/72 mmHg, nadi 88 x/menit, suhu 37,4 °C."
+        },
+        {
+          "type": "MEDICAL_RESUME",
+          "recordedAt": "2026-10-04T11:00:00+07:00",
+          "content": "Diagnosis utama: Demam berdarah dengue (A91). Kondisi saat pulang baik, kontrol ke poliklinik 5 hari lagi."
+        }
+      ]
+    },
+    {
+      "claimNo": "KLM-2026-10-0002",
+      "facility": {
+        "code": "RS-SIM-002",
+        "name": "RS Sintetis Harapan Sejahtera",
+        "type": "B",
+        "city": "Kota Simulasi Timur"
+      },
+      "patient": {
+        "medicalRecordNo": "RM-IMPOR-000002",
+        "name": "Agus Saputra",
+        "gender": "M",
+        "birthDate": "1968-11-02"
+      },
+      "admittedAt": "2026-10-02",
+      "dischargedAt": "2026-10-06",
+      "inacbgCode": "J-4-16-II",
+      "severityLevel": 2,
+      "tariffAmount": 6900000,
+      "diagnoses": [
+        { "icd10Code": "J18.9", "name": "Pneumonia", "isPrimary": true }
+      ],
+      "documents": [
+        {
+          "type": "EXAM_NOTE",
+          "recordedAt": "2026-10-02T15:15:00+07:00",
+          "content": "Pasien datang dengan keluhan batuk berdahak sejak 4 hari disertai demam. Auskultasi: ronki di paru kanan bawah, sesak ringan. TD 118/76 mmHg, nadi 98 x/menit, suhu 38,4 °C."
+        },
+        {
+          "type": "PRESCRIPTION",
+          "recordedAt": "2026-10-02T16:45:00+07:00",
+          "content": "Seftriakson 1 x 2 g IV, ambroksol 3 x 30 mg, parasetamol 3 x 500 mg. Oksigen nasal kanul 2 lpm."
+        },
+        {
+          "type": "PROCEDURE",
+          "recordedAt": "2026-10-02T18:15:00+07:00",
+          "content": "Foto toraks: tampak infiltrat di lapang bawah paru kanan."
+        },
+        {
+          "type": "DAILY_NOTE",
+          "recordedAt": "2026-10-03T08:00:00+07:00",
+          "content": "Hari rawat ke-2. Batuk masih ada, sesak berkurang. TD 116/74 mmHg, nadi 90 x/menit, suhu 37,6 °C."
+        },
+        {
+          "type": "MEDICAL_RESUME",
+          "recordedAt": "2026-10-06T11:00:00+07:00",
+          "content": "Diagnosis utama: Pneumonia (J18.9). Kondisi saat pulang membaik, kontrol ke poliklinik 7 hari lagi."
+        }
+      ]
+    }
+  ]
+}

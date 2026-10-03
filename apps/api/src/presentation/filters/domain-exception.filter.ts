@@ -14,6 +14,10 @@ import { DomainError } from '../../domain/shared/domain-error';
 const STATUS_BY_CODE: Readonly<Record<string, HttpStatus>> = {
   CLAIM_NOT_FOUND: HttpStatus.NOT_FOUND,
   EXTRACTION_UNAVAILABLE: HttpStatus.SERVICE_UNAVAILABLE,
+  IMPORT_AI_UNAVAILABLE: HttpStatus.SERVICE_UNAVAILABLE,
+  IMPORT_FILE_TOO_LARGE: HttpStatus.PAYLOAD_TOO_LARGE,
+  IMPORT_NEEDS_AI: HttpStatus.UNPROCESSABLE_ENTITY,
+  IMPORT_TOO_MANY_CLAIMS: HttpStatus.UNPROCESSABLE_ENTITY,
   INVALID_LOGIN: HttpStatus.UNAUTHORIZED,
   SESSION_EXPIRED: HttpStatus.UNAUTHORIZED,
 };
@@ -32,7 +36,12 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainError> {
       STATUS_BY_CODE[error.code] ?? HttpStatus.UNPROCESSABLE_ENTITY;
     this.adapterHost.httpAdapter.reply(
       host.switchToHttp().getResponse(),
-      { statusCode: status, code: error.code, message: error.message },
+      {
+        ...error.details,
+        statusCode: status,
+        code: error.code,
+        message: error.message,
+      },
       status,
     );
   }

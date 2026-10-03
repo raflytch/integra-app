@@ -12,6 +12,8 @@
     "llm:smoke": "tsx scripts/llm-smoke.ts",
     "data:generate": "tsx scripts/generate-synthetic-dataset.ts",
     "data:seed": "tsx scripts/seed-synthetic-dataset.ts",
+    "eval:similarity": "tsx scripts/similarity-report.ts",
+    "eval:detection": "tsx scripts/evaluate-detection.ts",
     "seed:users": "tsx scripts/seed-users.ts",
     "seed:fixture": "tsx scripts/load-contract-fixture.ts",
     "seed:demo": "tsx scripts/seed-demo-claims.ts",

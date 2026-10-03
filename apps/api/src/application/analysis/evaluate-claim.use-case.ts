@@ -4,7 +4,9 @@ import type {
   EvidenceRule,
 } from '../../domain/analysis/claim-evidence';
 import { calculatePriorityScore } from '../../domain/analysis/priority-score';
+import type { RunConsistencyTestUseCase } from './run-consistency-test.use-case';
 import type { RunExistenceTestUseCase } from './run-existence-test.use-case';
+import type { RunSimilarityTestUseCase } from './run-similarity-test.use-case';
 
 export interface ClaimEvaluation {
   findingCount: number;
@@ -16,6 +18,8 @@ export class EvaluateClaimUseCase {
   constructor(
     private readonly analysisRepository: AnalysisRepository,
     private readonly runExistenceTest: RunExistenceTestUseCase,
+    private readonly runConsistencyTest: RunConsistencyTestUseCase,
+    private readonly runSimilarityTest: RunSimilarityTestUseCase,
   ) {}
 
   async execute(
@@ -23,6 +27,8 @@ export class EvaluateClaimUseCase {
     evidenceRules: EvidenceRule[],
   ): Promise<ClaimEvaluation> {
     await this.runExistenceTest.execute(claim, evidenceRules);
+    await this.runConsistencyTest.execute(claim);
+    await this.runSimilarityTest.execute(claim);
 
     const findingSignals = await this.analysisRepository.findFindingSignals(
       claim.claimId,

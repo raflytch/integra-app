@@ -5,6 +5,7 @@ import type { IconType } from 'react-icons';
 import {
   LuBuilding2,
   LuCircleHelp,
+  LuFileUp,
   LuLayoutDashboard,
   LuListOrdered,
   LuLogOut,
@@ -52,7 +53,10 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Verifikasi',
     allowedRoles: ['VERIFIER', 'SUPERVISOR'],
-    items: [{ href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered }],
+    items: [
+      { href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered },
+      { href: '/imports', label: 'Impor Klaim', icon: LuFileUp },
+    ],
   },
   {
     label: 'Supervisor',

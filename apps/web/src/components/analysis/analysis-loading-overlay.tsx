@@ -95,7 +95,7 @@ export function AnalysisLoadingOverlay({
         <Progress
           value={progressPercent}
           aria-label="Progres analisis AI"
-          className="h-1.5 w-full max-w-sm shrink-0 bg-subtle [&>[data-slot=progress-indicator]]:bg-ink"
+          className="h-1.5 w-full max-w-sm shrink-0 bg-subtle [&>[data-slot=progress-indicator]]:bg-primary"
         />
         <p className="w-full max-w-sm text-center text-caption text-ink-secondary">
           Setiap dokumen dibaca oleh LLM, jadi proses ini bisa memakan waktu

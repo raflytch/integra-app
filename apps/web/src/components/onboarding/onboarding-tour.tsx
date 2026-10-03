@@ -193,7 +193,7 @@ export function OnboardingTour({
       ) : (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55">
           <Spinner
-            className="size-6 text-surface"
+            className="size-6 text-primary-wash"
             aria-label="Memuat langkah panduan"
           />
         </div>

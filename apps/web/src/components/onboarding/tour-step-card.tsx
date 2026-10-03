@@ -70,7 +70,7 @@ export function TourStepCard({
             key={progressIndex}
             className={cn(
               'h-1 flex-1 rounded-full',
-              progressIndex <= stepIndex ? 'bg-ink' : 'bg-hairline',
+              progressIndex <= stepIndex ? 'bg-primary' : 'bg-hairline',
             )}
           />
         ))}
