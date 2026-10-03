@@ -107,4 +107,6 @@ export interface ClaimQueueItem {
   potentialGap: number;
   priorityScore: number;
   findingCounts: Record<TestType, number>;
+  documentCount: number;
+  extractedDocumentCount: number;
 }

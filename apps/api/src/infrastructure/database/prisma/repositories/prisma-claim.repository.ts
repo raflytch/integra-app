@@ -8,6 +8,7 @@ import type {
   ClaimQueueItem,
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
+import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { countFindingsByTestType } from './finding-counts';
 import { DECISION_FIELDS } from './prisma-decision.repository';
@@ -66,15 +67,33 @@ export class PrismaClaimRepository extends ClaimRepository {
           take: 1,
         },
         findings: { select: { testType: true } },
+        _count: { select: { documents: true } },
       },
     });
+    const extractedDocumentCounts = await this.prisma.clinicalDocument.groupBy({
+      by: ['claimId'],
+      where: {
+        claim: { status: filter.status },
+        NOT: { extracted: { equals: Prisma.DbNull } },
+      },
+      _count: { _all: true },
+    });
+    const extractedDocumentCountByClaimId = new Map(
+      extractedDocumentCounts.map((group) => [
+        group.claimId,
+        group._count._all,
+      ]),
+    );
 
-    return claims.map(({ diagnoses, findings, ...claim }) => ({
+    return claims.map(({ diagnoses, findings, _count, ...claim }) => ({
       ...claim,
       tariffAmount: claim.tariffAmount.toNumber(),
       potentialGap: claim.potentialGap.toNumber(),
       primaryDiagnosis: diagnoses[0] ?? null,
       findingCounts: countFindingsByTestType(findings),
+      documentCount: _count.documents,
+      extractedDocumentCount:
+        extractedDocumentCountByClaimId.get(claim.id) ?? 0,
     }));
   }
 

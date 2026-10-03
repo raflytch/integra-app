@@ -18,12 +18,14 @@ import {
   DashboardSkeleton,
   StatTile,
 } from '@/components/dashboard-panels';
+import { LoadError } from '@/components/load-error';
 import {
   type ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { isClaimAnalyzed, isClaimFlagged } from '@/lib/claim-analysis';
 import { CLAIM_STATUS_LABELS } from '@/lib/claim-labels';
 import { formatMonth, formatPercent, formatRupiah } from '@/lib/format';
 import { fetchClaimQueue } from '@/services/claim.service';
@@ -44,9 +46,16 @@ const STATUS_COLORS: Record<ClaimStatus, string> = {
 };
 
 const MONTHLY_CHART_CONFIG = {
-  clean: { label: 'Tanpa tanda', color: 'var(--color-chart-neutral)' },
+  notAnalyzed: {
+    label: 'Belum dianalisis AI',
+    color: 'var(--color-chart-neutral)',
+  },
+  clean: { label: 'Tidak ada tanda', color: 'var(--color-success)' },
   flagged: { label: 'Perlu klarifikasi', color: 'var(--color-warning)' },
 } satisfies ChartConfig;
+
+type MonthlySeries = keyof typeof MONTHLY_CHART_CONFIG;
+const MONTHLY_SERIES = Object.keys(MONTHLY_CHART_CONFIG) as MonthlySeries[];
 
 const STATUS_CHART_CONFIG = Object.fromEntries(
   STATUS_ORDER.map((status) => [
@@ -55,17 +64,21 @@ const STATUS_CHART_CONFIG = Object.fromEntries(
   ]),
 ) satisfies ChartConfig;
 
-function isFlagged(claim: ClaimQueueItem): boolean {
-  return Object.values(claim.findingCounts).some((count) => count > 0);
+function toMonthlySeries(claim: ClaimQueueItem): MonthlySeries {
+  if (!isClaimAnalyzed(claim)) return 'notAnalyzed';
+  return isClaimFlagged(claim) ? 'flagged' : 'clean';
 }
 
 function summarizeByAdmissionMonth(claims: ClaimQueueItem[]) {
-  const monthlyCounts = new Map<string, { clean: number; flagged: number }>();
+  const monthlyCounts = new Map<string, Record<MonthlySeries, number>>();
   for (const claim of claims) {
     const monthKey = claim.admittedAt.slice(0, 7);
-    const counts = monthlyCounts.get(monthKey) ?? { clean: 0, flagged: 0 };
-    if (isFlagged(claim)) counts.flagged += 1;
-    else counts.clean += 1;
+    const counts = monthlyCounts.get(monthKey) ?? {
+      notAnalyzed: 0,
+      clean: 0,
+      flagged: 0,
+    };
+    counts[toMonthlySeries(claim)] += 1;
     monthlyCounts.set(monthKey, counts);
   }
   return [...monthlyCounts]
@@ -78,17 +91,32 @@ function summarizeByAdmissionMonth(claims: ClaimQueueItem[]) {
     }));
 }
 
-export function ClaimQueueOverview() {
+export function ClaimOverview() {
   const allClaimsQuery = useQuery({
     queryKey: ['claims', 'queue', 'ALL'],
     queryFn: () => fetchClaimQueue(),
   });
 
   if (allClaimsQuery.isPending) return <DashboardSkeleton tileCount={4} />;
-  if (allClaimsQuery.isError || allClaimsQuery.data.length === 0) return null;
+  if (allClaimsQuery.isError) {
+    return (
+      <LoadError
+        title="Ringkasan klaim gagal dimuat"
+        onRetry={() => allClaimsQuery.refetch()}
+      />
+    );
+  }
+  if (allClaimsQuery.data.length === 0) {
+    return (
+      <p className="text-small text-ink-secondary">
+        Belum ada klaim. Grafik muncul setelah data klaim dimuat.
+      </p>
+    );
+  }
 
   const claims = allClaimsQuery.data;
-  const flaggedClaimCount = claims.filter(isFlagged).length;
+  const analyzedClaimCount = claims.filter(isClaimAnalyzed).length;
+  const flaggedClaimCount = claims.filter(isClaimFlagged).length;
   const pendingClaimCount = claims.filter(
     (claim) => claim.status === 'PENDING',
   ).length;
@@ -106,19 +134,23 @@ export function ClaimQueueOverview() {
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile
-          label="Total klaim"
-          value={claims.length.toLocaleString('id-ID')}
-          hint="Seluruh klaim rawat inap"
-        />
-        <StatTile
           label="Menunggu keputusan"
           value={pendingClaimCount.toLocaleString('id-ID')}
-          hint={`${formatPercent(pendingClaimCount / claims.length)} dari antrean`}
+          hint={`dari ${claims.length.toLocaleString('id-ID')} klaim rawat inap`}
+        />
+        <StatTile
+          label="Dianalisis AI"
+          value={formatPercent(analyzedClaimCount / claims.length)}
+          hint={`${analyzedClaimCount.toLocaleString('id-ID')} klaim sudah dibaca AI`}
         />
         <StatTile
           label="Perlu klarifikasi"
           value={flaggedClaimCount.toLocaleString('id-ID')}
-          hint={`${formatPercent(flaggedClaimCount / claims.length)} klaim memiliki tanda`}
+          hint={
+            analyzedClaimCount > 0
+              ? `${formatPercent(flaggedClaimCount / analyzedClaimCount)} dari klaim yang dianalisis`
+              : 'Belum ada klaim yang dianalisis'
+          }
         />
         <StatTile
           label="Potensi selisih"
@@ -130,7 +162,7 @@ export function ClaimQueueOverview() {
       <div className="grid gap-4 lg:grid-cols-3">
         <ChartPanel
           title="Klaim per bulan rawat inap"
-          description="Jumlah klaim menurut bulan masuk, dipisah antara yang bertanda dan tidak."
+          description="Jumlah klaim menurut bulan masuk dan hasil analisis AI."
           className="lg:col-span-2"
         >
           <ChartContainer
@@ -152,26 +184,23 @@ export function ClaimQueueOverview() {
                   <ChartTooltipContent className={CHART_TOOLTIP_CLASS_NAME} />
                 }
               />
-              <Bar dataKey="clean" stackId="claims" fill="var(--color-clean)" />
-              <Bar
-                dataKey="flagged"
-                stackId="claims"
-                fill="var(--color-flagged)"
-                radius={[4, 4, 0, 0]}
-              />
+              {MONTHLY_SERIES.map((series, seriesIndex) => (
+                <Bar
+                  key={series}
+                  dataKey={series}
+                  stackId="claims"
+                  fill={`var(--color-${series})`}
+                  radius={
+                    seriesIndex === MONTHLY_SERIES.length - 1
+                      ? [4, 4, 0, 0]
+                      : undefined
+                  }
+                />
+              ))}
             </BarChart>
           </ChartContainer>
           <ChartLegendList
-            items={[
-              {
-                label: MONTHLY_CHART_CONFIG.clean.label,
-                color: MONTHLY_CHART_CONFIG.clean.color,
-              },
-              {
-                label: MONTHLY_CHART_CONFIG.flagged.label,
-                color: MONTHLY_CHART_CONFIG.flagged.color,
-              },
-            ]}
+            items={MONTHLY_SERIES.map((series) => MONTHLY_CHART_CONFIG[series])}
           />
         </ChartPanel>
 

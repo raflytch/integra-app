@@ -1,4 +1,5 @@
-import { FileSearch, Gavel, type LucideIcon, Quote } from 'lucide-react';
+import type { IconType } from 'react-icons';
+import { LuFileSearch, LuGavel, LuQuote } from 'react-icons/lu';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Suspense } from 'react';
@@ -7,24 +8,24 @@ import { LoginForm } from '@/components/auth/login-form';
 export const metadata: Metadata = { title: 'Masuk · INTEGRA' };
 
 const PRODUCT_PRINCIPLES: {
-  icon: LucideIcon;
+  icon: IconType;
   title: string;
   description: string;
 }[] = [
   {
-    icon: FileSearch,
+    icon: LuFileSearch,
     title: 'Bukti, bukan sekadar skor',
     description:
       'Tiga uji menunjukkan bukti yang kurang, tidak konsisten, atau tersalin.',
   },
   {
-    icon: Quote,
+    icon: LuQuote,
     title: 'Kutipan dokumen asli',
     description:
       'Setiap tanda menautkan rekam medis yang bisa dicek verifikator.',
   },
   {
-    icon: Gavel,
+    icon: LuGavel,
     title: 'Manusia yang memutuskan',
     description:
       'Label sistem selalu perlu klarifikasi, tidak pernah tuduhan fraud.',

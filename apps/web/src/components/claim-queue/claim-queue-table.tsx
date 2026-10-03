@@ -1,6 +1,5 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -8,26 +7,94 @@ import {
   ClaimStatusPill,
   FacilityTypePill,
   NeedsClarificationPill,
+  NotAnalyzedPill,
   PriorityPill,
   SeverityPill,
   TestSignalPill,
 } from '@/components/claim-pills';
-import { Button } from '@/components/ui/button';
+import { SortableTableHead } from '@/components/data-table/sortable-table-head';
+import { TablePagination } from '@/components/data-table/table-pagination';
+import {
+  type FilterOption,
+  NoMatchingRows,
+  TableFilterSelect,
+  TableSearch,
+  TableToolbar,
+} from '@/components/data-table/table-toolbar';
 import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useTableControls } from '@/hooks/use-table-controls';
+import {
+  countClaimFindings,
+  isClaimAnalyzed,
+  isClaimFlagged,
+} from '@/lib/claim-analysis';
 import { TEST_TYPE_ORDER } from '@/lib/claim-labels';
 import { countDaysBetween, formatDate, formatRupiah } from '@/lib/format';
-import type { ClaimQueueItem } from '@/types/claim.types';
+import type { ClaimQueueItem, ClaimStatus } from '@/types/claim.types';
 
 const CLAIMS_PER_PAGE = 20;
+const COLUMN_COUNT = 7;
+const ALL = 'ALL';
+
+type AnalysisFilter = typeof ALL | 'ANALYZED' | 'NOT_ANALYZED';
+type SignalFilter = typeof ALL | 'FLAGGED' | 'CLEAN';
+
+const ANALYSIS_FILTER_OPTIONS: FilterOption<AnalysisFilter>[] = [
+  { value: ALL, label: 'Semua' },
+  { value: 'ANALYZED', label: 'Sudah dianalisis' },
+  { value: 'NOT_ANALYZED', label: 'Belum dianalisis' },
+];
+
+const SIGNAL_FILTER_OPTIONS: FilterOption<SignalFilter>[] = [
+  { value: ALL, label: 'Semua' },
+  { value: 'FLAGGED', label: 'Perlu klarifikasi' },
+  { value: 'CLEAN', label: 'Tidak ada tanda' },
+];
+
+const STATUS_SORT_ORDER: ClaimStatus[] = [
+  'PENDING',
+  'CLARIFICATION_REQUESTED',
+  'ESCALATED',
+  'APPROVED',
+];
+
+const CLAIM_SORT_VALUES = {
+  priority: (claim: ClaimQueueItem) => claim.priorityScore,
+  claimNo: (claim: ClaimQueueItem) => claim.claimNo,
+  facility: (claim: ClaimQueueItem) => claim.facility.name,
+  admittedAt: (claim: ClaimQueueItem) => claim.admittedAt,
+  findings: (claim: ClaimQueueItem) => countClaimFindings(claim),
+  potentialGap: (claim: ClaimQueueItem) => claim.potentialGap,
+  status: (claim: ClaimQueueItem) => STATUS_SORT_ORDER.indexOf(claim.status),
+};
+
+function toClaimSearchText(claim: ClaimQueueItem): string {
+  return [
+    claim.claimNo,
+    claim.primaryDiagnosis?.name,
+    claim.primaryDiagnosis?.icd10Code,
+    claim.inacbgCode,
+    claim.facility.name,
+  ].join(' ');
+}
 
 function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
+  if (!isClaimAnalyzed(claim)) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <NotAnalyzedPill />
+        <span className="text-caption text-ink-secondary tabular-nums">
+          {claim.extractedDocumentCount}/{claim.documentCount} dokumen dibaca
+        </span>
+      </div>
+    );
+  }
   const flaggedTestTypes = TEST_TYPE_ORDER.filter(
     (testType) => claim.findingCounts[testType] > 0,
   );
@@ -55,43 +122,159 @@ function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
 
 export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
   const router = useRouter();
-  const [pageIndex, setPageIndex] = useState(0);
-  const pageCount = Math.max(1, Math.ceil(claims.length / CLAIMS_PER_PAGE));
-  const currentPageIndex = Math.min(pageIndex, pageCount - 1);
-  const firstClaimIndex = currentPageIndex * CLAIMS_PER_PAGE;
-  const pageClaims = claims.slice(
-    firstClaimIndex,
-    firstClaimIndex + CLAIMS_PER_PAGE,
+  const [facilityFilter, setFacilityFilter] = useState<string>(ALL);
+  const [analysisFilter, setAnalysisFilter] = useState<AnalysisFilter>(ALL);
+  const [signalFilter, setSignalFilter] = useState<SignalFilter>(ALL);
+
+  const facilityOptions: FilterOption<string>[] = [
+    { value: ALL, label: 'Semua' },
+    ...[
+      ...new Map(
+        claims.map((claim) => [claim.facility.id, claim.facility.name]),
+      ),
+    ]
+      .sort(([, firstName], [, secondName]) =>
+        firstName.localeCompare(secondName, 'id'),
+      )
+      .map(([facilityId, facilityName]) => ({
+        value: facilityId,
+        label: facilityName,
+      })),
+  ];
+  const filteredClaims = claims.filter(
+    (claim) =>
+      (facilityFilter === ALL || claim.facility.id === facilityFilter) &&
+      (analysisFilter === ALL ||
+        isClaimAnalyzed(claim) === (analysisFilter === 'ANALYZED')) &&
+      (signalFilter === ALL ||
+        (isClaimAnalyzed(claim) &&
+          isClaimFlagged(claim) === (signalFilter === 'FLAGGED'))),
   );
+  const table = useTableControls({
+    rows: filteredClaims,
+    toSearchText: toClaimSearchText,
+    sortValues: CLAIM_SORT_VALUES,
+    initialSort: { key: 'priority', direction: 'desc' },
+    pageSize: CLAIMS_PER_PAGE,
+  });
+
+  function changeFilter<Value>(setFilter: (value: Value) => void) {
+    return (value: Value) => {
+      setFilter(value);
+      table.resetPage();
+    };
+  }
+
+  function resetSearchAndFilters() {
+    table.setSearchQuery('');
+    setFacilityFilter(ALL);
+    setAnalysisFilter(ALL);
+    setSignalFilter(ALL);
+  }
 
   return (
     <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-xs">
+      <TableToolbar>
+        <TableSearch
+          value={table.searchQuery}
+          onChange={table.setSearchQuery}
+          placeholder="Cari no. klaim, diagnosis, faskes"
+        />
+        <TableFilterSelect
+          label="Faskes"
+          value={facilityFilter}
+          options={facilityOptions}
+          onChange={changeFilter(setFacilityFilter)}
+        />
+        <TableFilterSelect
+          label="Analisis AI"
+          value={analysisFilter}
+          options={ANALYSIS_FILTER_OPTIONS}
+          onChange={changeFilter(setAnalysisFilter)}
+        />
+        <TableFilterSelect
+          label="Tanda"
+          value={signalFilter}
+          options={SIGNAL_FILTER_OPTIONS}
+          onChange={changeFilter(setSignalFilter)}
+        />
+      </TableToolbar>
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-12">#</TableHead>
-            <TableHead>Klaim</TableHead>
-            <TableHead>Faskes</TableHead>
-            <TableHead>Rawat inap</TableHead>
-            <TableHead>Tanda uji</TableHead>
-            <TableHead className="text-right">Potensi selisih</TableHead>
-            <TableHead>Status</TableHead>
+            <SortableTableHead
+              sortKey="priority"
+              sort={table.sort}
+              onSort={table.toggleSort}
+              className="w-16"
+            >
+              #
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="claimNo"
+              sort={table.sort}
+              onSort={table.toggleSort}
+            >
+              Klaim
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="facility"
+              sort={table.sort}
+              onSort={table.toggleSort}
+            >
+              Faskes
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="admittedAt"
+              sort={table.sort}
+              onSort={table.toggleSort}
+            >
+              Rawat inap
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="findings"
+              sort={table.sort}
+              onSort={table.toggleSort}
+            >
+              Tanda uji
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="potentialGap"
+              sort={table.sort}
+              onSort={table.toggleSort}
+              align="right"
+            >
+              Potensi selisih
+            </SortableTableHead>
+            <SortableTableHead
+              sortKey="status"
+              sort={table.sort}
+              onSort={table.toggleSort}
+            >
+              Status
+            </SortableTableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {pageClaims.map((claim, pageRowIndex) => {
-            const queueIndex = firstClaimIndex + pageRowIndex;
+          {table.pageRows.length === 0 && (
+            <NoMatchingRows
+              columnCount={COLUMN_COUNT}
+              onReset={resetSearchAndFilters}
+            />
+          )}
+          {table.pageRows.map((claim, pageRowIndex) => {
+            const rowIndex = table.firstRowIndex + pageRowIndex;
             const claimHref = `/claims/${claim.id}`;
             return (
               <TableRow
                 key={claim.id}
-                data-tour={queueIndex === 0 ? 'queue-first-claim' : undefined}
-                data-tour-href={queueIndex === 0 ? claimHref : undefined}
+                data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
+                data-tour-href={rowIndex === 0 ? claimHref : undefined}
                 onClick={() => router.push(claimHref)}
                 className="cursor-pointer"
               >
                 <TableCell className="align-top font-mono text-caption text-ink-secondary tabular-nums">
-                  {queueIndex + 1}
+                  {rowIndex + 1}
                 </TableCell>
                 <TableCell className="align-top">
                   <div className="flex flex-col items-start gap-1">
@@ -149,39 +332,16 @@ export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
           })}
         </TableBody>
       </Table>
-      {pageCount > 1 && (
-        <nav
-          aria-label="Halaman antrean"
-          className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline px-4 py-3"
-        >
-          <span className="text-small text-ink-secondary tabular-nums">
-            Menampilkan {firstClaimIndex + 1}–
-            {firstClaimIndex + pageClaims.length} dari {claims.length} klaim
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPageIndex(currentPageIndex - 1)}
-              disabled={currentPageIndex === 0}
-            >
-              <ChevronLeft aria-hidden="true" />
-              Sebelumnya
-            </Button>
-            <span className="text-small text-ink-secondary tabular-nums">
-              {currentPageIndex + 1} / {pageCount}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPageIndex(currentPageIndex + 1)}
-              disabled={currentPageIndex === pageCount - 1}
-            >
-              Berikutnya
-              <ChevronRight aria-hidden="true" />
-            </Button>
-          </div>
-        </nav>
+      {table.pageRows.length > 0 && (
+        <TablePagination
+          firstRowIndex={table.firstRowIndex}
+          pageRowCount={table.pageRows.length}
+          matchingRowCount={table.matchingRowCount}
+          pageIndex={table.pageIndex}
+          pageCount={table.pageCount}
+          rowNoun="klaim"
+          onPageChange={table.setPageIndex}
+        />
       )}
     </div>
   );

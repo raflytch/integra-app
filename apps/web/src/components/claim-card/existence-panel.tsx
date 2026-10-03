@@ -1,4 +1,4 @@
-import { CircleX, MessageSquareText } from 'lucide-react';
+import { LuCircleX, LuMessageSquareText } from 'react-icons/lu';
 import { MissingEvidencePill } from '@/components/claim-pills';
 import { Button } from '@/components/ui/button';
 import { EVIDENCE_TYPE_LABELS } from '@/lib/claim-labels';
@@ -100,7 +100,7 @@ function UnsupportedDiagnosis({
               key={`${evidence.evidenceType}-${evidence.expected}`}
               className="flex items-start gap-3 px-3 py-2.5"
             >
-              <CircleX
+              <LuCircleX
                 className="mt-0.5 size-4 shrink-0 text-ink-secondary"
                 aria-hidden="true"
               />
@@ -147,7 +147,7 @@ function UnsupportedDiagnosis({
           )
         }
       >
-        <MessageSquareText aria-hidden="true" />
+        <LuMessageSquareText aria-hidden="true" />
         Gunakan untuk minta klarifikasi
       </Button>
     </article>

@@ -5,8 +5,10 @@ import {
   CHART_TOOLTIP_CLASS_NAME,
   ChartLegendList,
   ChartPanel,
+  DashboardSkeleton,
   StatTile,
 } from '@/components/dashboard-panels';
+import { FacilitySummaryGate } from '@/components/facility-summary/facility-summary';
 import {
   type ChartConfig,
   ChartContainer,
@@ -62,7 +64,17 @@ function chartHeight(rowCount: number): number {
   return rowCount * BAR_ROW_HEIGHT + CHART_VERTICAL_PADDING;
 }
 
-export function FacilitySummaryCharts({
+export function FacilityOverviewPanel() {
+  return (
+    <FacilitySummaryGate loadingFallback={<DashboardSkeleton tileCount={4} />}>
+      {(facilitySummaries) => (
+        <FacilityOverview facilitySummaries={facilitySummaries} />
+      )}
+    </FacilitySummaryGate>
+  );
+}
+
+function FacilityOverview({
   facilitySummaries,
 }: {
   facilitySummaries: FacilitySummary[];

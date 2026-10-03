@@ -1,17 +1,20 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
+import type { IconType } from 'react-icons';
 import {
-  Building2,
-  CircleHelp,
-  ListOrdered,
-  LogOut,
-  type LucideIcon,
-  ShieldAlert,
-} from 'lucide-react';
+  LuBuilding2,
+  LuCircleHelp,
+  LuLayoutDashboard,
+  LuListOrdered,
+  LuLogOut,
+  LuShieldAlert,
+} from 'react-icons/lu';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -36,7 +39,7 @@ import type { UserRole } from '@/types/auth.types';
 interface MenuItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: IconType;
 }
 
 interface MenuGroup {
@@ -49,14 +52,15 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Verifikasi',
     allowedRoles: ['VERIFIER', 'SUPERVISOR'],
-    items: [{ href: '/claims', label: 'Antrean Klaim', icon: ListOrdered }],
+    items: [{ href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered }],
   },
   {
     label: 'Supervisor',
     allowedRoles: ['SUPERVISOR'],
     items: [
-      { href: '/escalations', label: 'Eskalasi', icon: ShieldAlert },
-      { href: '/facilities', label: 'Ringkasan Faskes', icon: Building2 },
+      { href: '/overview', label: 'Ikhtisar', icon: LuLayoutDashboard },
+      { href: '/escalations', label: 'Eskalasi', icon: LuShieldAlert },
+      { href: '/facilities', label: 'Ringkasan Faskes', icon: LuBuilding2 },
     ],
   },
 ];
@@ -79,6 +83,7 @@ export function AppSidebar() {
   const queryClient = useQueryClient();
   const startTour = useStartTour();
   const currentUserQuery = useCurrentUser();
+  const [isLogOutConfirmOpen, setIsLogOutConfirmOpen] = useState(false);
   const currentUser = currentUserQuery.data;
   const visibleMenuGroups = MENU_GROUPS.filter(
     (menuGroup) =>
@@ -170,21 +175,30 @@ export function AppSidebar() {
               onClick={startTour}
               className={MENU_BUTTON_CLASS_NAME}
             >
-              <CircleHelp aria-hidden="true" />
+              <LuCircleHelp aria-hidden="true" />
               <span>Panduan</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={handleLogOut}
+              onClick={() => setIsLogOutConfirmOpen(true)}
               className={MENU_BUTTON_CLASS_NAME}
             >
-              <LogOut aria-hidden="true" />
+              <LuLogOut aria-hidden="true" />
               <span>Keluar</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <ConfirmDialog
+        open={isLogOutConfirmOpen}
+        onOpenChange={setIsLogOutConfirmOpen}
+        icon={LuLogOut}
+        title="Keluar dari INTEGRA?"
+        description="Untuk masuk lagi, Anda perlu email dan kode dari aplikasi autentikator."
+        confirmLabel="Ya, keluar"
+        onConfirm={handleLogOut}
+      />
     </Sidebar>
   );
 }

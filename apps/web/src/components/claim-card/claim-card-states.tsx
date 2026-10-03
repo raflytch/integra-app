@@ -1,4 +1,4 @@
-import { FileQuestion } from 'lucide-react';
+import { LuFileQuestion } from 'react-icons/lu';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +36,7 @@ export function ClaimNotFound() {
     <Empty className="rounded-xl border border-hairline bg-surface shadow-xs">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="bg-subtle text-ink">
-          <FileQuestion />
+          <LuFileQuestion />
         </EmptyMedia>
         <EmptyTitle className="text-ink">Klaim tidak ditemukan</EmptyTitle>
         <EmptyDescription className="text-ink-secondary">

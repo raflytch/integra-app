@@ -1,17 +1,17 @@
+import type { IconType } from 'react-icons';
 import {
-  CircleAlert,
-  CircleCheck,
-  CircleDashed,
-  Copy,
-  FileSearch,
-  Flag,
-  Gauge,
-  GitCompareArrows,
-  type LucideIcon,
-  MessageSquareText,
-  ShieldAlert,
-  Sparkles,
-} from 'lucide-react';
+  LuCircleAlert,
+  LuCircleCheck,
+  LuCircleDashed,
+  LuCopy,
+  LuFileSearch,
+  LuFlag,
+  LuGauge,
+  LuGitCompareArrows,
+  LuMessageSquareText,
+  LuShieldAlert,
+  LuSparkles,
+} from 'react-icons/lu';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -43,27 +43,27 @@ const SEVERITY_LEVEL_NUMERALS = ['I', 'II', 'III'];
 
 const CLAIM_STATUS_APPEARANCE: Record<
   ClaimStatus,
-  { tone: PillTone; icon: LucideIcon }
+  { tone: PillTone; icon: IconType }
 > = {
-  PENDING: { tone: 'outline', icon: CircleDashed },
-  CLARIFICATION_REQUESTED: { tone: 'warning', icon: MessageSquareText },
-  ESCALATED: { tone: 'error', icon: ShieldAlert },
-  APPROVED: { tone: 'success', icon: CircleCheck },
+  PENDING: { tone: 'outline', icon: LuCircleDashed },
+  CLARIFICATION_REQUESTED: { tone: 'warning', icon: LuMessageSquareText },
+  ESCALATED: { tone: 'error', icon: LuShieldAlert },
+  APPROVED: { tone: 'success', icon: LuCircleCheck },
 };
 
 const DECISION_ACTION_APPEARANCE: Record<
   DecisionAction,
-  { tone: PillTone; icon: LucideIcon }
+  { tone: PillTone; icon: IconType }
 > = {
   APPROVE: CLAIM_STATUS_APPEARANCE.APPROVED,
   REQUEST_CLARIFICATION: CLAIM_STATUS_APPEARANCE.CLARIFICATION_REQUESTED,
   ESCALATE: CLAIM_STATUS_APPEARANCE.ESCALATED,
 };
 
-const TEST_TYPE_ICONS: Record<TestType, LucideIcon> = {
-  EXISTENCE: FileSearch,
-  CONSISTENCY: GitCompareArrows,
-  SIMILARITY: Copy,
+const TEST_TYPE_ICONS: Record<TestType, IconType> = {
+  EXISTENCE: LuFileSearch,
+  CONSISTENCY: LuGitCompareArrows,
+  SIMILARITY: LuCopy,
 };
 
 const PRIORITY_LEVELS: { minScore: number; label: string; tone: PillTone }[] = [
@@ -79,7 +79,7 @@ export function Pill({
   children,
 }: {
   tone: PillTone;
-  icon?: LucideIcon;
+  icon?: IconType;
   className?: string;
   children: ReactNode;
 }) {
@@ -118,15 +118,23 @@ export function DecisionActionPill({ action }: { action: DecisionAction }) {
 
 export function NeedsClarificationPill() {
   return (
-    <Pill tone="warning" icon={Flag}>
+    <Pill tone="warning" icon={LuFlag}>
       Perlu klarifikasi
+    </Pill>
+  );
+}
+
+export function NotAnalyzedPill() {
+  return (
+    <Pill tone="outline" icon={LuCircleDashed}>
+      Belum dianalisis AI
     </Pill>
   );
 }
 
 export function MissingEvidencePill() {
   return (
-    <Pill tone="warning" icon={CircleAlert}>
+    <Pill tone="warning" icon={LuCircleAlert}>
       Belum ada bukti
     </Pill>
   );
@@ -138,7 +146,7 @@ export function PriorityPill({ priorityScore }: { priorityScore: number }) {
     PRIORITY_LEVELS.find((level) => priorityScore >= level.minScore) ??
     PRIORITY_LEVELS[PRIORITY_LEVELS.length - 1];
   return (
-    <Pill tone={priorityLevel.tone} icon={Gauge}>
+    <Pill tone={priorityLevel.tone} icon={LuGauge}>
       {priorityLevel.label}
     </Pill>
   );
@@ -181,7 +189,7 @@ export function FacilityTypePill({
 
 export function IntegraAiPill() {
   return (
-    <Pill tone="inverse" icon={Sparkles}>
+    <Pill tone="inverse" icon={LuSparkles}>
       INTEGRA AI
     </Pill>
   );
@@ -189,7 +197,7 @@ export function IntegraAiPill() {
 
 export function ReadByAiPill() {
   return (
-    <Pill tone="neutral" icon={Sparkles}>
+    <Pill tone="neutral" icon={LuSparkles}>
       Dibaca AI
     </Pill>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CircleCheck } from 'lucide-react';
+import { LuCircleCheck } from 'react-icons/lu';
 import Link from 'next/link';
 import type { FormEvent } from 'react';
 import { DecisionActionPill } from '@/components/claim-pills';
@@ -106,7 +106,7 @@ export function DecisionPanel({
       </div>
       {savedDecision && (
         <Alert role="status" className="border-success/30 bg-success/10">
-          <CircleCheck aria-hidden="true" className="text-success-ink" />
+          <LuCircleCheck aria-hidden="true" className="text-success-ink" />
           <AlertTitle className="text-success-ink">
             Keputusan tersimpan:{' '}
             {DECISION_ACTION_DETAILS[savedDecision.action].label}

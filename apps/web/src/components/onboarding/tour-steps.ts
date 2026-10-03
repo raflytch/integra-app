@@ -28,27 +28,27 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'main-nav',
     title: 'Menu utama',
     description:
-      'Antrean Klaim untuk verifikator. Eskalasi dan Ringkasan Faskes untuk supervisor yang menindaklanjuti klaim dan memantau pola per faskes.',
+      'Antrean Klaim untuk verifikator. Ikhtisar, Eskalasi, dan Ringkasan Faskes untuk supervisor yang memantau hasil analisis, menindaklanjuti klaim, dan melihat pola per faskes.',
     missingTargetDescription:
-      'Buka menu di kiri atas untuk berpindah halaman. Antrean Klaim untuk verifikator; Eskalasi dan Ringkasan Faskes untuk supervisor.',
+      'Buka menu di kiri atas untuk berpindah halaman. Antrean Klaim untuk verifikator; Ikhtisar, Eskalasi, dan Ringkasan Faskes untuk supervisor.',
   },
   {
     id: 'run-analysis',
     page: 'queue',
     target: 'run-analysis',
-    title: 'Jalankan analisis',
+    title: 'Jalankan analisis AI',
     description:
-      'Tombol ini menjalankan uji atas bukti klinis yang sudah diekstraksi AI, lalu menghitung ulang potensi selisih tarif dan urutan antrean.',
+      'AI membaca rekam medis klaim berikutnya yang belum dianalisis, lalu aturan klinis menguji buktinya dan menghitung ulang potensi selisih tarif serta urutan antrean. Klik lagi untuk melanjutkan klaim berikutnya.',
     missingTargetDescription:
-      'Tombol Jalankan analisis ada di halaman Antrean Klaim. Tombol ini menjalankan uji atas bukti yang sudah diekstraksi AI, lalu menghitung ulang urutan antrean.',
+      'Tombol Jalankan analisis AI ada di halaman Antrean Klaim. AI membaca rekam medis klaim yang belum dianalisis, lalu aturan klinis menguji buktinya.',
   },
   {
     id: 'queue-filter',
     page: 'queue',
     target: 'queue-filter',
-    title: 'Pilih antrean',
+    title: 'Pilih dan saring antrean',
     description:
-      'Menunggu keputusan menampilkan klaim yang belum Anda putuskan. Pilih Semua untuk melihat klaim yang sudah diputuskan.',
+      'Menunggu keputusan menampilkan klaim yang belum Anda putuskan. Pilih Semua untuk melihat klaim yang sudah diputuskan. Di atas tabel, cari klaim, saring per faskes atau status analisis, dan klik judul kolom untuk mengurutkan.',
   },
   {
     id: OPEN_FIRST_CLAIM_STEP_ID,
@@ -105,7 +105,7 @@ export const TOUR_STEPS: TourStep[] = [
     description:
       'Klik sumber kutipan untuk membuka dokumen rekam medis yang dikutip. Anda tidak perlu membaca rekam medis dari nol.',
     missingTargetDescription:
-      'Sumber kutipan muncul di panel uji setelah analisis menemukan tanda. Klik sumber itu untuk membuka dokumen rekam medis yang dikutip. Jalankan analisis dari Antrean Klaim jika klaim ini belum dianalisis.',
+      'Sumber kutipan muncul di panel uji setelah analisis menemukan tanda. Klik sumber itu untuk membuka dokumen rekam medis yang dikutip. Jika klaim ini belum dianalisis, klik Analisis dengan AI di kartu analisis.',
   },
   {
     id: 'claim-diagnoses',

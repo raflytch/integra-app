@@ -23,6 +23,8 @@
       "EXISTENCE": 1,
       "CONSISTENCY": 0,
       "SIMILARITY": 0
-    }
+    },
+    "documentCount": 5,
+    "extractedDocumentCount": 5
   }
 ]

@@ -4,7 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, CircleAlert, Mail, Smartphone } from 'lucide-react';
+import {
+  LuArrowRight,
+  LuCircleAlert,
+  LuMail,
+  LuSmartphone,
+} from 'react-icons/lu';
 import { type FormEvent, Fragment, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -88,7 +93,7 @@ export function LoginForm() {
               onChange={(event) => setEmail(event.target.value)}
             />
             <InputGroupAddon className="text-ink-muted">
-              <Mail aria-hidden="true" />
+              <LuMail aria-hidden="true" />
             </InputGroupAddon>
           </InputGroup>
         </Field>
@@ -123,13 +128,13 @@ export function LoginForm() {
             ))}
           </InputOTP>
           <FieldDescription className="flex items-center gap-1.5 text-caption text-ink-secondary">
-            <Smartphone className="size-3.5" aria-hidden="true" />
+            <LuSmartphone className="size-3.5" aria-hidden="true" />
             Lihat 6 digit kode INTEGRA di aplikasi authenticator.
           </FieldDescription>
         </Field>
         {logInMutation.isError && (
           <Alert variant="destructive">
-            <CircleAlert aria-hidden="true" />
+            <LuCircleAlert aria-hidden="true" />
             <AlertTitle>Gagal masuk</AlertTitle>
             <AlertDescription>
               {describeLoginError(logInMutation.error)}
@@ -149,7 +154,7 @@ export function LoginForm() {
           ) : (
             <>
               Masuk
-              <ArrowRight aria-hidden="true" />
+              <LuArrowRight aria-hidden="true" />
             </>
           )}
         </Button>

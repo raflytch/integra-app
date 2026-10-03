@@ -1,27 +1,21 @@
 /**
- * Seeds hundreds of template-based demo claims (no LLM calls), then runs the
- * same analysis as "Jalankan analisis" so the queue and dashboards are filled.
- * Idempotent: it replaces only claims numbered KLM-DEMO-* and their patients.
+ * Seeds hundreds of raw, template-based demo claims without calling the LLM.
+ * Documents stay unextracted and claims stay "Menunggu keputusan", so the AI
+ * analysis ("Jalankan analisis" or "Analisis dengan AI" on a claim) and the
+ * verifier decisions happen in the app. Idempotent: it replaces only claims
+ * numbered KLM-DEMO-* (with their findings and decisions) and their patients.
  *
  *   npm run seed:demo                      # 300 claims
  *   npm run seed:demo -- --count=800       # custom size
- *
- * Run `npm run seed:users` first so decided claims get a verifier.
  */
 import 'reflect-metadata';
 import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { RunAnalysisUseCase } from '../src/application/analysis/run-analysis.use-case';
-import { RunExistenceTestUseCase } from '../src/application/analysis/run-existence-test.use-case';
-import type { Prisma } from '../src/generated/prisma/client';
 import { type Env, validateEnv } from '../src/infrastructure/config/env.schema';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
-import { PrismaAnalysisRepository } from '../src/infrastructure/database/prisma/repositories/prisma-analysis.repository';
-import { SyntheticTariffSchedule } from '../src/infrastructure/tariffs/synthetic-tariff-schedule';
 import {
-  DECISION_STATUS,
   DEMO_CLAIM_NO_PREFIX,
   DEMO_FACILITIES,
   DEMO_RECORD_NO_PREFIX,
@@ -69,14 +63,6 @@ async function main(): Promise<void> {
   });
   // tsx emits no decorator metadata, so dependencies are wired by hand.
   const prisma = new PrismaService(app.get(ConfigService<Env, true>));
-  const analysisRepository = new PrismaAnalysisRepository(prisma);
-  const runAnalysis = new RunAnalysisUseCase(
-    analysisRepository,
-    new RunExistenceTestUseCase(
-      analysisRepository,
-      new SyntheticTariffSchedule(),
-    ),
-  );
 
   try {
     const facilityIdByCode = new Map<string, string>();
@@ -101,17 +87,6 @@ async function main(): Promise<void> {
         create: evidenceRule,
         update: { guidelineRef: evidenceRule.guidelineRef },
       });
-    }
-
-    const verifier = await prisma.user.findFirst({
-      where: { role: 'VERIFIER' },
-      orderBy: { createdAt: 'asc' },
-      select: { id: true },
-    });
-    if (!verifier) {
-      logger.warn(
-        'Belum ada akun verifikator; semua klaim demo dibuat Menunggu keputusan. Jalankan "npm run seed:users" lalu ulangi.',
-      );
     }
 
     const demoClaimFilter = { claimNo: { startsWith: DEMO_CLAIM_NO_PREFIX } };
@@ -148,10 +123,6 @@ async function main(): Promise<void> {
             inacbgCode: claim.inacbgCode,
             severityLevel: claim.severityLevel,
             tariffAmount: claim.tariffAmount,
-            status:
-              verifier && claim.decision
-                ? DECISION_STATUS[claim.decision.action]
-                : 'PENDING',
             injectedCase: claim.injectedCase,
           })),
         });
@@ -174,40 +145,14 @@ async function main(): Promise<void> {
         await transaction.clinicalDocument.createMany({
           data: claims.flatMap((claim) =>
             claim.documents.map((document) => ({
+              ...document,
               claimId: claimIdByNo.get(claim.claimNo)!,
-              type: document.type,
-              recordedAt: document.recordedAt,
-              content: document.content,
-              extracted:
-                document.extracted as unknown as Prisma.InputJsonObject,
             })),
           ),
         });
-        if (verifier) {
-          await transaction.decision.createMany({
-            data: claims.flatMap((claim) =>
-              claim.decision
-                ? [
-                    {
-                      claimId: claimIdByNo.get(claim.claimNo)!,
-                      verifierId: verifier.id,
-                      action: claim.decision.action,
-                      reason: claim.decision.reason,
-                      createdAt: claim.decision.decidedAt,
-                    },
-                  ]
-                : [],
-            ),
-          });
-        }
       },
       { timeout: 120_000 },
     );
-
-    logger.log(
-      `Menyimpan ${claims.length} klaim demo selesai. Menjalankan analisis...`,
-    );
-    const analysisSummary = await runAnalysis.execute();
 
     const claimsPerProfile = new Map<string, number>();
     for (const claim of claims) {
@@ -219,13 +164,12 @@ async function main(): Promise<void> {
     logger.log(
       [
         `Faskes    : ${DEMO_FACILITIES.length}`,
-        `Klaim demo: ${claims.length}`,
+        `Klaim demo: ${claims.length} (mentah, belum dianalisis AI)`,
         ...[...claimsPerProfile]
           .sort(([first], [second]) => first.localeCompare(second))
           .map(([profile, count]) => `  ${profile.padEnd(24)} ${count}`),
         `Dokumen   : ${claims.reduce((total, claim) => total + claim.documents.length, 0)}`,
-        `Keputusan : ${verifier ? claims.filter((claim) => claim.decision).length : 0}`,
-        `Analisis  : ${analysisSummary.analyzedClaimCount} klaim dianalisis, ${analysisSummary.flaggedClaimCount} bertanda, ${analysisSummary.findingCount} tanda`,
+        'Jalankan analisis dari aplikasi; setiap dokumen dibaca AI (panggilan LLM berbayar).',
       ].join('\n'),
     );
   } finally {

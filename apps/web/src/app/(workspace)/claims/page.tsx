@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { ClaimQueue } from '@/components/claim-queue/claim-queue';
-import { ClaimQueueOverview } from '@/components/claim-queue/claim-queue-overview';
 import { REVIEW_QUEUE_FILTERS } from '@/components/claim-queue/claim-queue-filters';
 import { RunAnalysisButton } from '@/components/claim-queue/run-analysis-button';
 import { PageHeader } from '@/components/page-header';
@@ -15,7 +14,6 @@ export default function ClaimQueuePage() {
         description="Klaim diurutkan dari sinyal terkuat dan potensi selisih tarif terbesar."
         action={<RunAnalysisButton />}
       />
-      <ClaimQueueOverview />
       <ClaimQueue filterOptions={REVIEW_QUEUE_FILTERS} />
     </div>
   );

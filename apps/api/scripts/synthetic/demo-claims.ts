@@ -1,17 +1,9 @@
 /**
- * Deterministic, template-based demo claims for dashboards and load testing.
- * No LLM is involved: every document ships with a matching `extracted`
- * payload whose quotes are exact substrings of the document text, so
- * "Jalankan analisis" can run on them immediately. Everything is fictional.
+ * Deterministic, template-based raw demo claims. Generating them costs
+ * nothing: documents are stored unextracted, without findings or decisions,
+ * so the AI analysis and verifier decisions start from scratch in the app.
+ * Everything is fictional.
  */
-import type {
-  ClinicalExtraction,
-  ExtractedDiagnosis,
-  ExtractedFinding,
-  ExtractedMedication,
-  ExtractedProcedure,
-  ExtractedVitalSign,
-} from '../../src/domain/analysis/clinical-extraction';
 import { SyntheticTariffSchedule } from '../../src/infrastructure/tariffs/synthetic-tariff-schedule';
 import type { InjectedCase } from './dataset.schema';
 import { DISEASES, type DiseaseKey, FACILITIES } from './scenarios';
@@ -22,9 +14,6 @@ export const DEMO_RECORD_NO_PREFIX = 'RM-DEMO-';
 type FacilityType = 'A' | 'B' | 'C' | 'D';
 type DocumentType =
   'MEDICAL_RESUME' | 'EXAM_NOTE' | 'DAILY_NOTE' | 'PRESCRIPTION' | 'PROCEDURE';
-type DecisionAction = 'APPROVE' | 'REQUEST_CLARIFICATION' | 'ESCALATE';
-type ClaimStatus =
-  'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
 
 export interface DemoFacility {
   code: string;
@@ -44,7 +33,6 @@ export interface DemoDocument {
   type: DocumentType;
   recordedAt: Date;
   content: string;
-  extracted: ClinicalExtraction;
 }
 
 export interface DemoClaim {
@@ -60,7 +48,6 @@ export interface DemoClaim {
   injectedCase: InjectedCase[];
   diagnoses: { icd10Code: string; name: string; isPrimary: boolean }[];
   documents: DemoDocument[];
-  decision: { action: DecisionAction; reason: string; decidedAt: Date } | null;
 }
 
 /**
@@ -294,23 +281,6 @@ const FAMILY_NAMES = [
   'Utami',
 ];
 
-const REASONS: Record<DecisionAction, readonly string[]> = {
-  APPROVE: [
-    'Bukti klinis lengkap dan sesuai diagnosis yang diajukan.',
-    'Dokumen konsisten, tidak ditemukan tanda yang perlu ditindaklanjuti.',
-    'Tanda sudah ditinjau; bukti klinis ditemukan dalam format tidak baku.',
-  ],
-  REQUEST_CLARIFICATION: [
-    'Mohon faskes melampirkan bukti klinis untuk diagnosis sekunder.',
-    'Diagnosis sekunder belum didukung catatan tindakan dan tanda vital.',
-    'Perlu klarifikasi catatan pemeriksaan yang tidak sejalan dengan catatan harian.',
-  ],
-  ESCALATE: [
-    'Pola diagnosis sekunder tanpa bukti berulang di faskes ini.',
-    'Diteruskan ke tim anti-fraud untuk telaah pola pengkodean.',
-  ],
-};
-
 /** Seeded PRNG (mulberry32) so every run produces the same dataset. */
 function createRandom(seed: number) {
   let state = seed >>> 0;
@@ -343,86 +313,17 @@ function createRandom(seed: number) {
 
 type Random = ReturnType<typeof createRandom>;
 
-/** Accumulates sentences and the extraction items quoted from them. */
+/** Joins the sentences of one clinical document. */
 class DocumentBuilder {
   private readonly sentences: string[] = [];
-  private readonly extraction: ClinicalExtraction = {
-    diagnoses: [],
-    findings: [],
-    vitalSigns: [],
-    medications: [],
-    procedures: [],
-  };
-
-  constructor(private readonly observedAt: string) {}
 
   sentence(text: string): this {
     this.sentences.push(text);
     return this;
   }
 
-  diagnosis(item: Omit<ExtractedDiagnosis, 'quote'>, quote: string): this {
-    this.extraction.diagnoses.push({ ...item, quote });
-    return this;
-  }
-
-  finding(name: string, quote: string, isPresent = true): this {
-    const finding: ExtractedFinding = {
-      name,
-      isPresent,
-      observedAt: this.observedAt,
-      quote,
-    };
-    this.extraction.findings.push(finding);
-    return this;
-  }
-
-  vital(name: string, value: string, quote: string): this {
-    const vital: ExtractedVitalSign = {
-      name,
-      value,
-      observedAt: this.observedAt,
-      quote,
-    };
-    this.extraction.vitalSigns.push(vital);
-    return this;
-  }
-
-  medication(name: string, dose: string | null, quote: string): this {
-    const medication: ExtractedMedication = {
-      name,
-      dose,
-      givenAt: this.observedAt,
-      quote,
-    };
-    this.extraction.medications.push(medication);
-    return this;
-  }
-
-  procedure(name: string, quote: string): this {
-    const procedure: ExtractedProcedure = {
-      name,
-      performedAt: this.observedAt,
-      quote,
-    };
-    this.extraction.procedures.push(procedure);
-    return this;
-  }
-
   build(type: DocumentType, recordedAt: Date): DemoDocument {
-    const content = this.sentences.join(' ');
-    const quotes = [
-      ...this.extraction.diagnoses,
-      ...this.extraction.findings,
-      ...this.extraction.vitalSigns,
-      ...this.extraction.medications,
-      ...this.extraction.procedures,
-    ].map((item) => item.quote);
-    const missingQuote = quotes.find((quote) => !content.includes(quote));
-    if (missingQuote) {
-      throw new Error(`Quote "${missingQuote}" is not in the ${type} text`);
-    }
-    return { type, recordedAt, content, extracted: this.extraction };
+    return { type, recordedAt, content: this.sentences.join(' ') };
   }
 }
 
@@ -459,99 +360,62 @@ function addVitals(
 ): void {
   const pulse = `${random.int(82, 108)} x/menit`;
   const bodyTemperature = temperature(random, ...temperatureRange);
-  builder
-    .sentence(
-      `TD ${bloodPressureValue}, nadi ${pulse}, suhu ${bodyTemperature}.`,
-    )
-    .vital('tekanan darah', bloodPressureValue, `TD ${bloodPressureValue}`)
-    .vital('nadi', pulse, `nadi ${pulse}`)
-    .vital('suhu', bodyTemperature, `suhu ${bodyTemperature}`);
+  builder.sentence(
+    `TD ${bloodPressureValue}, nadi ${pulse}, suhu ${bodyTemperature}.`,
+  );
 }
 
-function buildExamNote(
-  profile: ClaimProfile,
-  random: Random,
-  observedAt: string,
-): DocumentBuilder {
-  const builder = new DocumentBuilder(observedAt);
+function buildExamNote(profile: ClaimProfile, random: Random): DocumentBuilder {
+  const builder = new DocumentBuilder();
   const symptomDays = random.int(2, 4);
 
   switch (PROFILE_DETAILS[profile].disease) {
     case 'DBD': {
       const fever = `demam tinggi sejak ${symptomDays} hari`;
-      builder
-        .sentence(`Pasien datang ke IGD dengan keluhan ${fever}.`)
-        .finding('demam', fever);
+      builder.sentence(`Pasien datang ke IGD dengan keluhan ${fever}.`);
       const petechiae = random.pick([
         'petekie di kedua lengan',
         'petekie di tungkai bawah',
       ]);
-      builder.sentence(`Tampak ${petechiae}.`).finding('petekie', petechiae);
+      builder.sentence(`Tampak ${petechiae}.`);
       if (profile === 'GENUINE_SHOCK') {
         const shockBloodPressure = `${random.int(75, 85)}/${random.int(45, 55)} mmHg`;
         const hypotension = `hipotensi (TD ${shockBloodPressure})`;
-        builder
-          .sentence(`Akral dingin, ${hypotension}, nadi cepat dan lemah.`)
-          .finding('akral dingin', 'Akral dingin')
-          .finding('hipotensi', hypotension)
-          .vital(
-            'tekanan darah',
-            shockBloodPressure,
-            `TD ${shockBloodPressure}`,
-          );
+        builder.sentence(`Akral dingin, ${hypotension}, nadi cepat dan lemah.`);
       } else if (profile === 'SHOCK_NONSTANDARD') {
-        builder
-          .sentence('Akral dingin, TD 85/50 mmHg, CRT lebih dari 2 detik.')
-          .finding('akral dingin', 'Akral dingin')
-          .vital('tekanan darah', '85/50 mmHg', 'TD 85/50 mmHg');
+        builder.sentence(
+          'Akral dingin, TD 85/50 mmHg, CRT lebih dari 2 detik.',
+        );
       } else {
         addVitals(builder, random, bloodPressure(random), [38.2, 39.6]);
       }
       const platelets = `Trombosit ${random.int(45, 98)}.000/µL`;
-      builder.sentence(`${platelets}.`).finding('trombositopenia', platelets);
+      builder.sentence(`${platelets}.`);
       return builder;
     }
     case 'PNEUMONIA': {
       const cough = `batuk berdahak sejak ${symptomDays} hari`;
-      builder
-        .sentence(`Pasien datang dengan keluhan ${cough} disertai demam.`)
-        .finding('batuk berdahak', cough)
-        .finding('demam', 'disertai demam');
+      builder.sentence(`Pasien datang dengan keluhan ${cough} disertai demam.`);
       if (profile === 'GENUINE_RESP_FAILURE') {
         const saturation = `SpO2 ${random.int(82, 88)}%`;
-        builder
-          .sentence(`Sesak napas berat, desaturasi, ${saturation} udara ruang.`)
-          .finding('sesak napas', 'Sesak napas berat')
-          .finding('desaturasi', 'desaturasi')
-          .vital(
-            'saturasi oksigen',
-            saturation.replace('SpO2 ', ''),
-            saturation,
-          );
+        builder.sentence(
+          `Sesak napas berat, desaturasi, ${saturation} udara ruang.`,
+        );
       } else if (profile === 'EXAM_MANIPULATION') {
-        builder
-          .sentence('Sesak napas berat, ronki basah di kedua lapang paru.')
-          .finding('sesak napas', 'Sesak napas berat')
-          .finding('ronki basah', 'ronki basah');
+        builder.sentence(
+          'Sesak napas berat, ronki basah di kedua lapang paru.',
+        );
       } else if (profile === 'RESP_FAILURE_UPCODING') {
         const saturation = `SpO2 ${random.int(95, 98)}%`;
-        builder
-          .sentence(`Pasien tidak tampak sesak, ${saturation} udara ruang.`)
-          .finding('sesak napas', 'tidak tampak sesak', false)
-          .vital(
-            'saturasi oksigen',
-            saturation.replace('SpO2 ', ''),
-            saturation,
-          );
+        builder.sentence(
+          `Pasien tidak tampak sesak, ${saturation} udara ruang.`,
+        );
       } else {
         const crackles = random.pick([
           'ronki di paru kanan bawah',
           'ronki di paru kiri bawah',
         ]);
-        builder
-          .sentence(`Auskultasi: ${crackles}, sesak ringan.`)
-          .finding('ronki', crackles)
-          .finding('sesak ringan', 'sesak ringan');
+        builder.sentence(`Auskultasi: ${crackles}, sesak ringan.`);
       }
       addVitals(builder, random, bloodPressure(random), [37.8, 39.2]);
       return builder;
@@ -562,11 +426,7 @@ function buildExamNote(
         .sentence(
           `Pasien datang dengan ${diarrhea}, disertai muntah dan nyeri perut.`,
         )
-        .finding('diare cair', diarrhea)
-        .finding('muntah', 'muntah')
-        .finding('nyeri perut', 'nyeri perut')
-        .sentence('Turgor kulit menurun, mukosa bibir kering.')
-        .finding('dehidrasi', 'Turgor kulit menurun');
+        .sentence('Turgor kulit menurun, mukosa bibir kering.');
       addVitals(builder, random, bloodPressure(random), [37.4, 38.4]);
       return builder;
     }
@@ -576,10 +436,9 @@ function buildExamNote(
 function buildDailyNote(
   profile: ClaimProfile,
   random: Random,
-  observedAt: string,
   careDay: number,
 ): DocumentBuilder {
-  const builder = new DocumentBuilder(observedAt);
+  const builder = new DocumentBuilder();
   const disease = PROFILE_DETAILS[profile].disease;
   const isFirstNote = careDay === 1;
   builder.sentence(`Hari rawat ke-${careDay + 1}.`);
@@ -588,145 +447,92 @@ function buildDailyNote(
     const isStillCold =
       isFirstNote &&
       (profile === 'GENUINE_SHOCK' || profile === 'SHOCK_NONSTANDARD');
-    builder
-      .sentence(
-        isFirstNote
-          ? 'Demam mulai turun, nyeri otot berkurang.'
-          : 'Demam turun, nafsu makan membaik.',
-      )
-      .finding(
-        'demam turun',
-        isFirstNote ? 'Demam mulai turun' : 'Demam turun',
-      );
+    builder.sentence(
+      isFirstNote
+        ? 'Demam mulai turun, nyeri otot berkurang.'
+        : 'Demam turun, nafsu makan membaik.',
+    );
     if (isStillCold) {
-      builder
-        .sentence('Akral dingin berkurang.')
-        .finding('akral dingin', 'Akral dingin');
+      builder.sentence('Akral dingin berkurang.');
     } else {
-      builder.sentence('Akral hangat.').finding('akral hangat', 'Akral hangat');
+      builder.sentence('Akral hangat.');
     }
     const platelets = `Trombosit ${random.int(60 + careDay * 20, 110 + careDay * 25)}.000/µL`;
-    builder.sentence(`${platelets}.`).finding('trombosit', platelets);
+    builder.sentence(`${platelets}.`);
     addVitals(builder, random, bloodPressure(random), [36.6, 37.6]);
   } else if (disease === 'PNEUMONIA') {
     if (isFirstNote && profile === 'EXAM_MANIPULATION') {
-      builder
-        .sentence('Pasien tidak sesak, ronki minimal.')
-        .finding('sesak napas', 'Pasien tidak sesak', false);
+      builder.sentence('Pasien tidak sesak, ronki minimal.');
     } else if (isFirstNote && profile === 'GENUINE_RESP_FAILURE') {
-      builder
-        .sentence('Sesak napas masih ada, oksigen dilanjutkan.')
-        .finding('sesak napas', 'Sesak napas masih ada');
+      builder.sentence('Sesak napas masih ada, oksigen dilanjutkan.');
     } else {
-      builder
-        .sentence(
-          isFirstNote
-            ? 'Batuk masih ada, sesak berkurang.'
-            : 'Batuk berkurang, sesak tidak dikeluhkan.',
-        )
-        .finding('batuk', isFirstNote ? 'Batuk masih ada' : 'Batuk berkurang');
+      builder.sentence(
+        isFirstNote
+          ? 'Batuk masih ada, sesak berkurang.'
+          : 'Batuk berkurang, sesak tidak dikeluhkan.',
+      );
     }
     addVitals(builder, random, bloodPressure(random), [36.8, 37.8]);
   } else {
-    builder
-      .sentence(
-        isFirstNote
-          ? `Diare berkurang menjadi ${random.int(2, 4)} kali, muntah berkurang.`
-          : 'BAB lembek satu kali, toleransi minum baik.',
-      )
-      .finding(
-        isFirstNote ? 'diare berkurang' : 'BAB lembek',
-        isFirstNote ? 'Diare berkurang' : 'BAB lembek',
-      );
+    builder.sentence(
+      isFirstNote
+        ? `Diare berkurang menjadi ${random.int(2, 4)} kali, muntah berkurang.`
+        : 'BAB lembek satu kali, toleransi minum baik.',
+    );
     addVitals(builder, random, bloodPressure(random), [36.5, 37.4]);
   }
   return builder;
 }
 
-function buildPrescription(
-  profile: ClaimProfile,
-  observedAt: string,
-): DocumentBuilder {
-  const builder = new DocumentBuilder(observedAt);
+function buildPrescription(profile: ClaimProfile): DocumentBuilder {
+  const builder = new DocumentBuilder();
   switch (PROFILE_DETAILS[profile].disease) {
     case 'DBD':
-      return builder
-        .sentence('Infus RL 20 tetes/menit, parasetamol 3 x 500 mg per oral.')
-        .medication('infus RL', '20 tetes/menit', 'Infus RL 20 tetes/menit')
-        .medication('parasetamol', '3 x 500 mg', 'parasetamol 3 x 500 mg');
+      return builder.sentence(
+        'Infus RL 20 tetes/menit, parasetamol 3 x 500 mg per oral.',
+      );
     case 'PNEUMONIA':
-      builder
-        .sentence(
-          'Seftriakson 1 x 2 g IV, ambroksol 3 x 30 mg, parasetamol 3 x 500 mg.',
-        )
-        .medication('seftriakson', '1 x 2 g IV', 'Seftriakson 1 x 2 g IV')
-        .medication('ambroksol', '3 x 30 mg', 'ambroksol 3 x 30 mg')
-        .medication('parasetamol', '3 x 500 mg', 'parasetamol 3 x 500 mg');
+      builder.sentence(
+        'Seftriakson 1 x 2 g IV, ambroksol 3 x 30 mg, parasetamol 3 x 500 mg.',
+      );
       if (profile === 'GENUINE_RESP_FAILURE') {
-        builder
-          .sentence('Oksigen via masker non-rebreathing 10 lpm.')
-          .medication(
-            'oksigen',
-            '10 lpm',
-            'Oksigen via masker non-rebreathing 10 lpm',
-          );
+        builder.sentence('Oksigen via masker non-rebreathing 10 lpm.');
       } else if (profile === 'NORMAL_PNEUMONIA') {
-        builder
-          .sentence('Oksigen nasal kanul 2 lpm.')
-          .medication('oksigen', '2 lpm', 'Oksigen nasal kanul 2 lpm');
+        builder.sentence('Oksigen nasal kanul 2 lpm.');
       }
       return builder;
     case 'GASTROENTERITIS':
-      return builder
-        .sentence(
-          'Oralit setiap selesai BAB, zinc 1 x 20 mg, ondansetron 3 x 4 mg IV, infus RL 20 tetes/menit.',
-        )
-        .medication('oralit', null, 'Oralit setiap selesai BAB')
-        .medication('zinc', '1 x 20 mg', 'zinc 1 x 20 mg')
-        .medication('ondansetron', '3 x 4 mg IV', 'ondansetron 3 x 4 mg IV')
-        .medication('infus RL', '20 tetes/menit', 'infus RL 20 tetes/menit');
+      return builder.sentence(
+        'Oralit setiap selesai BAB, zinc 1 x 20 mg, ondansetron 3 x 4 mg IV, infus RL 20 tetes/menit.',
+      );
   }
 }
 
 function buildProcedureNote(
   profile: ClaimProfile,
   random: Random,
-  observedAt: string,
 ): DocumentBuilder | null {
-  const builder = new DocumentBuilder(observedAt);
+  const builder = new DocumentBuilder();
   if (profile === 'GENUINE_SHOCK') {
-    return builder
-      .sentence(
-        'Dilakukan resusitasi cairan dengan ringer laktat 20 ml/kgBB dalam 1 jam, dilanjutkan evaluasi hematokrit.',
-      )
-      .procedure(
-        'resusitasi cairan',
-        'resusitasi cairan dengan ringer laktat 20 ml/kgBB',
-      );
+    return builder.sentence(
+      'Dilakukan resusitasi cairan dengan ringer laktat 20 ml/kgBB dalam 1 jam, dilanjutkan evaluasi hematokrit.',
+    );
   }
   if (profile === 'SHOCK_NONSTANDARD') {
-    return builder
-      .sentence(
-        'Diberikan RL 20 cc/kgBB dalam 1 jam, evaluasi ulang tekanan darah tiap 15 menit.',
-      )
-      .procedure('pemberian RL', 'RL 20 cc/kgBB dalam 1 jam');
+    return builder.sentence(
+      'Diberikan RL 20 cc/kgBB dalam 1 jam, evaluasi ulang tekanan darah tiap 15 menit.',
+    );
   }
   const disease = PROFILE_DETAILS[profile].disease;
   if (disease === 'DBD') {
     const hematocrit = `Ht ${random.int(42, 47)}% menjadi ${random.int(38, 41)}%`;
-    return builder
-      .sentence(`Pemeriksaan hematokrit serial: ${hematocrit}.`)
-      .procedure(
-        'pemeriksaan hematokrit serial',
-        'Pemeriksaan hematokrit serial',
-      );
+    return builder.sentence(`Pemeriksaan hematokrit serial: ${hematocrit}.`);
   }
   if (disease === 'PNEUMONIA') {
     const side = random.pick(['kanan', 'kiri']);
-    return builder
-      .sentence(`Foto toraks: tampak infiltrat di lapang bawah paru ${side}.`)
-      .procedure('foto toraks', 'Foto toraks')
-      .finding('infiltrat', `infiltrat di lapang bawah paru ${side}`);
+    return builder.sentence(
+      `Foto toraks: tampak infiltrat di lapang bawah paru ${side}.`,
+    );
   }
   return null;
 }
@@ -734,48 +540,19 @@ function buildProcedureNote(
 function buildMedicalResume(
   diagnoses: DemoClaim['diagnoses'],
   random: Random,
-  observedAt: string,
 ): DocumentBuilder {
-  const builder = new DocumentBuilder(observedAt);
+  const builder = new DocumentBuilder();
   for (const diagnosis of diagnoses) {
     const label = `${diagnosis.name} (${diagnosis.icd10Code})`;
-    builder
-      .sentence(
-        `${diagnosis.isPrimary ? 'Diagnosis utama' : 'Diagnosis sekunder'}: ${label}.`,
-      )
-      .diagnosis(
-        { name: diagnosis.name, icd10Code: diagnosis.icd10Code },
-        label,
-      );
+    builder.sentence(
+      `${diagnosis.isPrimary ? 'Diagnosis utama' : 'Diagnosis sekunder'}: ${label}.`,
+    );
   }
   builder.sentence(
     `Kondisi saat pulang ${random.pick(['baik', 'membaik', 'stabil'])}, kontrol ke poliklinik ${random.int(3, 7)} hari lagi.`,
   );
   return builder;
 }
-
-function decideClaim(
-  profile: ClaimProfile,
-  random: Random,
-): DecisionAction | null {
-  if (random.chance(0.3)) return null;
-  if (profile === 'SHOCK_UPCODING' || profile === 'RESP_FAILURE_UPCODING') {
-    return random.chance(0.7) ? 'REQUEST_CLARIFICATION' : 'ESCALATE';
-  }
-  if (profile === 'EXAM_MANIPULATION') {
-    return random.chance(0.6) ? 'REQUEST_CLARIFICATION' : 'APPROVE';
-  }
-  return 'APPROVE';
-}
-
-export const DECISION_STATUS: Record<DecisionAction, ClaimStatus> = {
-  APPROVE: 'APPROVED',
-  REQUEST_CLARIFICATION: 'CLARIFICATION_REQUESTED',
-  ESCALATE: 'ESCALATED',
-};
-
-/** Claims admitted in the most recent window stay undecided, like a live queue. */
-const UNDECIDED_RECENT_DAYS = 30;
 
 export function generateDemoClaims(
   claimCount: number,
@@ -837,56 +614,27 @@ export function generateDemoClaims(
       random.pick([0, 15, 30, 45]),
     );
     const documents: DemoDocument[] = [
-      buildExamNote(profile, random, examTime.toISOString()).build(
-        'EXAM_NOTE',
-        examTime,
-      ),
+      buildExamNote(profile, random).build('EXAM_NOTE', examTime),
     ];
     const prescriptionTime = new Date(examTime.getTime() + 90 * 60 * 1000);
     documents.push(
-      buildPrescription(profile, prescriptionTime.toISOString()).build(
-        'PRESCRIPTION',
-        prescriptionTime,
-      ),
+      buildPrescription(profile).build('PRESCRIPTION', prescriptionTime),
     );
     const procedureTime = new Date(examTime.getTime() + 3 * 60 * 60 * 1000);
-    const procedureNote = buildProcedureNote(
-      profile,
-      random,
-      procedureTime.toISOString(),
-    );
+    const procedureNote = buildProcedureNote(profile, random);
     if (procedureNote)
       documents.push(procedureNote.build('PROCEDURE', procedureTime));
     const dailyNoteCount = Math.min(lengthOfStay - 1, 3);
     for (let careDay = 1; careDay <= dailyNoteCount; careDay += 1) {
       const noteTime = atJakartaTime(addDays(admittedAt, careDay), 8);
       documents.push(
-        buildDailyNote(profile, random, noteTime.toISOString(), careDay).build(
-          'DAILY_NOTE',
-          noteTime,
-        ),
+        buildDailyNote(profile, random, careDay).build('DAILY_NOTE', noteTime),
       );
     }
     const resumeTime = atJakartaTime(dischargedAt, 11);
     documents.push(
-      buildMedicalResume(diagnoses, random, resumeTime.toISOString()).build(
-        'MEDICAL_RESUME',
-        resumeTime,
-      ),
+      buildMedicalResume(diagnoses, random).build('MEDICAL_RESUME', resumeTime),
     );
-
-    const isRecent = admissionOffset > DATASET_DAY_SPAN - UNDECIDED_RECENT_DAYS;
-    const action = isRecent ? null : decideClaim(profile, random);
-    const decision = action
-      ? {
-          action,
-          reason: random.pick(REASONS[action]),
-          decidedAt: atJakartaTime(
-            addDays(dischargedAt, random.int(3, 14)),
-            random.int(9, 16),
-          ),
-        }
-      : null;
 
     return {
       claimNo: `${DEMO_CLAIM_NO_PREFIX}${sequence}`,
@@ -901,7 +649,6 @@ export function generateDemoClaims(
       injectedCase,
       diagnoses,
       documents,
-      decision,
     };
   });
 }

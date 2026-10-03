@@ -1,4 +1,4 @@
-import { ListOrdered } from 'lucide-react';
+import { LuListOrdered } from 'react-icons/lu';
 import {
   Empty,
   EmptyDescription,
@@ -35,7 +35,7 @@ export function ClaimQueueEmpty({
     <Empty className="rounded-xl border border-hairline bg-surface shadow-xs">
       <EmptyHeader>
         <EmptyMedia variant="icon" className="bg-subtle text-ink">
-          <ListOrdered />
+          <LuListOrdered />
         </EmptyMedia>
         <EmptyTitle className="text-ink">{title}</EmptyTitle>
         <EmptyDescription className="text-ink-secondary">

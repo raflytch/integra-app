@@ -19,6 +19,8 @@ export const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
   LLM_CONCURRENCY: z.coerce.number().int().positive().default(3),
+  /** Claims the AI reads per "Jalankan analisis" request (about 6 LLM calls each). */
+  ANALYSIS_BATCH_SIZE: z.coerce.number().int().positive().default(5),
 });
 
 export type Env = z.infer<typeof envSchema>;

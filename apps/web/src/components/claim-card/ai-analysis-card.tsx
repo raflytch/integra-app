@@ -1,11 +1,7 @@
-import {
-  Lightbulb,
-  type LucideIcon,
-  Scale,
-  Sparkles,
-  UserCheck,
-} from 'lucide-react';
+import type { IconType } from 'react-icons';
+import { LuLightbulb, LuScale, LuSparkles, LuUserCheck } from 'react-icons/lu';
 import { IntegraAiPill } from '@/components/claim-pills';
+import { AnalyzeClaimButton } from './analyze-claim-button';
 import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
 import { formatRupiah } from '@/lib/format';
 import type { ClaimDetail } from '@/types/claim.types';
@@ -27,7 +23,7 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
       headline: 'Rekam medis belum selesai dibaca AI',
       explanation: `${extractedDocumentCount} dari ${documentCount} dokumen sudah diekstraksi. Uji baru bisa menilai klaim setelah semua dokumen dibaca.`,
       suggestion:
-        'Jalankan analisis dari Antrean Klaim setelah ekstraksi selesai.',
+        'Klik Analisis dengan AI agar AI membaca rekam medis klaim ini dan aturan klinis mengujinya.',
     };
   }
 
@@ -36,8 +32,7 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
     return {
       headline: 'Belum ada tanda pada klaim ini',
       explanation: `${readingSentence} Aturan klinis belum menemukan bukti yang kurang, tidak konsisten, atau tersalin.`,
-      suggestion:
-        'Periksa ringkasan klaim, lalu putuskan. Jika analisis belum dijalankan, jalankan dari Antrean Klaim.',
+      suggestion: 'Periksa ringkasan klaim, lalu putuskan.',
     };
   }
 
@@ -73,19 +68,19 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
   };
 }
 
-const ANALYSIS_STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
+const ANALYSIS_STEPS: { icon: IconType; title: string; detail: string }[] = [
   {
-    icon: Sparkles,
+    icon: LuSparkles,
     title: 'AI membaca rekam medis',
     detail: 'Mengekstrak bukti beserta kutipan aslinya.',
   },
   {
-    icon: Scale,
+    icon: LuScale,
     title: 'Aturan klinis menilai',
     detail: 'Pedoman klinis yang bisa diaudit, bukan skor tanpa alasan.',
   },
   {
-    icon: UserCheck,
+    icon: LuUserCheck,
     title: 'Anda memutuskan',
     detail: 'Setujui, minta klarifikasi, atau eskalasi.',
   },
@@ -93,6 +88,9 @@ const ANALYSIS_STEPS: { icon: LucideIcon; title: string; detail: string }[] = [
 
 export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
   const { headline, explanation, suggestion } = describeAnalysis(claim);
+  const unreadDocumentCount = claim.documents.filter(
+    (document) => !document.isExtracted,
+  ).length;
 
   return (
     <section
@@ -110,8 +108,13 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         </h2>
         <p className="text-body text-ink-secondary">{explanation}</p>
       </div>
+      <AnalyzeClaimButton
+        claimId={claim.id}
+        claimNo={claim.claimNo}
+        unreadDocumentCount={unreadDocumentCount}
+      />
       <div className="flex gap-3 rounded-lg border border-hairline bg-canvas px-4 py-3">
-        <Lightbulb
+        <LuLightbulb
           className="mt-0.5 size-4 shrink-0 text-ink"
           aria-hidden="true"
         />

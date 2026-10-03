@@ -6,7 +6,7 @@ This npm-only monorepo contains `apps/api` (NestJS, TypeScript, Prisma, PostgreS
 
 ## Root commands
 
-Use root commands for normal work: `npm run dev` (both), `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run format:check`, `npm run prisma:generate`, `npm run prisma:migrate`, `npm run prisma:deploy`, `npm run prisma:studio`, `npm run prisma:validate`, `npm run llm:smoke` (two small paid calls to the configured LLM), and the free demo seeds `npm run seed` (`seed:users` then `seed:demo`), `npm run seed:demo -- --count=N`, and `npm run seed:fixture`. `npm run data:generate` makes paid LLM calls; run it only when asked. Prefer these over changing into a workspace. Use npm only: never pnpm, Yarn, or Bun.
+Use root commands for normal work: `npm run dev` (both), `npm run dev:client`, `npm run dev:server`, `npm run build`, `npm run lint`, `npm run typecheck`, `npm run format`, `npm run format:check`, `npm run prisma:generate`, `npm run prisma:migrate`, `npm run prisma:deploy`, `npm run prisma:studio`, `npm run prisma:validate`, `npm run llm:smoke` (two small paid calls to the configured LLM), and the free demo seeds `npm run seed` (`seed:users` then `seed:demo`), `npm run seed:demo -- --count=N`, and `npm run seed:fixture`. `seed:demo` stores raw, unextracted claims; the AI analysis (`POST /analysis/run` and `POST /analysis/claims/:id`) and `npm run data:generate` make paid LLM calls, so trigger them only when asked. Prefer these over changing into a workspace. Use npm only: never pnpm, Yarn, or Bun.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Shared ports are ready for injection: `PrismaService` (repositories only), `LlmC
 
 ## Frontend conventions
 
-App Router owns routing and layouts. Server Components are the default; add `use client` only for browser APIs, event handlers, React state, or client data libraries. The QueryClient provider is a small client boundary. Use the centralized Axios instance in `src/lib/api-client.ts` from future `services/`. `components/ui` contains official shadcn primitives; check those before building a custom primitive. `components` holds reusable application components, `hooks` reusable hooks, `providers` global React providers, and `types` frontend contracts when needed. Keep backend DTOs separate until sharing is justified.
+App Router owns routing and layouts. Server Components are the default; add `use client` only for browser APIs, event handlers, React state, or client data libraries. The QueryClient provider is a small client boundary. Use the centralized Axios instance in `src/lib/api-client.ts` from future `services/`. `components/ui` contains official shadcn primitives; check those before building a custom primitive. Icons come only from `react-icons/lu` (Lucide); swap `lucide-react` imports when adding a shadcn component. Data tables use `components/data-table` with the `useTableControls` hook for search, filters, sorting, and pagination. `components` holds reusable application components, `hooks` reusable hooks, `providers` global React providers, and `types` frontend contracts when needed. Keep backend DTOs separate until sharing is justified.
 
 Follow `apps/web/DESIGN.md` for every visual decision. Reuse its palette, typography, spacing, radius, and surface tokens; do not introduce arbitrary colors or spacing. Build accessible forms and keyboard controls. Prefer Skeleton for structured loading, plain recovery actions for errors, and concise empty states.
 

@@ -14,6 +14,9 @@ export interface ClaimQueueItem {
   potentialGap: number;
   priorityScore: number;
   findingCounts: Record<TestType, number>;
+  documentCount: number;
+  /** Documents already read by the AI; the claim is analyzed when it equals `documentCount`. */
+  extractedDocumentCount: number;
 }
 
 export interface ClaimQueueFilter {

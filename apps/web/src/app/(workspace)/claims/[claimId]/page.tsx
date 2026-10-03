@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { LuArrowLeft } from 'react-icons/lu';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ClaimCard } from '@/components/claim-card/claim-card';
@@ -18,7 +18,7 @@ export default async function ClaimCardPage({
         href="/claims"
         className="flex w-fit items-center gap-1 text-small text-ink-secondary hover:text-ink"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" />
+        <LuArrowLeft className="size-4" aria-hidden="true" />
         Antrean Klaim
       </Link>
       <ClaimCard claimId={claimId} />
