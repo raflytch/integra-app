@@ -60,6 +60,7 @@ export class PrismaClaimRepository extends ClaimRepository {
         tariffAmount: true,
         potentialGap: true,
         priorityScore: true,
+        analyzedAt: true,
         facility: { select: { id: true, name: true, type: true } },
         diagnoses: {
           where: { isPrimary: true },
@@ -148,6 +149,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       tariffAmount: claim.tariffAmount.toNumber(),
       potentialGap: claim.potentialGap.toNumber(),
       priorityScore: claim.priorityScore,
+      analyzedAt: claim.analyzedAt,
       facility: claim.facility,
       patient: claim.patient,
       diagnoses: claim.diagnoses,

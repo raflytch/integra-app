@@ -13,6 +13,8 @@ export interface ClaimQueueItem {
   tariffAmount: number;
   potentialGap: number;
   priorityScore: number;
+  /** When the AI analysis last completed; null while the claim is unanalyzed. */
+  analyzedAt: Date | null;
   findingCounts: Record<TestType, number>;
   documentCount: number;
   /** Documents already read by the AI; the claim is analyzed when it equals `documentCount`. */

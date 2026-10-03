@@ -6,6 +6,7 @@ export function presentClaimQueue(claimQueue: ClaimQueueItem[]) {
     ...claim,
     admittedAt: toDateOnly(claim.admittedAt),
     dischargedAt: toDateOnly(claim.dischargedAt),
+    analyzedAt: claim.analyzedAt?.toISOString() ?? null,
   }));
 }
 

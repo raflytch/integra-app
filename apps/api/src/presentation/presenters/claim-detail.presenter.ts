@@ -7,6 +7,7 @@ export function presentClaimDetail(claimDetail: ClaimDetail) {
     ...claimDetail,
     admittedAt: toDateOnly(claimDetail.admittedAt),
     dischargedAt: toDateOnly(claimDetail.dischargedAt),
+    analyzedAt: claimDetail.analyzedAt?.toISOString() ?? null,
     patient: {
       ...claimDetail.patient,
       birthDate: toDateOnly(claimDetail.patient.birthDate),

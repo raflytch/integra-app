@@ -73,6 +73,8 @@ export interface ClaimDetail {
   tariffAmount: number;
   potentialGap: number;
   priorityScore: number;
+  /** ISO timestamp of the last completed AI analysis; null while unanalyzed. */
+  analyzedAt: string | null;
   facility: {
     id: string;
     code: string;
@@ -106,6 +108,8 @@ export interface ClaimQueueItem {
   tariffAmount: number;
   potentialGap: number;
   priorityScore: number;
+  /** ISO timestamp of the last completed AI analysis; null while unanalyzed. */
+  analyzedAt: string | null;
   findingCounts: Record<TestType, number>;
   documentCount: number;
   extractedDocumentCount: number;

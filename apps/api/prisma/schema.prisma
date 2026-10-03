@@ -190,7 +190,9 @@ model Claim {
   potentialGap  Decimal        @default(0) @map("potential_gap") @db.Decimal(14, 2)
   /// Queue ordering score; higher is reviewed first. Zero until analysis runs.
   priorityScore Float          @default(0) @map("priority_score")
-  status        ClaimStatus    @default(PENDING)
+  /// When the detectors last evaluated the claim, after the AI read every document. Null until then.
+  analyzedAt    DateTime?      @map("analyzed_at") @db.Timestamptz(3)
+  status       ClaimStatus    @default(PENDING)
   /// Evaluation ground truth for synthetic data. Keep out of API responses.
   injectedCase  InjectedCase[] @default([]) @map("injected_case")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)

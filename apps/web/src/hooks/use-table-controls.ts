@@ -80,6 +80,8 @@ export function useTableControls<Row, SortKey extends string>({
     pageCount,
     firstRowIndex,
     pageRows: sortedRows.slice(firstRowIndex, firstRowIndex + pageSize),
+    /** Every row passing search and filters, in sort order, across all pages. */
+    matchingRows: sortedRows,
     matchingRowCount: sortedRows.length,
   };
 }

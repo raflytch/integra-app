@@ -43,7 +43,7 @@ Example: [`claim-detail.example.json`](claim-detail.example.json). Returns `404 
 
 ## `GET /claims` (M-07 antrean)
 
-Example: [`claim-list.example.json`](claim-list.example.json). Optional `?status=PENDING|APPROVED|CLARIFICATION_REQUESTED|ESCALATED`. Ordered by `priorityScore` descending, then `potentialGap` descending. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud". `documentCount` and `extractedDocumentCount` show AI progress: the claim is analyzed once they are equal.
+Example: [`claim-list.example.json`](claim-list.example.json). Optional `?status=PENDING|APPROVED|CLARIFICATION_REQUESTED|ESCALATED`. Ordered by `priorityScore` descending, then `potentialGap` descending. `findingCounts` drives the per-test badges; a claim with any finding is labelled "perlu klarifikasi", never "fraud". `documentCount` and `extractedDocumentCount` show how many documents the AI has read. `analyzedAt` is the ISO timestamp of the last completed analysis (every document extracted and the tests run), or `null` while the claim is unanalyzed; `GET /claims/:id` returns it too.
 
 ## `GET /facilities/summary` (M-10 Ringkasan Faskes)
 
@@ -65,12 +65,8 @@ Every endpoint except `GET /health`, `POST /auth/login`, and `POST /auth/logout`
 
 Body `{ action: APPROVE | REQUEST_CLARIFICATION | ESCALATE, reason }` with a trimmed reason of 10 to 1000 characters. `verifier_id` comes from the session, never the body. The claim status becomes `APPROVED`, `CLARIFICATION_REQUESTED`, or `ESCALATED` in the same transaction. Returns the decision in the `decisions` item shape.
 
-## `POST /analysis/run` (T21)
+## `POST /analysis/claims/:id` (T21)
 
-First runs M-03 extraction (paid LLM calls) on the next `ANALYSIS_BATCH_SIZE` claims (default 5) that still have unextracted documents, pending claims and newest admissions first. Then runs every available test over claims whose documents all have `extracted`, rewrites their findings, and recalculates `potential_gap` (sum of `tariffGap`) and `priority_score` (`0.7 × strongest finding strength + 0.3 × min(potentialGap / tariffAmount, 1)`). Returns `{ extractedDocumentCount, failedDocumentCount, analyzedClaimCount, flaggedClaimCount, findingCount, remainingClaimCount }`; call it again while `remainingClaimCount > 0`. Returns `503 EXTRACTION_UNAVAILABLE` when the LLM is misconfigured or every document in the batch failed.
-
-## `POST /analysis/claims/:id`
-
-Extracts the remaining documents of one claim, then runs the tests on it when every document is extracted. Returns `{ extractedDocumentCount, failedDocumentCount, isAnalyzed, findingCount, potentialGap }`; `isAnalyzed` is false while some documents still failed. `404 CLAIM_NOT_FOUND` for an unknown id and `503 EXTRACTION_UNAVAILABLE` as above.
+Runs M-03 extraction (paid LLM calls) on the claim's documents that are still unextracted, then, once every document is extracted, runs every available test on the claim, rewrites its findings, sets `analyzed_at` to now, and recalculates `potential_gap` (sum of `tariffGap`) and `priority_score` (`0.7 × strongest finding strength + 0.3 × min(potentialGap / tariffAmount, 1)`). A claim that is already extracted is only re-tested, without LLM calls. There is no bulk endpoint: the web app calls this once per claim the verifier selected, two at a time, so a run can be stopped between claims. Returns `{ extractedDocumentCount, failedDocumentCount, isAnalyzed, findingCount, potentialGap }`; `isAnalyzed` is false while some documents still failed. `404 CLAIM_NOT_FOUND` for an unknown id; `503 EXTRACTION_UNAVAILABLE` when the LLM is misconfigured or every remaining document failed.
 
 Uji Ada (M-04) rules: a secondary diagnosis is flagged when at least half of its `evidence_rules` are not found. A rule is found when an extracted item of the same evidence type contains `expected` (case-insensitive). `FINDING` only counts items with `isPresent: true`; `VITAL_SIGN` also matches present findings such as "hipotensi". Each flagged diagnosis lowers severity by one level, and `tariffGap` is the tariff difference between those levels from the `TariffSchedule` port.

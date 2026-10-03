@@ -150,7 +150,7 @@ async function main(): Promise<void> {
   ]);
 
   logger.log(
-    `Loaded ${fixture.claimNo} with extraction and ${FIXTURE_EVIDENCE_RULES.length} evidence rules. Run "Jalankan analisis" to create findings.`,
+    `Loaded ${fixture.claimNo} with extraction and ${FIXTURE_EVIDENCE_RULES.length} evidence rules. Select it in Antrean Klaim and click "Analisis AI" to create findings (no LLM call, it is already extracted).`,
   );
   await prisma.$disconnect();
   await app.close();

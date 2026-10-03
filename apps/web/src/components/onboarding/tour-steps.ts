@@ -36,11 +36,11 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'run-analysis',
     page: 'queue',
     target: 'run-analysis',
-    title: 'Jalankan analisis AI',
+    title: 'Analisis klaim pilihan dengan AI',
     description:
-      'AI membaca rekam medis klaim berikutnya yang belum dianalisis, lalu aturan klinis menguji buktinya dan menghitung ulang potensi selisih tarif serta urutan antrean. Klik lagi untuk melanjutkan klaim berikutnya.',
+      'Centang klaim, atau gunakan menu Pilih untuk halaman ini, beberapa klaim teratas, atau semua klaim di tabel, lalu klik Analisis AI. Tombol Analisis di setiap baris menganalisis satu klaim. AI hanya membaca klaim yang Anda pilih, karena setiap dokumen memakai token berbayar.',
     missingTargetDescription:
-      'Tombol Jalankan analisis AI ada di halaman Antrean Klaim. AI membaca rekam medis klaim yang belum dianalisis, lalu aturan klinis menguji buktinya.',
+      'Tombol Analisis AI ada di atas tabel Antrean Klaim. Pilih klaim terlebih dahulu; AI hanya membaca klaim yang Anda pilih.',
   },
   {
     id: 'queue-filter',

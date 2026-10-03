@@ -1,9 +1,15 @@
 import type { IconType } from 'react-icons';
-import { LuLightbulb, LuScale, LuSparkles, LuUserCheck } from 'react-icons/lu';
-import { IntegraAiPill } from '@/components/claim-pills';
+import {
+  LuClock,
+  LuLightbulb,
+  LuScale,
+  LuSparkles,
+  LuUserCheck,
+} from 'react-icons/lu';
+import { IntegraAiPill, Pill } from '@/components/claim-pills';
 import { AnalyzeClaimButton } from './analyze-claim-button';
 import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
-import { formatRupiah } from '@/lib/format';
+import { formatDateTime, formatRupiah } from '@/lib/format';
 import type { ClaimDetail } from '@/types/claim.types';
 
 interface AnalysisNarrative {
@@ -24,6 +30,15 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
       explanation: `${extractedDocumentCount} dari ${documentCount} dokumen sudah diekstraksi. Uji baru bisa menilai klaim setelah semua dokumen dibaca.`,
       suggestion:
         'Klik Analisis dengan AI agar AI membaca rekam medis klaim ini dan aturan klinis mengujinya.',
+    };
+  }
+
+  if (!claim.analyzedAt) {
+    return {
+      headline: 'Rekam medis sudah dibaca AI, uji belum dijalankan',
+      explanation: `Semua ${documentCount} dokumen sudah diekstraksi, tetapi aturan klinis belum menilai klaim ini.`,
+      suggestion:
+        'Klik Analisis dengan AI untuk menjalankan uji. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
     };
   }
 
@@ -96,10 +111,22 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
     <section
       aria-labelledby="ai-analysis-heading"
       data-tour="claim-ai-analysis"
-      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-6"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-6 shadow-xs"
     >
       <div className="flex flex-col items-start gap-2">
-        <IntegraAiPill />
+        <div className="flex flex-wrap items-center gap-2">
+          <IntegraAiPill />
+          {claim.analyzedAt ? (
+            <Pill tone="neutral" icon={LuClock}>
+              Dianalisis{' '}
+              <time dateTime={claim.analyzedAt}>
+                {formatDateTime(claim.analyzedAt)}
+              </time>
+            </Pill>
+          ) : (
+            <Pill tone="outline">Belum dianalisis AI</Pill>
+          )}
+        </div>
         <h2
           id="ai-analysis-heading"
           className="text-body font-semibold tracking-display text-ink"
@@ -112,6 +139,7 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         claimId={claim.id}
         claimNo={claim.claimNo}
         unreadDocumentCount={unreadDocumentCount}
+        isAnalyzed={claim.analyzedAt !== null}
       />
       <div className="flex gap-3 rounded-lg border border-hairline bg-canvas px-4 py-3">
         <LuLightbulb

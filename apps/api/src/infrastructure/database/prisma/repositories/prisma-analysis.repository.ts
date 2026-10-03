@@ -24,10 +24,6 @@ const CLAIM_EVIDENCE_FIELDS = {
   documents: { select: { id: true, extracted: true } },
 } satisfies Prisma.ClaimSelect;
 
-const AWAITING_EXTRACTION = {
-  documents: { some: { extracted: { equals: Prisma.DbNull } } },
-} satisfies Prisma.ClaimWhereInput;
-
 function toClaimEvidence({
   id,
   tariffAmount,
@@ -53,33 +49,12 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
     super();
   }
 
-  async findClaimsForAnalysis(): Promise<ClaimEvidence[]> {
-    const claims = await this.prisma.claim.findMany({
-      select: CLAIM_EVIDENCE_FIELDS,
-    });
-    return claims.map(toClaimEvidence);
-  }
-
   async findClaimEvidence(claimId: string): Promise<ClaimEvidence | null> {
     const claim = await this.prisma.claim.findUnique({
       where: { id: claimId },
       select: CLAIM_EVIDENCE_FIELDS,
     });
     return claim && toClaimEvidence(claim);
-  }
-
-  async findClaimIdsAwaitingExtraction(limit: number): Promise<string[]> {
-    const claims = await this.prisma.claim.findMany({
-      where: AWAITING_EXTRACTION,
-      orderBy: [{ status: 'asc' }, { admittedAt: 'desc' }],
-      take: limit,
-      select: { id: true },
-    });
-    return claims.map((claim) => claim.id);
-  }
-
-  countClaimsAwaitingExtraction(): Promise<number> {
-    return this.prisma.claim.count({ where: AWAITING_EXTRACTION });
   }
 
   findDocumentsToExtract(claimId: string): Promise<DocumentToExtract[]> {
@@ -138,7 +113,11 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
 
   async saveClaimScores(
     claimId: string,
-    scores: { potentialGap: number; priorityScore: number },
+    scores: {
+      potentialGap: number;
+      priorityScore: number;
+      analyzedAt: Date;
+    },
   ): Promise<void> {
     await this.prisma.claim.update({ where: { id: claimId }, data: scores });
   }

@@ -1,7 +1,7 @@
 /**
  * Seeds hundreds of raw, template-based demo claims without calling the LLM.
  * Documents stay unextracted and claims stay "Menunggu keputusan", so the AI
- * analysis ("Jalankan analisis" or "Analisis dengan AI" on a claim) and the
+ * analysis (claims selected in Antrean Klaim, or "Analisis dengan AI" on a claim) and the
  * verifier decisions happen in the app. Idempotent: it replaces only claims
  * numbered KLM-DEMO-* (with their findings and decisions) and their patients.
  *
@@ -169,7 +169,7 @@ async function main(): Promise<void> {
           .sort(([first], [second]) => first.localeCompare(second))
           .map(([profile, count]) => `  ${profile.padEnd(24)} ${count}`),
         `Dokumen   : ${claims.reduce((total, claim) => total + claim.documents.length, 0)}`,
-        'Jalankan analisis dari aplikasi; setiap dokumen dibaca AI (panggilan LLM berbayar).',
+        'Pilih klaim di Antrean Klaim lalu klik Analisis AI; setiap dokumen dibaca AI (panggilan LLM berbayar).',
       ].join('\n'),
     );
   } finally {

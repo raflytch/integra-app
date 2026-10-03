@@ -38,6 +38,7 @@ export class EvaluateClaimUseCase {
         potentialGap,
         claim.tariffAmount,
       ),
+      analyzedAt: new Date(),
     });
     return { findingCount: findingSignals.length, potentialGap };
   }

@@ -1,3 +1,6 @@
+/* Declared first so lottie-react's default 100% sizing ranks below Tailwind utilities. */
+@layer lottie-react;
+
 @import 'tailwindcss';
 
 /* Small, low-opacity shadow scale; borders still define every edge (DESIGN.md). */

@@ -4,7 +4,6 @@ import { LuSparkles } from 'react-icons/lu';
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -18,25 +17,18 @@ export interface AnalysisResultStat {
   value: string;
 }
 
-/** Short summary shown after an AI analysis run succeeds. */
+/** Short summary shown after an AI analysis run. Keep `stats` to an even count for the 2×2 grid. */
 export function AnalysisResultDialog({
   open,
   onOpenChange,
   summary,
   stats,
-  continueLabel,
-  onContinue,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   summary: string;
   stats: AnalysisResultStat[];
-  /** Offered when more claims still wait for the AI. */
-  continueLabel?: string;
-  onContinue?: () => void;
 }) {
-  const canContinue = Boolean(continueLabel && onContinue);
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -61,16 +53,7 @@ export function AnalysisResultDialog({
           ))}
         </dl>
         <AlertDialogFooter>
-          {canContinue ? (
-            <>
-              <AlertDialogCancel>Tutup</AlertDialogCancel>
-              <AlertDialogAction onClick={onContinue}>
-                {continueLabel}
-              </AlertDialogAction>
-            </>
-          ) : (
-            <AlertDialogAction>Tutup</AlertDialogAction>
-          )}
+          <AlertDialogAction>Tutup</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

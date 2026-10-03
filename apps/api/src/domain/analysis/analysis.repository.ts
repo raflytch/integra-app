@@ -9,11 +9,7 @@ import type {
 import type { ClinicalExtraction } from './clinical-extraction';
 
 export abstract class AnalysisRepository {
-  abstract findClaimsForAnalysis(): Promise<ClaimEvidence[]>;
   abstract findClaimEvidence(claimId: string): Promise<ClaimEvidence | null>;
-  /** Claims with at least one unextracted document, pending claims and newest admissions first. */
-  abstract findClaimIdsAwaitingExtraction(limit: number): Promise<string[]>;
-  abstract countClaimsAwaitingExtraction(): Promise<number>;
   abstract findDocumentsToExtract(
     claimId: string,
   ): Promise<DocumentToExtract[]>;
@@ -30,6 +26,10 @@ export abstract class AnalysisRepository {
   abstract findFindingSignals(claimId: string): Promise<FindingSignal[]>;
   abstract saveClaimScores(
     claimId: string,
-    scores: { potentialGap: number; priorityScore: number },
+    scores: {
+      potentialGap: number;
+      priorityScore: number;
+      analyzedAt: Date;
+    },
   ): Promise<void>;
 }
