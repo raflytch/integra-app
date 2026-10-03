@@ -19,6 +19,8 @@ export const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
   LLM_CONCURRENCY: z.coerce.number().int().positive().default(3),
+  /** Uji Bukan Salinan: minimum TF-IDF cosine similarity to flag a claim pair; calibrated with `npm run eval:similarity`. */
+  SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
 });
 
 export type Env = z.infer<typeof envSchema>;

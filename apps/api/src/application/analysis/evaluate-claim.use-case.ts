@@ -6,6 +6,7 @@ import type {
 import { calculatePriorityScore } from '../../domain/analysis/priority-score';
 import type { RunConsistencyTestUseCase } from './run-consistency-test.use-case';
 import type { RunExistenceTestUseCase } from './run-existence-test.use-case';
+import type { RunSimilarityTestUseCase } from './run-similarity-test.use-case';
 
 export interface ClaimEvaluation {
   findingCount: number;
@@ -18,6 +19,7 @@ export class EvaluateClaimUseCase {
     private readonly analysisRepository: AnalysisRepository,
     private readonly runExistenceTest: RunExistenceTestUseCase,
     private readonly runConsistencyTest: RunConsistencyTestUseCase,
+    private readonly runSimilarityTest: RunSimilarityTestUseCase,
   ) {}
 
   async execute(
@@ -26,6 +28,7 @@ export class EvaluateClaimUseCase {
   ): Promise<ClaimEvaluation> {
     await this.runExistenceTest.execute(claim, evidenceRules);
     await this.runConsistencyTest.execute(claim);
+    await this.runSimilarityTest.execute(claim);
 
     const findingSignals = await this.analysisRepository.findFindingSignals(
       claim.claimId,

@@ -6,6 +6,7 @@ import type {
   EvidenceRule,
   FindingSignal,
   NewFinding,
+  SimilarityCandidate,
 } from '../../../../domain/analysis/claim-evidence';
 import type { ClinicalExtraction } from '../../../../domain/analysis/clinical-extraction';
 import type { TestType } from '../../../../domain/claims/claim-detail';
@@ -98,6 +99,38 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
         guidelineRef: true,
       },
     });
+  }
+
+  async findSimilarityCandidates(
+    claim: ClaimEvidence,
+  ): Promise<SimilarityCandidate[]> {
+    const primaryCodes = claim.diagnoses
+      .filter((diagnosis) => diagnosis.isPrimary)
+      .map((diagnosis) => diagnosis.icd10Code);
+    if (primaryCodes.length === 0) return [];
+    const candidates = await this.prisma.claim.findMany({
+      where: {
+        id: { not: claim.claimId },
+        patientId: { not: claim.patientId },
+        diagnoses: {
+          some: { isPrimary: true, icd10Code: { in: primaryCodes } },
+        },
+      },
+      orderBy: { claimNo: 'asc' },
+      select: {
+        id: true,
+        claimNo: true,
+        patientId: true,
+        documents: {
+          orderBy: [{ type: 'asc' }, { recordedAt: 'asc' }],
+          select: { id: true, type: true, content: true },
+        },
+      },
+    });
+    return candidates.map(({ id, ...candidate }) => ({
+      ...candidate,
+      claimId: id,
+    }));
   }
 
   async replaceFindings(

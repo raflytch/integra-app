@@ -50,6 +50,15 @@ export function isFullyExtracted(claim: ClaimEvidence): boolean {
   );
 }
 
+/** Another claim compared by Uji Bukan Salinan; raw content only, extraction not needed. */
+export interface SimilarityCandidate {
+  claimId: string;
+  claimNo: string;
+  patientId: string;
+  /** Ordered by type, then `recordedAt`. */
+  documents: { id: string; type: DocumentType; content: string }[];
+}
+
 export interface DocumentToExtract {
   id: string;
   type: DocumentType;
