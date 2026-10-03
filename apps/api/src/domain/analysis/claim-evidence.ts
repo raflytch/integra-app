@@ -13,8 +13,22 @@ export interface EvidenceRule {
   guidelineRef: string;
 }
 
+export interface ClaimEvidenceDocument {
+  id: string;
+  type: DocumentType;
+  recordedAt: Date;
+  content: string;
+  extracted: ClinicalExtraction | null;
+}
+
 export interface ClaimEvidence {
   claimId: string;
+  claimNo: string;
+  patientId: string;
+  /** Date-only column, stored as UTC midnight. */
+  admittedAt: Date;
+  /** Date-only column, stored as UTC midnight. */
+  dischargedAt: Date;
   inacbgCode: string;
   severityLevel: number;
   tariffAmount: number;
@@ -24,7 +38,8 @@ export interface ClaimEvidence {
     name: string;
     isPrimary: boolean;
   }[];
-  documents: { id: string; extracted: ClinicalExtraction | null }[];
+  /** Ordered by `recordedAt` ascending. */
+  documents: ClaimEvidenceDocument[];
 }
 
 /** Detectors only judge a claim once the AI has read every document. */

@@ -15,13 +15,26 @@ import { parseClinicalExtraction } from './clinical-extraction.parser';
 
 const CLAIM_EVIDENCE_FIELDS = {
   id: true,
+  claimNo: true,
+  patientId: true,
+  admittedAt: true,
+  dischargedAt: true,
   inacbgCode: true,
   severityLevel: true,
   tariffAmount: true,
   diagnoses: {
     select: { id: true, icd10Code: true, name: true, isPrimary: true },
   },
-  documents: { select: { id: true, extracted: true } },
+  documents: {
+    orderBy: { recordedAt: 'asc' },
+    select: {
+      id: true,
+      type: true,
+      recordedAt: true,
+      content: true,
+      extracted: true,
+    },
+  },
 } satisfies Prisma.ClaimSelect;
 
 function toClaimEvidence({
@@ -36,9 +49,9 @@ function toClaimEvidence({
     ...claim,
     claimId: id,
     tariffAmount: tariffAmount.toNumber(),
-    documents: documents.map((document) => ({
-      id: document.id,
-      extracted: parseClinicalExtraction(document.extracted),
+    documents: documents.map(({ extracted, ...document }) => ({
+      ...document,
+      extracted: parseClinicalExtraction(extracted),
     })),
   };
 }
