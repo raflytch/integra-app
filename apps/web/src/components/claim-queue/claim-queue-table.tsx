@@ -395,7 +395,6 @@ export function ClaimQueueTable({ claims }: { claims: ClaimQueueItem[] }) {
               <TableRow
                 key={claim.id}
                 data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
-                data-tour-href={rowIndex === 0 ? claimHref : undefined}
                 data-state={isSelected ? 'selected' : undefined}
                 onClick={() => router.push(claimHref)}
                 className="cursor-pointer"

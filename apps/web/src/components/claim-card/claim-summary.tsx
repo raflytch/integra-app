@@ -85,10 +85,7 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           />
         </dl>
       </div>
-      <div
-        data-tour="claim-potential-gap"
-        className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72"
-      >
+      <div className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72">
         <div className="flex flex-col gap-1">
           <p className="text-caption text-ink-secondary">
             Potensi selisih tarif

@@ -5,7 +5,7 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import QRCode from 'qrcode';
-import type { UserRole } from '../src/domain/users/user';
+import { DEMO_ACCOUNTS } from '../src/domain/users/demo-accounts';
 import { type Env, validateEnv } from '../src/infrastructure/config/env.schema';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { AesGcmSecretCipher } from '../src/infrastructure/security/aes-gcm-secret-cipher';
@@ -14,18 +14,6 @@ import { OtplibTotpVerifier } from '../src/infrastructure/security/otplib-totp-v
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 /** Gitignored: each PNG holds a live TOTP secret. */
 const ENROLLMENT_QR_DIRECTORY = join(__dirname, '../.totp-qr');
-const DEMO_ACCOUNTS: { email: string; name: string; role: UserRole }[] = [
-  {
-    email: 'verifikator@integra.local',
-    name: 'Verifikator Demo',
-    role: 'VERIFIER',
-  },
-  {
-    email: 'supervisor@integra.local',
-    name: 'Supervisor Demo',
-    role: 'SUPERVISOR',
-  },
-];
 const PENDING_TOTP_SECRET = 'pending';
 const shouldRotateSecrets = process.argv.includes('--rotate');
 

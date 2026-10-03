@@ -4,11 +4,13 @@ import type { UserRepository } from '../../domain/users/user.repository';
 import type { SecretCipher } from '../ports/secret-cipher.port';
 import type { SessionTokenService } from '../ports/session-token.port';
 import type { TotpVerifier } from '../ports/totp-verifier.port';
+import type { DemoLoginPolicy } from './demo-login-policy';
 import { normalizeEmail } from './normalize-email';
 
 export interface LogInInput {
   email: string;
-  code: string;
+  /** Omitted only for demo accounts that `DemoLoginPolicy` lets in without one. */
+  code?: string;
 }
 
 export interface LogInResult {
@@ -22,6 +24,7 @@ export class LogInUseCase {
     private readonly secretCipher: SecretCipher,
     private readonly totpVerifier: TotpVerifier,
     private readonly sessionTokenService: SessionTokenService,
+    private readonly demoLoginPolicy: DemoLoginPolicy,
   ) {}
 
   async execute({ email, code }: LogInInput): Promise<LogInResult> {
@@ -29,6 +32,13 @@ export class LogInUseCase {
       normalizeEmail(email),
     );
     if (!credentials) throw new InvalidLoginError();
+
+    if (code === undefined) {
+      if (!this.demoLoginPolicy.allowsLoginWithoutCode(credentials.email)) {
+        throw new InvalidLoginError();
+      }
+      return this.startSession(credentials);
+    }
 
     const totpSecret = this.secretCipher.decrypt(
       credentials.totpSecretEnc,
@@ -47,6 +57,10 @@ export class LogInUseCase {
     );
     if (!isFirstUseOfCode) throw new InvalidLoginError();
 
+    return this.startSession(credentials);
+  }
+
+  private startSession(credentials: User): LogInResult {
     const user: User = {
       id: credentials.id,
       name: credentials.name,

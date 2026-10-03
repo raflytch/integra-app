@@ -36,7 +36,6 @@ export function ClaimQueue({
             selectedFilter && setQueueFilter(selectedFilter as QueueFilter)
           }
           aria-label="Filter status klaim"
-          data-tour="queue-filter"
           spacing={2}
           className="flex-wrap"
         >
