@@ -1,5 +1,5 @@
+import { isDemoAccount } from '../../domain/users/demo-accounts';
 import type { UserRepository } from '../../domain/users/user.repository';
-import type { DemoLoginPolicy } from './demo-login-policy';
 import { normalizeEmail } from './normalize-email';
 
 export interface EmailStatus {
@@ -9,19 +9,14 @@ export interface EmailStatus {
 }
 
 export class CheckEmailStatusUseCase {
-  constructor(
-    private readonly userRepository: UserRepository,
-    private readonly demoLoginPolicy: DemoLoginPolicy,
-  ) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   async execute(email: string): Promise<EmailStatus> {
     const normalizedEmail = normalizeEmail(email);
     const registered = await this.userRepository.existsByEmail(normalizedEmail);
     return {
       registered,
-      requiresCode:
-        !registered ||
-        !this.demoLoginPolicy.allowsLoginWithoutCode(normalizedEmail),
+      requiresCode: !registered || !isDemoAccount(normalizedEmail),
     };
   }
 }

@@ -55,11 +55,10 @@ export function OnboardingTour({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { hasCompletedOnboarding, markOnboardingCompleted } =
-    useOnboardingStatus();
+  const { isOnboardingSnoozed, snoozeOnboarding } = useOnboardingStatus();
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
-  const isTourOpen = isRestartRequested || !hasCompletedOnboarding;
+  const isTourOpen = isRestartRequested || !isOnboardingSnoozed;
   const activeStep = TOUR_STEPS[activeStepIndex];
   const isOnStepPage = !activeStep.page || pathname === QUEUE_PATH;
   const { targetRect, isTargetMissing } = useTourTarget(
@@ -73,7 +72,7 @@ export function OnboardingTour({
   }, [isTourOpen, activeStep.page, isOnStepPage, router]);
 
   function finishTour() {
-    markOnboardingCompleted();
+    snoozeOnboarding();
     onTourClosed();
     setActiveStepIndex(0);
   }
