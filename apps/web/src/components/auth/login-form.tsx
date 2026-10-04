@@ -101,11 +101,16 @@ function EmailStatusHint({ emailState }: { emailState: EmailState }) {
   return null;
 }
 
-export function LoginForm() {
+export function LoginForm({
+  email,
+  onEmailChange,
+}: {
+  email: string;
+  onEmailChange: (email: string) => void;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const [email, setEmail] = useState(() => searchParams.get('email') ?? '');
   const [hasLeftEmailField, setHasLeftEmailField] = useState(false);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isSignupPromptRequested, setIsSignupPromptRequested] = useState(false);
@@ -160,7 +165,7 @@ export function LoginForm() {
   const isCodeComplete = authenticatorCode.length === TOTP_CODE_LENGTH;
 
   function changeEmail(nextEmail: string) {
-    setEmail(nextEmail);
+    onEmailChange(nextEmail);
     setIsSignupPromptRequested(false);
   }
 
@@ -197,7 +202,7 @@ export function LoginForm() {
       <FieldGroup className="gap-6">
         <Field data-invalid={emailState === 'invalid'} data-tour="login-email">
           <FieldLabel htmlFor="login-email" className="text-small text-ink">
-            Email kerja
+            Email
           </FieldLabel>
           <InputGroup className="h-11">
             <InputGroupInput

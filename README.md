@@ -35,7 +35,7 @@ INTEGRA never accuses anyone of fraud. Its only label is "perlu klarifikasi" (ne
 Also included:
 
 - Passwordless sign-in with an email address and a TOTP code from an authenticator app. New users create their own account from the login page by scanning a QR code.
-- Interactive onboarding tours: the login guide (welcome, sign-in steps, copyable demo emails) opens on every visit to the login page; the review-flow tour covers the queue to a decision.
+- Interactive onboarding tours: the login guide (welcome, sign-in steps, one-click demo accounts that fill the email field) opens on every visit to the login page; the review-flow tour covers the queue to a decision.
 - Responsive layouts for phones, tablets, and desktops. Below 1024 px, tables become card lists and the sidebar becomes a slide-over sheet. On desktop, the sidebar collapses to an icon rail (Ctrl/⌘+B).
 
 The user interface is in Indonesian; code, API, and documentation are in English.

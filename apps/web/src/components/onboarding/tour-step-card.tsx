@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import type { ElementType } from 'react';
-import { CopyButton } from '@/components/copy-button';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TourStep } from './tour-steps';
@@ -15,6 +14,7 @@ export function TourStepCard({
   onSkip,
   onBack,
   onNext,
+  onSelectPoint,
 }: {
   step: TourStep;
   stepIndex: number;
@@ -25,6 +25,7 @@ export function TourStepCard({
   onSkip: () => void;
   onBack: () => void;
   onNext: () => void;
+  onSelectPoint?: (label: string) => void;
 }) {
   const isFirstStep = stepIndex === 0;
 
@@ -58,7 +59,7 @@ export function TourStepCard({
       {step.points && (
         <ul className="flex flex-col gap-1.5 rounded-lg border border-hairline bg-canvas px-4 py-3">
           {step.points.map((point) =>
-            point.copyable ? (
+            point.selectable && onSelectPoint ? (
               <li
                 key={point.label}
                 className="flex items-center justify-between gap-2 text-small text-ink-secondary"
@@ -69,7 +70,16 @@ export function TourStepCard({
                   </span>
                   {point.detail}
                 </span>
-                <CopyButton value={point.label} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => onSelectPoint(point.label)}
+                  aria-label={`Pakai akun ${point.label}`}
+                >
+                  Pakai akun ini
+                </Button>
               </li>
             ) : (
               <li key={point.label} className="text-small text-ink-secondary">

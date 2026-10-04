@@ -7,8 +7,8 @@ export interface TourStep {
   missingTargetDescription?: string;
   page?: TourPage;
   target?: string;
-  /** `copyable` adds a copy button for values the user types, such as demo emails. */
-  points?: { label: string; detail: string; copyable?: boolean }[];
+  /** `selectable` adds a button that hands the label to the tour, such as a demo email. */
+  points?: { label: string; detail: string; selectable?: boolean }[];
   nextLabel?: string;
   advancesOnTargetClick?: boolean;
   showsLogo?: boolean;
