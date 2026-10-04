@@ -44,7 +44,7 @@ The user interface is in Indonesian; code, API, and documentation are in English
 
 ![INTEGRA high-level architecture](docs/architecture/high-level-architecture.svg)
 
-The diagram shows the clients, the production stack (Caddy, Next.js, NestJS, PostgreSQL), the external LLM provider, the claim review flow, and CI/CD. A PNG copy is in [docs/architecture](docs/architecture/high-level-architecture.png).
+The diagram shows the users, the production stack (Caddy, Next.js, NestJS, PostgreSQL), the Qwen LLM, and CI/CD. A PNG copy is in [docs/architecture](docs/architecture/high-level-architecture.png).
 
 An npm-workspaces monorepo with no shared packages:
 
