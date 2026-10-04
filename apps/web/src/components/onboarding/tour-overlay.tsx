@@ -55,6 +55,7 @@ export function TourOverlay({
   onSkip,
   onBack,
   onNext,
+  onSelectPoint,
 }: {
   step: TourStep;
   stepIndex: number;
@@ -64,6 +65,7 @@ export function TourOverlay({
   onSkip: () => void;
   onBack: () => void;
   onNext: () => void;
+  onSelectPoint?: (label: string) => void;
 }) {
   const stepCardProps = {
     step,
@@ -72,6 +74,7 @@ export function TourOverlay({
     onSkip,
     onBack,
     onNext,
+    onSelectPoint,
   };
 
   if (!step.target || isTargetMissing) {

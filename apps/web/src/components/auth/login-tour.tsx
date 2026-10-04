@@ -18,7 +18,7 @@ const LOGIN_TOUR_STEPS: TourStep[] = [
   {
     id: 'login-email',
     target: 'login-email',
-    title: 'Masukkan email kerja',
+    title: 'Masukkan email',
     description:
       'INTEGRA langsung memeriksa akun Anda. Jika email belum terdaftar, Anda ditawari membuat akun baru dan menghubungkan aplikasi authenticator.',
   },
@@ -35,17 +35,17 @@ const LOGIN_TOUR_STEPS: TourStep[] = [
     id: 'login-demo',
     title: 'Coba dengan akun demo',
     description:
-      'Belum punya akun? Salin salah satu email demo berikut, tempel di kolom email, lalu klik Masuk tanpa kode authenticator.',
+      'Belum punya akun? Pilih Pakai akun ini pada salah satu akun demo berikut. Emailnya langsung terisi, lalu klik Masuk tanpa kode authenticator.',
     points: [
       {
         label: 'verifikator@integra.local',
         detail: 'Antrean klaim, analisis AI, dan keputusan.',
-        copyable: true,
+        selectable: true,
       },
       {
         label: 'supervisor@integra.local',
         detail: 'Ditambah Ikhtisar, Eskalasi, dan Ringkasan Faskes.',
-        copyable: true,
+        selectable: true,
       },
     ],
     nextLabel: 'Mulai',
@@ -57,8 +57,15 @@ function subscribeToNothing() {
   return () => {};
 }
 
-/** Four-step login guide, opened on every visit to the login page. */
-export function LoginTour() {
+/**
+ * Four-step login guide, opened on every visit to the login page. Choosing a
+ * demo account fills the email field and closes the guide.
+ */
+export function LoginTour({
+  onUseDemoAccount,
+}: {
+  onUseDemoAccount: (email: string) => void;
+}) {
   const [isTourOpen, setIsTourOpen] = useState(true);
   // The overlay measures the window, so it only renders after hydration.
   const isHydrated = useSyncExternalStore(
@@ -82,6 +89,11 @@ export function LoginTour() {
     setActiveStepIndex(0);
   }
 
+  function selectDemoAccount(email: string) {
+    onUseDemoAccount(email);
+    finishTour();
+  }
+
   return (
     <>
       <Button
@@ -102,6 +114,7 @@ export function LoginTour() {
           targetRect={targetRect}
           isTargetMissing={isTargetMissing}
           onSkip={finishTour}
+          onSelectPoint={selectDemoAccount}
           onBack={() => setActiveStepIndex(Math.max(activeStepIndex - 1, 0))}
           onNext={() =>
             activeStepIndex === FINAL_STEP_INDEX
