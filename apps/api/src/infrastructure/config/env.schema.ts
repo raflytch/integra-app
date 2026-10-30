@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+/** A blank value counts as unset, so `.env` can keep the key empty. */
+const optionalPrice = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.coerce.number().nonnegative().optional(),
+);
+
 /** Environment contract. The app refuses to start when it is not satisfied. */
 export const envSchema = z.object({
   DATABASE_URL: z.url(),
@@ -21,6 +27,10 @@ export const envSchema = z.object({
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).default(2),
   LLM_CONCURRENCY: z.coerce.number().int().positive().default(3),
+  /** Rupiah per 1M LLM input tokens, for the cost estimate on Penggunaan AI. Unset hides the estimate. */
+  LLM_INPUT_PRICE_PER_MTOK_IDR: optionalPrice,
+  /** Rupiah per 1M LLM output tokens. Set together with the input price. */
+  LLM_OUTPUT_PRICE_PER_MTOK_IDR: optionalPrice,
   /** Uji Bukan Salinan: minimum TF-IDF cosine similarity to flag a claim pair; calibrated with `npm run eval:similarity`. */
   SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
 });

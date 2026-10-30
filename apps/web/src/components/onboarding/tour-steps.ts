@@ -30,7 +30,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'main-nav',
     title: 'Menu utama',
     description:
-      'Antrean Klaim dan Impor Klaim untuk verifikator. Ikhtisar, Eskalasi, dan Ringkasan Faskes untuk supervisor. Buka panduan ini lagi kapan saja lewat menu Panduan.',
+      'Antrean Klaim dan Impor Klaim untuk verifikator. Dashboard, Eskalasi, Ringkasan Faskes, dan Penggunaan AI untuk supervisor. Buka panduan ini lagi kapan saja lewat menu Panduan.',
     missingTargetDescription:
       'Buka menu di kiri atas untuk berpindah halaman. Panduan ini bisa dibuka lagi lewat menu Panduan.',
   },
