@@ -7,7 +7,6 @@ import {
   LuUserCheck,
 } from 'react-icons/lu';
 import { IntegraAiPill, Pill } from '@/components/claim-pills';
-import { AnalyzeClaimButton } from './analyze-claim-button';
 import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
 import { formatDateTime, formatRupiah } from '@/lib/format';
 import type { ClaimDetail } from '@/types/claim.types';
@@ -29,7 +28,7 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
       headline: 'Rekam medis belum selesai dibaca AI',
       explanation: `${extractedDocumentCount} dari ${documentCount} dokumen sudah diekstraksi. Uji baru bisa menilai klaim setelah semua dokumen dibaca.`,
       suggestion:
-        'Klik Analisis dengan AI agar AI membaca rekam medis klaim ini dan aturan klinis mengujinya.',
+        'Klik Analisis pada baris klaim ini di Antrean Klaim agar AI membaca rekam medisnya dan aturan klinis mengujinya.',
     };
   }
 
@@ -38,7 +37,7 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
       headline: 'Rekam medis sudah dibaca AI, uji belum dijalankan',
       explanation: `Semua ${documentCount} dokumen sudah diekstraksi, tetapi aturan klinis belum menilai klaim ini.`,
       suggestion:
-        'Klik Analisis dengan AI untuk menjalankan uji. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
+        'Klik Analisis pada baris klaim ini di Antrean Klaim untuk menjalankan uji. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
     };
   }
 
@@ -103,9 +102,6 @@ const ANALYSIS_STEPS: { icon: IconType; title: string; detail: string }[] = [
 
 export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
   const { headline, explanation, suggestion } = describeAnalysis(claim);
-  const unreadDocumentCount = claim.documents.filter(
-    (document) => !document.isExtracted,
-  ).length;
 
   return (
     <section
@@ -135,12 +131,6 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         </h2>
         <p className="text-body text-ink-secondary">{explanation}</p>
       </div>
-      <AnalyzeClaimButton
-        claimId={claim.id}
-        claimNo={claim.claimNo}
-        unreadDocumentCount={unreadDocumentCount}
-        isAnalyzed={claim.analyzedAt !== null}
-      />
       <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary-wash px-4 py-3">
         <LuLightbulb
           className="mt-0.5 size-4 shrink-0 text-primary-hover"
