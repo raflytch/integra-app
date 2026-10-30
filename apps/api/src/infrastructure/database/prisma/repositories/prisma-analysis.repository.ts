@@ -8,7 +8,10 @@ import type {
   NewFinding,
   SimilarityCandidate,
 } from '../../../../domain/analysis/claim-evidence';
-import type { ClinicalExtraction } from '../../../../domain/analysis/clinical-extraction';
+import type {
+  ClinicalExtraction,
+  ExtractionSource,
+} from '../../../../domain/analysis/clinical-extraction';
 import type { TestType } from '../../../../domain/claims/claim-detail';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
@@ -82,10 +85,15 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
   async saveExtraction(
     documentId: string,
     extraction: ClinicalExtraction,
+    source: ExtractionSource,
   ): Promise<void> {
     await this.prisma.clinicalDocument.update({
       where: { id: documentId },
-      data: { extracted: extraction as unknown as Prisma.InputJsonObject },
+      data: {
+        extracted: extraction as unknown as Prisma.InputJsonObject,
+        extractedModel: source.model,
+        extractionPromptVersion: source.promptVersion,
+      },
     });
   }
 

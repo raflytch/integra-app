@@ -27,6 +27,8 @@ interface AnalysisRunSummary {
   extractedDocumentCount: number;
   failedDocumentCount: number;
   potentialGap: number;
+  /** Input plus output LLM tokens of every successful extraction. */
+  tokenCount: number;
   unfinishedClaimCount: number;
   stopReason: 'COMPLETED' | 'STOPPED' | 'AI_UNAVAILABLE';
 }
@@ -105,6 +107,7 @@ export function useClaimAnalysisRunner({
       extractedDocumentCount: 0,
       failedDocumentCount: 0,
       potentialGap: 0,
+      tokenCount: 0,
       unfinishedClaimCount: 0,
       stopReason: 'COMPLETED',
     };
@@ -122,6 +125,8 @@ export function useClaimAnalysisRunner({
           const result = await analyzeClaim(target.id);
           runSummary.extractedDocumentCount += result.extractedDocumentCount;
           runSummary.failedDocumentCount += result.failedDocumentCount;
+          runSummary.tokenCount +=
+            result.tokenUsage.inputTokens + result.tokenUsage.outputTokens;
           if (result.isAnalyzed) {
             runSummary.analyzedClaimCount += 1;
             runSummary.potentialGap += result.potentialGap;
@@ -205,6 +210,11 @@ export function useClaimAnalysisRunner({
           open={phase === 'SHOWING_RESULT'}
           onOpenChange={(open) => !open && setPhase('IDLE')}
           summary={describeRun(summary)}
+          footnote={
+            summary.tokenCount > 0
+              ? `${formatCount(summary.tokenCount)} token AI terpakai`
+              : undefined
+          }
           stats={[
             {
               label: 'Klaim dianalisis',

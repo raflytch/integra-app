@@ -16,6 +16,12 @@ function listTerms(terms: readonly string[]): string {
   return terms.join(', ');
 }
 
+/**
+ * Saved with every extraction so evidence stays traceable to the prompt that
+ * produced it. Bump it whenever the prompt or the output schema changes.
+ */
+export const EXTRACTION_PROMPT_VERSION = 'extraction/v1';
+
 export const EXTRACTION_SYSTEM_PROMPT = [
   'You extract clinical evidence from one Indonesian inpatient medical record document for a claim verification system.',
   'Rules:',

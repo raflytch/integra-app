@@ -23,11 +23,14 @@ export function AnalysisResultDialog({
   onOpenChange,
   summary,
   stats,
+  footnote,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   summary: string;
   stats: AnalysisResultStat[];
+  /** One caption line under the grid, e.g. the AI tokens the run used. */
+  footnote?: string;
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -52,6 +55,9 @@ export function AnalysisResultDialog({
             </div>
           ))}
         </dl>
+        {footnote && (
+          <p className="text-caption text-ink-secondary">{footnote}</p>
+        )}
         <AlertDialogFooter>
           <AlertDialogAction>Tutup</AlertDialogAction>
         </AlertDialogFooter>
