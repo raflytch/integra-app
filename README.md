@@ -23,14 +23,14 @@ INTEGRA never accuses anyone of fraud. Its only label is "perlu klarifikasi" (ne
 
 ## Features
 
-| Page                                    | Roles                | Contents                                                                                                                                                         |
-| --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Antrean Klaim** (claim queue)         | Verifier, supervisor | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and AI analysis of selected rows or the whole page             |
-| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel                                  |
-| **Impor Klaim** (claim import)          | Verifier, supervisor | Upload a file of up to 2 MB or 200 claims, preview validation, then import. Files not in `integra-claims/v1` format are reshaped by the AI after the user agrees |
-| **Ikhtisar** (overview)                 | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, computed by the API                                        |
-| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                                             |
-| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                                              |
+| Page                                    | Roles                | Contents                                                                                                                                             |
+| --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Antrean Klaim** (claim queue)         | Verifier, supervisor | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and AI analysis of selected rows or the whole page |
+| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel                      |
+| **Impor Klaim** (claim import)          | Verifier, supervisor | Upload a file of up to 2 MB, preview validation, then import. Files not in `integra-claims/v1` format are reshaped by the AI after the user agrees   |
+| **Ikhtisar** (overview)                 | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, computed by the API                            |
+| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                                 |
+| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                                  |
 
 Also included:
 

@@ -3,12 +3,8 @@ import {
   ImportAiUnavailableError,
   ImportFileTooLargeError,
   ImportNeedsAiError,
-  ImportTooManyClaimsError,
 } from '../../domain/imports/claim-import.errors';
-import {
-  MAX_IMPORT_CLAIMS,
-  MAX_IMPORT_FILE_BYTES,
-} from '../../domain/imports/imported-claim';
+import { MAX_IMPORT_FILE_BYTES } from '../../domain/imports/imported-claim';
 import type { LlmClient } from '../ports/llm-client.port';
 import { LlmConfigurationError, LlmError } from '../ports/llm.errors';
 import {
@@ -107,9 +103,6 @@ export class PreviewClaimImportUseCase {
     const parsedJson = parseJsonContent(content);
     const canonicalFile = claimImportFileSchema.safeParse(parsedJson);
     if (canonicalFile.success) {
-      if (canonicalFile.data.claims.length > MAX_IMPORT_CLAIMS) {
-        throw new ImportTooManyClaimsError();
-      }
       return this.buildPreview(
         'CANONICAL',
         canonicalFile.data.claims.map(checkClaim),
@@ -119,9 +112,6 @@ export class PreviewClaimImportUseCase {
     const chunks = splitImportFile(fileName, content, parsedJson);
     if (!allowAi) throw new ImportNeedsAiError(chunks.length);
     const checkedClaims = await this.normalizeWithAi(fileName, chunks);
-    if (checkedClaims.length > MAX_IMPORT_CLAIMS) {
-      throw new ImportTooManyClaimsError();
-    }
     return this.buildPreview('AI_NORMALIZED', checkedClaims);
   }
 

@@ -54,8 +54,6 @@ export function readImportNeedsAi(error: unknown): number | null {
 
 const IMPORT_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   IMPORT_FILE_TOO_LARGE: 'Ukuran file melebihi 2 MB.',
-  IMPORT_TOO_MANY_CLAIMS:
-    'File berisi lebih dari 200 klaim. Pecah file lalu impor bertahap.',
   IMPORT_AI_UNAVAILABLE:
     'AI tidak dapat menyesuaikan file saat ini. Coba lagi nanti atau gunakan format INTEGRA.',
   INVALID_IMPORT_REQUEST: 'Isi file tidak dapat dibaca.',

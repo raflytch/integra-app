@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import {
-  type ImportedClaim,
-  MAX_IMPORT_CLAIMS,
-} from '../../domain/imports/imported-claim';
+import type { ImportedClaim } from '../../domain/imports/imported-claim';
 
 export const CLAIM_IMPORT_FORMAT = 'integra-claims/v1';
 
@@ -114,7 +111,7 @@ export type PreviewClaimImportInput = z.infer<
 >;
 
 export const importClaimsInputSchema = z.object({
-  claims: z.array(canonicalClaimSchema).min(1).max(MAX_IMPORT_CLAIMS),
+  claims: z.array(canonicalClaimSchema).min(1),
 });
 
 const FIELD_LABELS: Readonly<Record<string, string>> = {

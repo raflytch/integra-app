@@ -36,8 +36,7 @@ export function ImportFilePicker({
           1. Pilih file
         </h2>
         <p className="text-small text-ink-secondary">
-          File .json, .csv, atau .txt berukuran maksimal 2 MB dan berisi paling
-          banyak 200 klaim.
+          File .json, .csv, atau .txt berukuran maksimal 2 MB.
         </p>
       </div>
       <div className="flex flex-col gap-2">
