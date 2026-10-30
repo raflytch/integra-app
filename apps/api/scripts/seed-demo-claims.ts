@@ -22,6 +22,7 @@ import {
   generateDemoClaims,
 } from './synthetic/demo-claims';
 import { EVIDENCE_RULES } from './synthetic/scenarios';
+import { upsertEvidenceRules } from './synthetic/upsert-evidence-rules';
 
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 300;
@@ -79,19 +80,7 @@ async function main(): Promise<void> {
       });
       facilityIdByCode.set(facility.code, id);
     }
-    for (const evidenceRule of EVIDENCE_RULES) {
-      await prisma.evidenceRule.upsert({
-        where: {
-          icd10Code_evidenceType_expected: {
-            icd10Code: evidenceRule.icd10Code,
-            evidenceType: evidenceRule.evidenceType,
-            expected: evidenceRule.expected,
-          },
-        },
-        create: evidenceRule,
-        update: { guidelineRef: evidenceRule.guidelineRef },
-      });
-    }
+    await upsertEvidenceRules(prisma, EVIDENCE_RULES);
 
     const demoClaimFilter = { claimNo: { startsWith: DEMO_CLAIM_NO_PREFIX } };
     await prisma.$transaction(
