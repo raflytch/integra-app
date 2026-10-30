@@ -1,3 +1,6 @@
+'use client';
+
+import type { ReactNode } from 'react';
 import {
   ClaimStatusPill,
   FacilityTypePill,
@@ -5,6 +8,8 @@ import {
   PriorityPill,
   SeverityPill,
 } from '@/components/claim-pills';
+import { PatientDataToggle } from '@/components/patient-data-toggle';
+import { usePatientDataVisibility } from '@/hooks/use-patient-data-visibility';
 import { GENDER_LABELS } from '@/lib/claim-labels';
 import {
   calculateAgeInYears,
@@ -12,27 +17,32 @@ import {
   formatDate,
   formatRupiah,
 } from '@/lib/format';
+import { maskIdentifier, maskPersonName } from '@/lib/pii';
 import type { ClaimDetail } from '@/types/claim.types';
 
 function SummaryItem({
   label,
   value,
   detail,
+  action,
 }: {
   label: string;
   value: string;
   detail: string;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <dt className="text-caption text-ink-secondary">{label}</dt>
       <dd className="truncate font-medium text-ink">{value}</dd>
       <dd className="truncate text-caption text-ink-secondary">{detail}</dd>
+      {action && <dd className="-ml-2 pt-1">{action}</dd>}
     </div>
   );
 }
 
 export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
+  const { isPatientDataVisible } = usePatientDataVisibility();
   const primaryDiagnosis = claim.diagnoses.find(
     (diagnosis) => diagnosis.isPrimary,
   );
@@ -75,8 +85,17 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           />
           <SummaryItem
             label="Pasien"
-            value={claim.patient.name}
-            detail={`${claim.patient.medicalRecordNo} · ${GENDER_LABELS[claim.patient.gender]} · ${patientAge} tahun`}
+            value={
+              isPatientDataVisible
+                ? claim.patient.name
+                : maskPersonName(claim.patient.name)
+            }
+            detail={`${
+              isPatientDataVisible
+                ? claim.patient.medicalRecordNo
+                : maskIdentifier(claim.patient.medicalRecordNo)
+            } · ${GENDER_LABELS[claim.patient.gender]} · ${patientAge} tahun`}
+            action={<PatientDataToggle />}
           />
           <SummaryItem
             label="Rawat inap"
