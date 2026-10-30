@@ -18,7 +18,7 @@ import {
   SeverityPill,
   TestSignalPill,
 } from '@/components/claim-pills';
-import { ClaimSelectionBar } from '@/components/claim-queue/claim-selection-bar';
+import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -33,7 +33,6 @@ import {
 } from '@/components/data-table/table-toolbar';
 import { LoadError } from '@/components/load-error';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -64,7 +63,7 @@ import type {
 import { ClaimQueueEmpty, ClaimQueueSkeleton } from './claim-queue-states';
 
 const CLAIMS_PER_PAGE = 10;
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 8;
 const ALL = 'ALL';
 
 type AnalysisFilter = typeof ALL | 'ANALYZED' | 'NOT_ANALYZED';
@@ -158,20 +157,9 @@ function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
   );
 }
 
-function PotentialGap({
-  claim,
-  align,
-}: {
-  claim: ClaimQueueItem;
-  align: 'start' | 'end';
-}) {
+function PotentialGap({ claim }: { claim: ClaimQueueItem }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-0.5',
-        align === 'end' ? 'items-end' : 'items-start',
-      )}
-    >
+    <div className="flex flex-col items-start gap-0.5">
       <span className="font-medium text-ink tabular-nums">
         {formatRupiah(claim.potentialGap)}
       </span>
@@ -234,12 +222,7 @@ export function ClaimQueueTable({
   const [analysisFilter, setAnalysisFilter] = useState<AnalysisFilter>(ALL);
   const [signalFilter, setSignalFilter] = useState<SignalFilter>(ALL);
   const table = useServerTableControls({ initialSort: INITIAL_CLAIM_SORT });
-  const [selectedClaimIds, setSelectedClaimIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  const analysisRunner = useClaimAnalysisRunner({
-    onFinished: () => setSelectedClaimIds(new Set()),
-  });
+  const analysisRunner = useClaimAnalysisRunner();
 
   const queueParams: ClaimQueueParams = {
     status,
@@ -298,20 +281,6 @@ export function ClaimQueueTable({
   ) {
     table.setPageIndex(pageCount - 1);
   }
-  // Selection only counts on the visible page, so one run covers at most one page.
-  const selectedClaims = claims.filter((claim) =>
-    selectedClaimIds.has(claim.id),
-  );
-  const pageSelectionState =
-    selectedClaims.length === 0
-      ? false
-      : selectedClaims.length === claims.length
-        ? true
-        : 'indeterminate';
-  const unreadDocumentCount = selectedClaims.reduce(
-    (total, claim) => total + toAnalysisTarget(claim).unreadDocumentCount,
-    0,
-  );
   const facilityOptions: FilterOption<string>[] = [
     { value: ALL, label: 'Semua' },
     ...(facilityOptionsQuery.data ?? []).map((facility) => ({
@@ -353,34 +322,6 @@ export function ClaimQueueTable({
     analysisRunner.requestAnalysis([toAnalysisTarget(claim)]);
   }
 
-  function toggleClaimSelection(claimId: string, isSelected: boolean) {
-    setSelectedClaimIds((currentIds) => {
-      const nextIds = new Set(currentIds);
-      if (isSelected) nextIds.add(claimId);
-      else nextIds.delete(claimId);
-      return nextIds;
-    });
-  }
-
-  function selectPage(isSelected: boolean) {
-    setSelectedClaimIds(
-      new Set(isSelected ? claims.map((claim) => claim.id) : []),
-    );
-  }
-
-  function renderSelectionCheckbox(claim: ClaimQueueItem) {
-    return (
-      <Checkbox
-        checked={selectedClaimIds.has(claim.id)}
-        onCheckedChange={(checked) =>
-          toggleClaimSelection(claim.id, checked === true)
-        }
-        onClick={(event) => event.stopPropagation()}
-        aria-label={`Pilih ${claim.claimNo}`}
-      />
-    );
-  }
-
   return (
     <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-xs">
       <TableToolbar>
@@ -419,42 +360,18 @@ export function ClaimQueueTable({
           onChange={table.setSort}
         />
       </TableToolbar>
-      <ClaimSelectionBar
-        pageClaimCount={claims.length}
-        selectedCount={selectedClaims.length}
-        unreadDocumentCount={unreadDocumentCount}
-        pageSelectionState={pageSelectionState}
-        isRunning={analysisRunner.isRunning}
-        onSelectPage={selectPage}
-        onAnalyze={() =>
-          analysisRunner.requestAnalysis(selectedClaims.map(toAnalysisTarget))
-        }
-      />
       <div
         aria-busy={claimQueueQuery.isPlaceholderData}
         className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
       >
         <div className="hidden lg:block">
-          {/* Nine columns: 12px side padding lets them fit from 1280px wide. */}
+          {/* Eight columns: 12px side padding lets them fit from 1280px wide. */}
           <Table className="[&_td]:px-3 [&_th]:px-3">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-10 pr-0">
-                  <Checkbox
-                    checked={pageSelectionState}
-                    onCheckedChange={(checked) => selectPage(checked === true)}
-                    disabled={claims.length === 0}
-                    aria-label="Pilih semua klaim di halaman ini"
-                  />
+                <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
+                  No
                 </TableHead>
-                <SortableTableHead
-                  sortKey="priority"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                  className="w-12"
-                >
-                  #
-                </SortableTableHead>
                 <SortableTableHead
                   sortKey="claimNo"
                   sort={table.sort}
@@ -473,6 +390,7 @@ export function ClaimQueueTable({
                   sortKey="admittedAt"
                   sort={table.sort}
                   onSort={table.toggleSort}
+                  className={CENTERED_COLUMN_CLASS_NAME}
                 >
                   Rawat inap
                 </SortableTableHead>
@@ -487,7 +405,6 @@ export function ClaimQueueTable({
                   sortKey="potentialGap"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  align="right"
                 >
                   Potensi selisih
                 </SortableTableHead>
@@ -498,7 +415,12 @@ export function ClaimQueueTable({
                 >
                   Status
                 </SortableTableHead>
-                <TableHead className="text-right">Aksi</TableHead>
+                <TableHead
+                  data-tour="run-analysis"
+                  className={CENTERED_COLUMN_CLASS_NAME}
+                >
+                  Aksi
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -516,16 +438,15 @@ export function ClaimQueueTable({
                     key={claim.id}
                     data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
                     data-tour-href={rowIndex === 0 ? claimHref : undefined}
-                    data-state={
-                      selectedClaimIds.has(claim.id) ? 'selected' : undefined
-                    }
                     onClick={() => router.push(claimHref)}
                     className="cursor-pointer"
                   >
-                    <TableCell className="w-10 pr-0 align-top">
-                      {renderSelectionCheckbox(claim)}
-                    </TableCell>
-                    <TableCell className="align-top font-mono text-caption text-ink-secondary tabular-nums">
+                    <TableCell
+                      className={cn(
+                        'align-top font-mono text-caption text-ink-secondary tabular-nums',
+                        CENTERED_COLUMN_CLASS_NAME,
+                      )}
+                    >
                       {rowIndex + 1}
                     </TableCell>
                     <TableCell className="min-w-36 align-top whitespace-normal">
@@ -533,7 +454,7 @@ export function ClaimQueueTable({
                         <Link
                           href={claimHref}
                           onClick={(event) => event.stopPropagation()}
-                          className="font-mono text-caption text-primary-hover hover:underline"
+                          className="font-mono text-caption whitespace-nowrap text-primary-hover hover:underline"
                         >
                           {claim.claimNo}
                         </Link>
@@ -552,7 +473,9 @@ export function ClaimQueueTable({
                         <FacilityTypePill facilityType={claim.facility.type} />
                       </div>
                     </TableCell>
-                    <TableCell className="align-top">
+                    <TableCell
+                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
+                    >
                       <div className="flex flex-col gap-0.5">
                         <span className="text-ink">
                           {formatDate(claim.admittedAt)}
@@ -569,13 +492,15 @@ export function ClaimQueueTable({
                     <TableCell className="align-top">
                       <FindingSignals claim={claim} />
                     </TableCell>
-                    <TableCell className="text-right align-top">
-                      <PotentialGap claim={claim} align="end" />
+                    <TableCell className="align-top">
+                      <PotentialGap claim={claim} />
                     </TableCell>
                     <TableCell className="align-top">
                       <ClaimStatusPill status={claim.status} />
                     </TableCell>
-                    <TableCell className="text-right align-top">
+                    <TableCell
+                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
+                    >
                       <AnalysisAction
                         claim={claim}
                         isAnalysisRunning={analysisRunner.isRunning}
@@ -602,15 +527,11 @@ export function ClaimQueueTable({
                 key={claim.id}
                 data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
                 data-tour-href={rowIndex === 0 ? claimHref : undefined}
-                data-state={
-                  selectedClaimIds.has(claim.id) ? 'selected' : undefined
-                }
                 onClick={() => router.push(claimHref)}
-                className="flex cursor-pointer flex-col gap-3 p-4 hover:bg-subtle data-[state=selected]:bg-primary-wash"
+                className="flex cursor-pointer flex-col gap-3 p-4 hover:bg-subtle"
               >
                 <div className="flex flex-col items-start gap-1">
                   <div className="flex w-full items-start gap-2">
-                    {renderSelectionCheckbox(claim)}
                     <Link
                       href={claimHref}
                       onClick={(event) => event.stopPropagation()}
@@ -644,7 +565,7 @@ export function ClaimQueueTable({
                 </div>
                 <FindingSignals claim={claim} />
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <PotentialGap claim={claim} align="start" />
+                  <PotentialGap claim={claim} />
                   <AnalysisAction
                     claim={claim}
                     isAnalysisRunning={analysisRunner.isRunning}

@@ -14,6 +14,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const DESTRUCTIVE_ACTION_CLASS_NAME =
+  'border-error-ink bg-error-ink text-white hover:bg-error-ink/90';
+
 /** Yes/no confirmation before an action that costs money or ends the session. */
 export function ConfirmDialog({
   open,
@@ -24,6 +27,7 @@ export function ConfirmDialog({
   children,
   confirmLabel,
   cancelLabel = 'Tidak',
+  isDestructive = false,
   onConfirm,
 }: {
   open: boolean;
@@ -34,6 +38,7 @@ export function ConfirmDialog({
   children?: ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
+  isDestructive?: boolean;
   onConfirm: () => void;
 }) {
   return (
@@ -49,7 +54,13 @@ export function ConfirmDialog({
         {children}
         <AlertDialogFooter>
           <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>
+          <AlertDialogAction
+            variant={isDestructive ? 'destructive' : 'default'}
+            className={
+              isDestructive ? DESTRUCTIVE_ACTION_CLASS_NAME : undefined
+            }
+            onClick={onConfirm}
+          >
             {confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>

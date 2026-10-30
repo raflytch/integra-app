@@ -77,12 +77,7 @@ function describeRun(summary: AnalysisRunSummary): string {
  * Confirm, run, and report AI analysis for the claims a verifier picked.
  * Render `dialogs` once in the calling component.
  */
-export function useClaimAnalysisRunner({
-  onFinished,
-}: {
-  /** Runs after a confirmed run ends, e.g. to clear a table selection. */
-  onFinished?: () => void;
-} = {}) {
+export function useClaimAnalysisRunner() {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<RunPhase>('IDLE');
   const [targets, setTargets] = useState<AnalysisTarget[]>([]);
@@ -167,7 +162,6 @@ export function useClaimAnalysisRunner({
     ]);
     setSummary(runSummary);
     setPhase('SHOWING_RESULT');
-    onFinished?.();
   }
 
   function stopAnalysis() {

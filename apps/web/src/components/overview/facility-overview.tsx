@@ -79,7 +79,7 @@ function chartHeight(rowCount: number): number {
 }
 
 /** Charts show at most this many facilities, largest potential gap first. */
-const CHARTED_FACILITY_LIMIT = 100;
+const CHARTED_FACILITY_LIMIT = 10;
 
 const CHARTED_FACILITY_PARAMS: FacilitySummaryParams = {
   sortBy: 'totalPotentialGap',
@@ -176,7 +176,7 @@ function FacilityOverview({
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartPanel
           title="Klaim dan tanda per faskes"
-          description="Jumlah klaim yang diajukan dibanding klaim yang perlu klarifikasi."
+          description="10 faskes dengan potensi selisih terbesar: klaim diajukan dibanding klaim yang perlu klarifikasi."
         >
           <ChartContainer
             config={CLAIM_CHART_CONFIG}
@@ -235,7 +235,7 @@ function FacilityOverview({
 
         <ChartPanel
           title="Potensi selisih per faskes"
-          description="Rupiah yang dapat dikoreksi jika diagnosis tanpa bukti dikeluarkan."
+          description="10 faskes teratas, dalam rupiah yang dapat dikoreksi jika diagnosis tanpa bukti dikeluarkan."
         >
           <ChartContainer
             config={GAP_CHART_CONFIG}
@@ -291,7 +291,7 @@ function FacilityOverview({
 
         <ChartPanel
           title="Tanda per jenis uji"
-          description="Jumlah tanda dari setiap uji, per faskes."
+          description="Jumlah tanda dari setiap uji, untuk 10 faskes yang sama."
           className="lg:col-span-2"
         >
           <ChartContainer

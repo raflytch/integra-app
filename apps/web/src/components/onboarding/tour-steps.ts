@@ -38,11 +38,11 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'run-analysis',
     page: 'queue',
     target: 'run-analysis',
-    title: 'Pilih klaim, lalu analisis dengan AI',
+    title: 'Analisis klaim dengan AI',
     description:
-      'Centang beberapa klaim, atau centang kotak di kepala tabel untuk memilih semua klaim di halaman ini, lalu klik Analisis AI. Tombol Analisis di setiap baris menganalisis satu klaim. AI hanya membaca klaim yang Anda pilih, karena setiap dokumen memakai token berbayar.',
+      'Klik Analisis di kolom Aksi untuk menganalisis satu klaim. Klaim yang sudah dianalisis menampilkan tanggal analisisnya. AI hanya membaca klaim yang Anda pilih satu per satu, karena setiap dokumen memakai token berbayar.',
     missingTargetDescription:
-      'Tombol Analisis AI ada di atas tabel Antrean Klaim. AI hanya membaca klaim yang Anda pilih.',
+      'Tombol Analisis ada di setiap baris Antrean Klaim. AI hanya membaca klaim yang Anda pilih satu per satu.',
   },
   {
     id: OPEN_FIRST_CLAIM_STEP_ID,
@@ -64,7 +64,7 @@ export const TOUR_STEPS: TourStep[] = [
     description:
       'AI membaca rekam medis dan mengekstrak buktinya, lalu aturan klinis menilai. Ringkasan ini menjelaskan temuan dan langkah berikutnya. Potensi selisih tarif di atas kartu menunjukkan dampak finansialnya.',
     missingTargetDescription:
-      'Ringkasan AI muncul di Kartu Klaim. Jika klaim belum dianalisis, klik Analisis dengan AI.',
+      'Ringkasan AI muncul di Kartu Klaim. Jika klaim belum dianalisis, klik Analisis pada barisnya di Antrean Klaim.',
   },
   {
     id: 'claim-test-panels',

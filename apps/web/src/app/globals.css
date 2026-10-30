@@ -52,6 +52,8 @@
   --color-warning-ink: #b45309;
   --color-error: #ef4444;
   --color-error-ink: #b91c1c;
+  --color-info: #3b82f6;
+  --color-info-ink: #1d4ed8;
 }
 
 @theme inline {
@@ -104,13 +106,14 @@
   --input: #e8e8ec;
   --ring: #00736b;
   --radius: 0.375rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0a0a0a;
+  --sidebar: #132e2d;
+  --sidebar-bottom: #0c5c55;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: #00736b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f4f4f5;
-  --sidebar-accent-foreground: #0a0a0a;
-  --sidebar-border: #e8e8ec;
+  --sidebar-accent: rgb(255 255 255 / 0.12);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.12);
   --sidebar-ring: #00736b;
 }
 
@@ -142,6 +145,9 @@
   }
   html {
     -webkit-font-smoothing: antialiased;
+  }
+  [data-sidebar='sidebar'] {
+    background-image: linear-gradient(var(--sidebar), var(--sidebar-bottom));
   }
   body {
     background: var(--background);

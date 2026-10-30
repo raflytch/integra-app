@@ -1,6 +1,6 @@
 # Deployment
 
-Production runs on a single Ubuntu 24.04 VPS with Docker Compose. GitHub Actions verifies every pull request and, on each push to `main`, builds the images, pushes them to GitHub Container Registry (GHCR), and restarts the stack on the VPS over SSH.
+Production runs on a single Ubuntu 24.04 VPS with Docker Compose. On each push to `main`, GitHub Actions verifies the code, builds the images, pushes them to GitHub Container Registry (GHCR), and restarts the stack on the VPS over SSH.
 
 ```
 Internet ──80/443──► caddy (automatic HTTPS for integraa.site)
@@ -10,13 +10,13 @@ Internet ──80/443──► caddy (automatic HTTPS for integraa.site)
                      migrate: `prisma migrate deploy`, runs before api on every `up`
 ```
 
-| File                          | Purpose                                                            |
-| ----------------------------- | ------------------------------------------------------------------ |
-| `Dockerfile`                  | One multi-stage build with targets `api`, `web`, and `migrate`     |
-| `deploy/docker-compose.yml`   | Production stack; uploaded to `/opt/integra` by the workflow       |
-| `deploy/Caddyfile`            | Reverse proxy and TLS                                              |
-| `deploy/.env.example`         | Template for `/opt/integra/.env`, which exists only on the VPS     |
-| `.github/workflows/ci-cd.yml` | `verify` (PRs and `main`), then `build` and `deploy` (`main` only) |
+| File                          | Purpose                                                        |
+| ----------------------------- | -------------------------------------------------------------- |
+| `Dockerfile`                  | One multi-stage build with targets `api`, `web`, and `migrate` |
+| `deploy/docker-compose.yml`   | Production stack; uploaded to `/opt/integra` by the workflow   |
+| `deploy/Caddyfile`            | Reverse proxy and TLS                                          |
+| `deploy/.env.example`         | Template for `/opt/integra/.env`, which exists only on the VPS |
+| `.github/workflows/ci-cd.yml` | `verify`, `build`, and `deploy`, on `main` only                |
 
 The web app is built with `NEXT_PUBLIC_API_URL=/api`, so the browser calls the API on the same origin. The session cookie is `Secure` in production, so the app must be served over HTTPS; plain `http://<ip>` cannot log in.
 
