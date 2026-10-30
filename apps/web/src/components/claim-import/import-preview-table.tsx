@@ -16,6 +16,7 @@ import {
   TableSortSelect,
   TableToolbar,
 } from '@/components/data-table/table-toolbar';
+import { PatientDataToggle } from '@/components/patient-data-toggle';
 import {
   Table,
   TableBody,
@@ -24,8 +25,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { usePatientDataVisibility } from '@/hooks/use-patient-data-visibility';
 import { useTableControls } from '@/hooks/use-table-controls';
 import { formatDate } from '@/lib/format';
+import { maskPersonName } from '@/lib/pii';
 import type { ClaimPreviewRow, ClaimPreviewStatus } from '@/types/import.types';
 
 const ROWS_PER_PAGE = 10;
@@ -118,6 +121,9 @@ export function ImportPreviewStatusPill({
 
 export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL);
+  const { isPatientDataVisible } = usePatientDataVisibility();
+  const displayPatientName = (name: string) =>
+    isPatientDataVisible ? name : maskPersonName(name);
   const table = useTableControls({
     rows: rows.filter(
       (row) => statusFilter === ALL || row.status === statusFilter,
@@ -155,6 +161,9 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
           options={PREVIEW_SORT_OPTIONS}
           onChange={table.setSort}
         />
+        <div className="sm:ml-auto">
+          <PatientDataToggle />
+        </div>
       </TableToolbar>
       <div className="hidden lg:block">
         <Table>
@@ -218,8 +227,8 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                         {row.claim.facility.name}
                       </span>
                       <span className="text-caption text-ink-secondary">
-                        {row.claim.patient.name} · {row.claim.documents.length}{' '}
-                        dokumen
+                        {displayPatientName(row.claim.patient.name)} ·{' '}
+                        {row.claim.documents.length} dokumen
                       </span>
                     </div>
                   ) : (
@@ -267,8 +276,8 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                   {row.claim.facility.name}
                 </span>
                 <span className="text-caption text-ink-secondary">
-                  {row.claim.patient.name} · {row.claim.documents.length}{' '}
-                  dokumen · {formatAdmission(row)}
+                  {displayPatientName(row.claim.patient.name)} ·{' '}
+                  {row.claim.documents.length} dokumen · {formatAdmission(row)}
                 </span>
               </div>
             )}
