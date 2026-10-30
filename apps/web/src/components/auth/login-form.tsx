@@ -136,7 +136,9 @@ export function LoginForm({
     mutationFn: logIn,
     onSuccess: (currentUser) => {
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, currentUser);
-      router.replace(toSafeReturnPath(searchParams.get('next')));
+      router.replace(
+        toSafeReturnPath(searchParams.get('next'), currentUser.role),
+      );
     },
     onError: () => setAuthenticatorCode(''),
   });

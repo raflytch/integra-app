@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ClaimOverview } from '@/components/overview/claim-overview';
+import { DeleteAllClaimsButton } from '@/components/overview/delete-all-claims-button';
 import { FacilityOverviewPanel } from '@/components/overview/facility-overview';
 import { PageHeader } from '@/components/page-header';
 
@@ -29,6 +30,7 @@ export default function OverviewPage() {
       <PageHeader
         title="Dashboard"
         description="Gambaran eksekutif antrean, hasil analisis AI, keputusan verifikator, dan pola per faskes."
+        action={<DeleteAllClaimsButton />}
       />
       <OverviewSection title="Klaim">
         <ClaimOverview />

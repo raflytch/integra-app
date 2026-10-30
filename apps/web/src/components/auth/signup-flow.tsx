@@ -202,7 +202,9 @@ export function SignupFlow() {
     mutationFn: confirmEnrollment,
     onSuccess: (currentUser) => {
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, currentUser);
-      router.replace(toSafeReturnPath(searchParams.get('next')));
+      router.replace(
+        toSafeReturnPath(searchParams.get('next'), currentUser.role),
+      );
     },
     onError: (error) => {
       setAuthenticatorCode('');

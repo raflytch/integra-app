@@ -23,20 +23,20 @@ INTEGRA never accuses anyone of fraud. Its only label is "perlu klarifikasi" (ne
 
 ## Features
 
-| Page                                    | Roles                | Contents                                                                                                                                             |
-| --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Antrean Klaim** (claim queue)         | Verifier, supervisor | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and AI analysis of selected rows or the whole page |
-| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel                      |
-| **Impor Klaim** (claim import)          | Verifier, supervisor | Upload a file of any size, preview validation, then import. Files not in `integra-claims/v1` format are reshaped by the AI after the user agrees     |
-| **Dashboard** (overview)                | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, computed by the API                            |
-| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                                 |
-| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                                  |
-| **Penggunaan AI** (AI usage)            | Supervisor           | LLM tokens and estimated rupiah cost of document extraction: totals, the last 30 days, and a server-paginated table per claim with the model used    |
+| Page                                    | Roles                | Contents                                                                                                                                          |
+| --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Antrean Klaim** (claim queue)         | Verifier             | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and an Analisis button that analyzes one claim  |
+| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel                   |
+| **Impor Klaim** (claim import)          | Verifier             | Upload a file of any size, preview validation, then import. Files not in `integra-claims/v1` format are reshaped by the AI after the user agrees  |
+| **Dashboard** (overview)                | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, plus the Hapus semua klaim reset            |
+| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                              |
+| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                               |
+| **Penggunaan AI** (AI usage)            | Supervisor           | LLM tokens and estimated rupiah cost of document extraction: totals, the last 30 days, and a server-paginated table per claim with the model used |
 
 Also included:
 
 - Passwordless sign-in with an email address and a TOTP code from an authenticator app. New users create their own account from the login page by scanning a QR code.
-- Interactive onboarding tours: the login guide (welcome, sign-in steps, one-click demo accounts that fill the email field) opens on every visit to the login page; the review-flow tour covers the queue to a decision.
+- Interactive onboarding tours: the login guide (welcome, sign-in steps, one-click demo accounts that fill the email field) opens on every visit to the login page; the review-flow tour covers the queue to a decision for verifiers. After sign-in, verifiers land on Antrean Klaim and supervisors on Dashboard.
 - Responsive layouts for phones, tablets, and desktops. Below 1024 px, tables become card lists and the sidebar becomes a slide-over sheet. On desktop, the sidebar collapses to an icon rail (Ctrl/⌘+B).
 
 The user interface is in Indonesian; code, API, and documentation are in English.
