@@ -75,9 +75,9 @@ const MENU_GROUPS: MenuGroup[] = [
   },
 ];
 
-/** The 2px green bar marks the active page; DESIGN.md allows green there. */
+/** The 2px white bar marks the active page on the dark sidebar gradient. */
 const MENU_BUTTON_CLASS_NAME =
-  'relative h-9 text-sm font-medium text-ink-secondary before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity before:duration-200 hover:bg-subtle hover:text-ink data-[active=true]:bg-primary-wash data-[active=true]:text-primary-hover data-[active=true]:before:opacity-100 [&>svg]:text-current';
+  'relative h-9 text-sm font-medium text-sidebar-foreground before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-full before:bg-sidebar-foreground before:opacity-0 before:transition-opacity before:duration-200 hover:bg-sidebar-accent data-[active=true]:bg-sidebar-accent data-[active=true]:before:opacity-100 [&>svg]:text-current';
 
 function toInitials(name: string): string {
   return name
@@ -115,41 +115,41 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-hairline">
-      <SidebarHeader className="border-b border-hairline p-3 group-data-[collapsible=icon]:px-2">
+    <Sidebar collapsible="icon" className="border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:px-2">
         <Link
           href="/claims"
           onClick={closeMobileSheet}
-          className="flex items-center gap-2.5 overflow-hidden rounded-md"
+          className="flex items-center justify-center gap-2.5 overflow-hidden rounded-md"
         >
           <Image
-            src="/integra-mark.png"
-            alt=""
+            src="/integra-mark-white.png"
+            alt="INTEGRA"
             width={32}
             height={32}
             priority
-            className="size-8 shrink-0"
+            className="hidden size-8 shrink-0 group-data-[collapsible=icon]:block"
           />
-          <span className="flex flex-col whitespace-nowrap">
-            <span className="font-display text-base leading-tight font-semibold tracking-display text-ink">
-              INTEGRA
-            </span>
-            <span className="text-caption text-ink-secondary">
-              Detect with evidence
-            </span>
-          </span>
+          <Image
+            src="/integra-logo-white.png"
+            alt="INTEGRA, Detect with evidence. Decide with integrity."
+            width={480}
+            height={133}
+            priority
+            className="h-10 w-auto group-data-[collapsible=icon]:hidden"
+          />
         </Link>
       </SidebarHeader>
       <SidebarContent data-tour="main-nav" className="py-2">
         {currentUserQuery.isPending ? (
           <div className="flex flex-col gap-2 p-3">
-            <Skeleton className="h-9 bg-subtle" />
-            <Skeleton className="h-9 bg-subtle" />
+            <Skeleton className="h-9 bg-sidebar-accent" />
+            <Skeleton className="h-9 bg-sidebar-accent" />
           </div>
         ) : (
           visibleMenuGroups.map((menuGroup) => (
             <SidebarGroup key={menuGroup.label}>
-              <SidebarGroupLabel className="text-overline font-medium tracking-wider text-ink-secondary uppercase">
+              <SidebarGroupLabel className="text-overline font-medium tracking-wider text-sidebar-foreground uppercase">
                 {menuGroup.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -175,11 +175,11 @@ export function AppSidebar() {
           ))
         )}
       </SidebarContent>
-      <SidebarFooter className="gap-2 border-t border-hairline p-3 group-data-[collapsible=icon]:px-2">
+      <SidebarFooter className="gap-2 border-t border-sidebar-border p-3 group-data-[collapsible=icon]:px-2">
         {currentUser && (
           <div
             title={isCollapsed ? currentUser.name : undefined}
-            className="flex items-center gap-2.5 overflow-hidden rounded-lg border border-hairline bg-canvas p-2 transition-[padding,background-color,border-color] duration-300 ease-out group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 motion-reduce:transition-none"
+            className="flex items-center gap-2.5 overflow-hidden rounded-lg border border-sidebar-border bg-sidebar-accent p-2 transition-[padding,background-color,border-color] duration-300 ease-out group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-0 motion-reduce:transition-none"
           >
             <Avatar className="size-8 shrink-0">
               <AvatarFallback className="bg-subtle text-caption font-medium text-ink">
@@ -187,10 +187,10 @@ export function AppSidebar() {
               </AvatarFallback>
             </Avatar>
             <span className="flex min-w-0 flex-col leading-tight whitespace-nowrap">
-              <span className="truncate text-small font-medium text-ink">
+              <span className="truncate text-small font-medium text-sidebar-foreground">
                 {currentUser.name}
               </span>
-              <span className="truncate text-caption text-ink-secondary">
+              <span className="truncate text-caption text-sidebar-foreground">
                 {USER_ROLE_LABELS[currentUser.role]}
               </span>
             </span>
