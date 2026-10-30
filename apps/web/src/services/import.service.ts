@@ -7,9 +7,11 @@ import type {
   ClaimImportResult,
 } from '@/types/import.types';
 
-/** AI normalization reads the file in several paid LLM calls and can take minutes. */
-const AI_PREVIEW_TIMEOUT_MS = 10 * 60 * 1000;
-const IMPORT_TIMEOUT_MS = 2 * 60 * 1000;
+/**
+ * Files have no size limit and AI normalization makes several paid LLM
+ * calls, so a preview or an import can take minutes.
+ */
+const IMPORT_TIMEOUT_MS = 10 * 60 * 1000;
 
 export async function previewClaimImport(input: {
   fileName: string;
@@ -19,7 +21,7 @@ export async function previewClaimImport(input: {
   const response = await apiClient.post<ClaimImportPreview>(
     '/imports/claims/preview',
     input,
-    { timeout: input.allowAi ? AI_PREVIEW_TIMEOUT_MS : IMPORT_TIMEOUT_MS },
+    { timeout: IMPORT_TIMEOUT_MS },
   );
   return response.data;
 }
@@ -53,7 +55,6 @@ export function readImportNeedsAi(error: unknown): number | null {
 }
 
 const IMPORT_ERROR_MESSAGES: Readonly<Record<string, string>> = {
-  IMPORT_FILE_TOO_LARGE: 'Ukuran file melebihi 2 MB.',
   IMPORT_AI_UNAVAILABLE:
     'AI tidak dapat menyesuaikan file saat ini. Coba lagi nanti atau gunakan format INTEGRA.',
   INVALID_IMPORT_REQUEST: 'Isi file tidak dapat dibaca.',
@@ -64,6 +65,10 @@ export function describeImportError(error: unknown): string {
   if (isAxiosError<{ code?: string }>(error)) {
     const code = error.response?.data?.code;
     if (code && IMPORT_ERROR_MESSAGES[code]) return IMPORT_ERROR_MESSAGES[code];
+    // Only the server's memory safeguard (hundreds of MB) answers 413.
+    if (error.response?.status === 413) {
+      return 'File terlalu besar untuk diproses sekaligus. Pecah file lalu impor bertahap.';
+    }
     if (error.code === 'ECONNABORTED') {
       return 'Server terlalu lama merespons. Coba lagi dengan file yang lebih kecil.';
     }

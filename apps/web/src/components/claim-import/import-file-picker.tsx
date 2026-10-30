@@ -4,7 +4,6 @@ import { useId, useRef } from 'react';
 import { LuDownload, LuFileUp } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 
-export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
 export const IMPORT_TEMPLATE_PATH = '/templates/integra-claim-import.json';
 
 export function ImportFilePicker({
@@ -36,7 +35,7 @@ export function ImportFilePicker({
           1. Pilih file
         </h2>
         <p className="text-small text-ink-secondary">
-          File .json, .csv, atau .txt berukuran maksimal 2 MB.
+          File .json, .csv, atau .txt, tanpa batas ukuran.
         </p>
       </div>
       <div className="flex flex-col gap-2">

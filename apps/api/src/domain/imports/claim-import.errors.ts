@@ -1,5 +1,4 @@
 import { DomainError } from '../shared/domain-error';
-import { MAX_IMPORT_FILE_BYTES } from './imported-claim';
 
 /** The file is not in the INTEGRA format; the client must confirm the paid AI step. */
 export class ImportNeedsAiError extends DomainError {
@@ -17,13 +16,5 @@ export class ImportAiUnavailableError extends DomainError {
 
   constructor() {
     super('The AI cannot normalize the file right now');
-  }
-}
-
-export class ImportFileTooLargeError extends DomainError {
-  readonly code = 'IMPORT_FILE_TOO_LARGE';
-
-  constructor() {
-    super(`The file exceeds ${MAX_IMPORT_FILE_BYTES / 1024 / 1024} MB`);
   }
 }

@@ -1,10 +1,8 @@
 import type { ClaimImportRepository } from '../../domain/imports/claim-import.repository';
 import {
   ImportAiUnavailableError,
-  ImportFileTooLargeError,
   ImportNeedsAiError,
 } from '../../domain/imports/claim-import.errors';
-import { MAX_IMPORT_FILE_BYTES } from '../../domain/imports/imported-claim';
 import type { LlmClient } from '../ports/llm-client.port';
 import { LlmConfigurationError, LlmError } from '../ports/llm.errors';
 import {
@@ -96,10 +94,6 @@ export class PreviewClaimImportUseCase {
     content,
     allowAi,
   }: PreviewClaimImportInput): Promise<ClaimImportPreview> {
-    if (Buffer.byteLength(content, 'utf8') > MAX_IMPORT_FILE_BYTES) {
-      throw new ImportFileTooLargeError();
-    }
-
     const parsedJson = parseJsonContent(content);
     const canonicalFile = claimImportFileSchema.safeParse(parsedJson);
     if (canonicalFile.success) {
