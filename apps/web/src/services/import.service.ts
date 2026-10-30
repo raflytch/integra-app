@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 import type {
   CanonicalClaim,
+  ClaimDeletionResult,
   ClaimImportPreview,
   ClaimImportResult,
 } from '@/types/import.types';
@@ -29,6 +30,14 @@ export async function importClaims(
   const response = await apiClient.post<ClaimImportResult>(
     '/imports/claims',
     { claims },
+    { timeout: IMPORT_TIMEOUT_MS },
+  );
+  return response.data;
+}
+
+export async function deleteAllClaims(): Promise<ClaimDeletionResult> {
+  const response = await apiClient.delete<ClaimDeletionResult>(
+    '/imports/claims',
     { timeout: IMPORT_TIMEOUT_MS },
   );
   return response.data;

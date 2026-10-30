@@ -30,3 +30,7 @@ export interface ClaimImportResult {
   importedCount: number;
   skipped: { claimNo: string; reason: string }[];
 }
+
+export interface ClaimDeletionResult {
+  deletedCount: number;
+}

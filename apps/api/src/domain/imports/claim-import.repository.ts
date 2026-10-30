@@ -1,4 +1,8 @@
-import type { ClaimImportResult, ImportedClaim } from './imported-claim';
+import type {
+  ClaimDeletionResult,
+  ClaimImportResult,
+  ImportedClaim,
+} from './imported-claim';
 
 export abstract class ClaimImportRepository {
   /** The given claim numbers that already exist. */
@@ -9,4 +13,10 @@ export abstract class ClaimImportRepository {
    * created when missing, and never overwritten.
    */
   abstract importClaims(claims: ImportedClaim[]): Promise<ClaimImportResult>;
+  /**
+   * Deletes every claim with its documents, diagnoses, findings, and
+   * decisions, then the facilities and patients left without claims.
+   * Runs in one transaction so a failure leaves the data untouched.
+   */
+  abstract deleteAllClaims(): Promise<ClaimDeletionResult>;
 }
