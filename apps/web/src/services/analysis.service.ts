@@ -7,6 +7,8 @@ export interface ClaimAnalysisResult {
   extractedDocumentCount: number;
   failedDocumentCount: number;
   isAnalyzed: boolean;
+  /** LLM tokens this call used; zero when no document needed reading. */
+  tokenUsage: { inputTokens: number; outputTokens: number };
   findingCount: number;
   potentialGap: number;
 }

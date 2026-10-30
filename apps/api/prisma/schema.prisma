@@ -192,7 +192,7 @@ model Claim {
   priorityScore Float          @default(0) @map("priority_score")
   /// When the detectors last evaluated the claim, after the AI read every document. Null until then.
   analyzedAt    DateTime?      @map("analyzed_at") @db.Timestamptz(3)
-  status       ClaimStatus    @default(PENDING)
+  status        ClaimStatus    @default(PENDING)
   /// Evaluation ground truth for synthetic data. Keep out of API responses.
   injectedCase  InjectedCase[] @default([]) @map("injected_case")
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -234,15 +234,19 @@ model ClaimDiagnosis {
 
 /// Free-text clinical document attached to a claim.
 model ClinicalDocument {
-  id         String       @id @default(uuid(7)) @db.Uuid
-  claimId    String       @map("claim_id") @db.Uuid
-  type       DocumentType
+  id                      String       @id @default(uuid(7)) @db.Uuid
+  claimId                 String       @map("claim_id") @db.Uuid
+  type                    DocumentType
   /// When the document was written, not when it was imported.
-  recordedAt DateTime     @map("recorded_at") @db.Timestamptz(3)
-  content    String
+  recordedAt              DateTime     @map("recorded_at") @db.Timestamptz(3)
+  content                 String
   /// Evidence extracted by the LLM (M-03). Null until extraction succeeds.
   /// Shape is owned by the extraction Zod schema; validate on read.
-  extracted  Json?
+  extracted               Json?
+  /// Model that produced `extracted`, as reported by the provider. Null until extraction succeeds and for seeded extractions.
+  extractedModel          String?      @map("extracted_model")
+  /// `EXTRACTION_PROMPT_VERSION` used for `extracted`. Null like `extractedModel`.
+  extractionPromptVersion String?      @map("extraction_prompt_version")
 
   claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
   findings        Finding[] @relation("FindingDocument")

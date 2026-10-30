@@ -6,7 +6,10 @@ import {
   collectSecondaryDiagnosisCodes,
   type EvaluateClaimUseCase,
 } from './evaluate-claim.use-case';
-import type { ExtractClaimDocumentsUseCase } from './extract-claim-documents.use-case';
+import type {
+  ExtractClaimDocumentsUseCase,
+  LlmTokenUsage,
+} from './extract-claim-documents.use-case';
 
 export interface ClaimAnalysisResult {
   extractedDocumentCount: number;
@@ -15,6 +18,8 @@ export interface ClaimAnalysisResult {
   isAnalyzed: boolean;
   findingCount: number;
   potentialGap: number;
+  /** LLM tokens this call used; zero when every document was already extracted. */
+  tokenUsage: LlmTokenUsage;
 }
 
 /** Reads the claim's remaining documents with the AI, then runs the detectors. */
@@ -29,7 +34,7 @@ export class AnalyzeClaimUseCase {
     if (!(await this.analysisRepository.findClaimEvidence(claimId))) {
       throw new ClaimNotFoundError(claimId);
     }
-    const { extractedDocumentCount, failedDocumentCount } =
+    const { extractedDocumentCount, failedDocumentCount, tokenUsage } =
       await this.extractClaimDocuments.execute(claimId);
     if (extractedDocumentCount === 0 && failedDocumentCount > 0) {
       throw new ExtractionUnavailableError();
@@ -44,6 +49,7 @@ export class AnalyzeClaimUseCase {
         isAnalyzed: false,
         findingCount: 0,
         potentialGap: 0,
+        tokenUsage,
       };
     }
 
@@ -56,6 +62,7 @@ export class AnalyzeClaimUseCase {
       failedDocumentCount,
       isAnalyzed: true,
       ...evaluation,
+      tokenUsage,
     };
   }
 }

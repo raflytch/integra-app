@@ -7,7 +7,10 @@ import type {
   NewFinding,
   SimilarityCandidate,
 } from './claim-evidence';
-import type { ClinicalExtraction } from './clinical-extraction';
+import type {
+  ClinicalExtraction,
+  ExtractionSource,
+} from './clinical-extraction';
 
 export abstract class AnalysisRepository {
   abstract findClaimEvidence(claimId: string): Promise<ClaimEvidence | null>;
@@ -17,6 +20,7 @@ export abstract class AnalysisRepository {
   abstract saveExtraction(
     documentId: string,
     extraction: ClinicalExtraction,
+    source: ExtractionSource,
   ): Promise<void>;
   abstract findEvidenceRules(icd10Codes: string[]): Promise<EvidenceRule[]>;
   /** Other claims that share a primary diagnosis with the given claim, excluding the same patient. */

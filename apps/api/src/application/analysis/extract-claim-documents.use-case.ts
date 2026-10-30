@@ -2,17 +2,22 @@ import type { AnalysisRepository } from '../../domain/analysis/analysis.reposito
 import type { DocumentToExtract } from '../../domain/analysis/claim-evidence';
 import { groundExtraction } from '../../domain/analysis/clinical-extraction';
 import { ExtractionUnavailableError } from '../../domain/analysis/extraction-unavailable.error';
-import type { LlmClient } from '../ports/llm-client.port';
+import type { LlmClient, LlmResult } from '../ports/llm-client.port';
 import { LlmConfigurationError, LlmError } from '../ports/llm.errors';
 import { clinicalExtractionSchema } from './clinical-extraction.schema';
 import {
   buildExtractionMessage,
+  EXTRACTION_PROMPT_VERSION,
   EXTRACTION_SYSTEM_PROMPT,
 } from './extraction-prompt';
+
+export type LlmTokenUsage = LlmResult<unknown>['usage'];
 
 export interface ClaimExtractionResult {
   extractedDocumentCount: number;
   failedDocumentCount: number;
+  /** Tokens billed by the successful extractions of this run. */
+  tokenUsage: LlmTokenUsage;
 }
 
 /**
@@ -33,8 +38,13 @@ export class ExtractClaimDocumentsUseCase {
     );
 
     let failedDocumentCount = 0;
+    const tokenUsage: LlmTokenUsage = { inputTokens: 0, outputTokens: 0 };
     for (const result of results) {
-      if (result.status === 'fulfilled') continue;
+      if (result.status === 'fulfilled') {
+        tokenUsage.inputTokens += result.value.inputTokens;
+        tokenUsage.outputTokens += result.value.outputTokens;
+        continue;
+      }
       if (result.reason instanceof LlmConfigurationError) {
         throw new ExtractionUnavailableError();
       }
@@ -44,11 +54,14 @@ export class ExtractClaimDocumentsUseCase {
     return {
       extractedDocumentCount: documents.length - failedDocumentCount,
       failedDocumentCount,
+      tokenUsage,
     };
   }
 
-  private async extractDocument(document: DocumentToExtract): Promise<void> {
-    const { output } = await this.llmClient.generateStructured({
+  private async extractDocument(
+    document: DocumentToExtract,
+  ): Promise<LlmTokenUsage> {
+    const { output, model, usage } = await this.llmClient.generateStructured({
       system: EXTRACTION_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: buildExtractionMessage(document) }],
       schema: clinicalExtractionSchema,
@@ -57,6 +70,8 @@ export class ExtractClaimDocumentsUseCase {
     await this.analysisRepository.saveExtraction(
       document.id,
       groundExtraction(output, document.content),
+      { model, promptVersion: EXTRACTION_PROMPT_VERSION },
     );
+    return usage;
   }
 }
