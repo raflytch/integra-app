@@ -205,7 +205,6 @@ export function FacilitySummaryTable() {
                   sortKey="claimCount"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  align="right"
                 >
                   Klaim
                 </SortableTableHead>
@@ -213,7 +212,6 @@ export function FacilitySummaryTable() {
                   sortKey="flaggedClaimCount"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  align="right"
                 >
                   Perlu klarifikasi
                 </SortableTableHead>
@@ -223,7 +221,6 @@ export function FacilitySummaryTable() {
                     sortKey={testType}
                     sort={table.sort}
                     onSort={table.toggleSort}
-                    align="right"
                   >
                     {TEST_TYPE_DETAILS[testType].title}
                   </SortableTableHead>
@@ -232,7 +229,6 @@ export function FacilitySummaryTable() {
                   sortKey="totalPotentialGap"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  align="right"
                 >
                   Potensi selisih
                 </SortableTableHead>
@@ -250,18 +246,18 @@ export function FacilitySummaryTable() {
                   <TableCell className="min-w-56 whitespace-normal">
                     <FacilityIdentity summary={summary} />
                   </TableCell>
-                  <TableCell className="text-right text-ink tabular-nums">
+                  <TableCell className="text-ink tabular-nums">
                     {summary.claimCount}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <CountPill count={summary.flaggedClaimCount} />
                   </TableCell>
                   {TEST_TYPE_ORDER.map((testType) => (
-                    <TableCell key={testType} className="text-right">
+                    <TableCell key={testType}>
                       <CountPill count={summary.findingCounts[testType]} />
                     </TableCell>
                   ))}
-                  <TableCell className="text-right font-medium text-ink tabular-nums">
+                  <TableCell className="font-medium text-ink tabular-nums">
                     {formatRupiah(summary.totalPotentialGap)}
                   </TableCell>
                 </TableRow>

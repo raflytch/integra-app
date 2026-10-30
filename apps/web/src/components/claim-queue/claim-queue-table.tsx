@@ -18,6 +18,7 @@ import {
   SeverityPill,
   TestSignalPill,
 } from '@/components/claim-pills';
+import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -156,20 +157,9 @@ function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
   );
 }
 
-function PotentialGap({
-  claim,
-  align,
-}: {
-  claim: ClaimQueueItem;
-  align: 'start' | 'end';
-}) {
+function PotentialGap({ claim }: { claim: ClaimQueueItem }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-0.5',
-        align === 'end' ? 'items-end' : 'items-start',
-      )}
-    >
+    <div className="flex flex-col items-start gap-0.5">
       <span className="font-medium text-ink tabular-nums">
         {formatRupiah(claim.potentialGap)}
       </span>
@@ -379,14 +369,9 @@ export function ClaimQueueTable({
           <Table className="[&_td]:px-3 [&_th]:px-3">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <SortableTableHead
-                  sortKey="priority"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                  className="w-12"
-                >
-                  #
-                </SortableTableHead>
+                <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
+                  No
+                </TableHead>
                 <SortableTableHead
                   sortKey="claimNo"
                   sort={table.sort}
@@ -405,6 +390,7 @@ export function ClaimQueueTable({
                   sortKey="admittedAt"
                   sort={table.sort}
                   onSort={table.toggleSort}
+                  className={CENTERED_COLUMN_CLASS_NAME}
                 >
                   Rawat inap
                 </SortableTableHead>
@@ -419,7 +405,6 @@ export function ClaimQueueTable({
                   sortKey="potentialGap"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  align="right"
                 >
                   Potensi selisih
                 </SortableTableHead>
@@ -430,7 +415,10 @@ export function ClaimQueueTable({
                 >
                   Status
                 </SortableTableHead>
-                <TableHead data-tour="run-analysis" className="text-right">
+                <TableHead
+                  data-tour="run-analysis"
+                  className={CENTERED_COLUMN_CLASS_NAME}
+                >
                   Aksi
                 </TableHead>
               </TableRow>
@@ -453,7 +441,12 @@ export function ClaimQueueTable({
                     onClick={() => router.push(claimHref)}
                     className="cursor-pointer"
                   >
-                    <TableCell className="align-top font-mono text-caption text-ink-secondary tabular-nums">
+                    <TableCell
+                      className={cn(
+                        'align-top font-mono text-caption text-ink-secondary tabular-nums',
+                        CENTERED_COLUMN_CLASS_NAME,
+                      )}
+                    >
                       {rowIndex + 1}
                     </TableCell>
                     <TableCell className="min-w-36 align-top whitespace-normal">
@@ -461,7 +454,7 @@ export function ClaimQueueTable({
                         <Link
                           href={claimHref}
                           onClick={(event) => event.stopPropagation()}
-                          className="font-mono text-caption text-primary-hover hover:underline"
+                          className="font-mono text-caption whitespace-nowrap text-primary-hover hover:underline"
                         >
                           {claim.claimNo}
                         </Link>
@@ -480,7 +473,9 @@ export function ClaimQueueTable({
                         <FacilityTypePill facilityType={claim.facility.type} />
                       </div>
                     </TableCell>
-                    <TableCell className="align-top">
+                    <TableCell
+                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
+                    >
                       <div className="flex flex-col gap-0.5">
                         <span className="text-ink">
                           {formatDate(claim.admittedAt)}
@@ -497,13 +492,15 @@ export function ClaimQueueTable({
                     <TableCell className="align-top">
                       <FindingSignals claim={claim} />
                     </TableCell>
-                    <TableCell className="text-right align-top">
-                      <PotentialGap claim={claim} align="end" />
+                    <TableCell className="align-top">
+                      <PotentialGap claim={claim} />
                     </TableCell>
                     <TableCell className="align-top">
                       <ClaimStatusPill status={claim.status} />
                     </TableCell>
-                    <TableCell className="text-right align-top">
+                    <TableCell
+                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
+                    >
                       <AnalysisAction
                         claim={claim}
                         isAnalysisRunning={analysisRunner.isRunning}
@@ -568,7 +565,7 @@ export function ClaimQueueTable({
                 </div>
                 <FindingSignals claim={claim} />
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                  <PotentialGap claim={claim} align="start" />
+                  <PotentialGap claim={claim} />
                   <AnalysisAction
                     claim={claim}
                     isAnalysisRunning={analysisRunner.isRunning}

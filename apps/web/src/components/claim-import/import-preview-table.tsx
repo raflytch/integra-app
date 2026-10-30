@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { IconType } from 'react-icons';
 import { LuCircleCheck, LuCircleX, LuCopy } from 'react-icons/lu';
 import { Pill } from '@/components/claim-pills';
+import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -28,6 +29,7 @@ import {
 import { usePatientDataVisibility } from '@/hooks/use-patient-data-visibility';
 import { useTableControls } from '@/hooks/use-table-controls';
 import { formatDate } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { maskPersonName } from '@/lib/pii';
 import type { ClaimPreviewRow, ClaimPreviewStatus } from '@/types/import.types';
 
@@ -169,13 +171,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <SortableTableHead
-                sortKey="index"
-                sort={table.sort}
-                onSort={table.toggleSort}
-              >
-                No
-              </SortableTableHead>
+              <TableHead className={CENTERED_COLUMN_CLASS_NAME}>No</TableHead>
               <SortableTableHead
                 sortKey="claimNo"
                 sort={table.sort}
@@ -188,6 +184,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                 sortKey="admittedAt"
                 sort={table.sort}
                 onSort={table.toggleSort}
+                className={CENTERED_COLUMN_CLASS_NAME}
               >
                 Rawat inap
               </SortableTableHead>
@@ -210,7 +207,12 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
             )}
             {table.pageRows.map((row) => (
               <TableRow key={row.index} className="align-top">
-                <TableCell className="text-ink-secondary tabular-nums">
+                <TableCell
+                  className={cn(
+                    'text-ink-secondary tabular-nums',
+                    CENTERED_COLUMN_CLASS_NAME,
+                  )}
+                >
                   {row.index + 1}
                 </TableCell>
                 <TableCell className="font-mono text-small text-ink">
@@ -235,7 +237,12 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                     <span className="text-small text-ink-secondary">-</span>
                   )}
                 </TableCell>
-                <TableCell className="text-small whitespace-nowrap text-ink-secondary tabular-nums">
+                <TableCell
+                  className={cn(
+                    'text-small whitespace-nowrap text-ink-secondary tabular-nums',
+                    CENTERED_COLUMN_CLASS_NAME,
+                  )}
+                >
                   {formatAdmission(row)}
                 </TableCell>
                 <TableCell>

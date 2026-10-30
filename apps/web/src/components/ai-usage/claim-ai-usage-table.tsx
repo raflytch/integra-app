@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Pill } from '@/components/claim-pills';
+import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -26,6 +27,7 @@ import {
 import { useServerTableControls } from '@/hooks/use-server-table-controls';
 import type { TableSort } from '@/hooks/use-table-controls';
 import { formatDateTime } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { fetchClaimAiUsagePage } from '@/services/ai-usage.service';
 import { isForbiddenError } from '@/services/auth.service';
 import type {
@@ -191,7 +193,6 @@ export function ClaimAiUsageTable() {
                     sortKey="documentCount"
                     sort={table.sort}
                     onSort={table.toggleSort}
-                    align="right"
                   >
                     Dokumen
                   </SortableTableHead>
@@ -199,7 +200,6 @@ export function ClaimAiUsageTable() {
                     sortKey="inputTokens"
                     sort={table.sort}
                     onSort={table.toggleSort}
-                    align="right"
                   >
                     Token input
                   </SortableTableHead>
@@ -207,16 +207,16 @@ export function ClaimAiUsageTable() {
                     sortKey="outputTokens"
                     sort={table.sort}
                     onSort={table.toggleSort}
-                    align="right"
                   >
                     Token output
                   </SortableTableHead>
-                  <TableHead className="text-right">Estimasi biaya</TableHead>
+                  <TableHead>Estimasi biaya</TableHead>
                   <TableHead>Model</TableHead>
                   <SortableTableHead
                     sortKey="lastExtractedAt"
                     sort={table.sort}
                     onSort={table.toggleSort}
+                    className={CENTERED_COLUMN_CLASS_NAME}
                   >
                     Terakhir dibaca
                   </SortableTableHead>
@@ -234,22 +234,27 @@ export function ClaimAiUsageTable() {
                     <TableCell className="min-w-48 whitespace-normal">
                       <ClaimIdentity usage={usage} />
                     </TableCell>
-                    <TableCell className="text-right text-ink tabular-nums">
+                    <TableCell className="text-ink tabular-nums">
                       {usage.documentCount}
                     </TableCell>
-                    <TableCell className="text-right text-ink tabular-nums">
+                    <TableCell className="text-ink tabular-nums">
                       {formatTokens(usage.inputTokens)}
                     </TableCell>
-                    <TableCell className="text-right text-ink tabular-nums">
+                    <TableCell className="text-ink tabular-nums">
                       {formatTokens(usage.outputTokens)}
                     </TableCell>
-                    <TableCell className="text-right font-medium text-ink tabular-nums">
+                    <TableCell className="font-medium text-ink tabular-nums">
                       {formatEstimatedCost(usage.estimatedCost)}
                     </TableCell>
                     <TableCell>
                       <ModelPills models={usage.models} />
                     </TableCell>
-                    <TableCell className="text-small text-ink-secondary tabular-nums">
+                    <TableCell
+                      className={cn(
+                        'text-small text-ink-secondary tabular-nums',
+                        CENTERED_COLUMN_CLASS_NAME,
+                      )}
+                    >
                       {formatDateTime(usage.lastExtractedAt)}
                     </TableCell>
                   </TableRow>

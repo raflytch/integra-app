@@ -8,14 +8,12 @@ export function SortableTableHead<SortKey extends string>({
   sortKey,
   sort,
   onSort,
-  align = 'left',
   className,
   children,
 }: {
   sortKey: NoInfer<SortKey>;
   sort: TableSort<SortKey>;
   onSort: (sortKey: SortKey) => void;
-  align?: 'left' | 'right';
   className?: string;
   children: ReactNode;
 }) {
@@ -35,14 +33,13 @@ export function SortableTableHead<SortKey extends string>({
             : 'descending'
           : 'none'
       }
-      className={cn(align === 'right' && 'text-right', className)}
+      className={className}
     >
       <button
         type="button"
         onClick={() => onSort(sortKey)}
         className={cn(
           '-mx-2 inline-flex h-7 items-center gap-1 rounded-md px-2 uppercase transition-colors hover:bg-subtle hover:text-ink focus-visible:ring-[3px] focus-visible:ring-primary/15 focus-visible:outline-none',
-          align === 'right' && 'flex-row-reverse',
           isSorted && 'text-ink',
         )}
       >
