@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -11,12 +12,17 @@ import {
   importClaimsInputSchema,
   previewClaimImportInputSchema,
 } from '../../application/imports/claim-import.schema';
+import { DeleteAllClaimsUseCase } from '../../application/imports/delete-all-claims.use-case';
 import { ImportClaimsUseCase } from '../../application/imports/import-claims.use-case';
 import {
   type ClaimImportPreview,
   PreviewClaimImportUseCase,
 } from '../../application/imports/preview-claim-import.use-case';
-import type { ClaimImportResult } from '../../domain/imports/imported-claim';
+import type {
+  ClaimDeletionResult,
+  ClaimImportResult,
+} from '../../domain/imports/imported-claim';
+import { Roles } from '../auth/auth.decorators';
 
 /** The import format's Zod schema is the single contract, so bodies skip class-validator. */
 function parseBody<T>(schema: ZodType<T>, body: unknown): T {
@@ -36,6 +42,7 @@ export class ImportsController {
   constructor(
     private readonly previewClaimImport: PreviewClaimImportUseCase,
     private readonly importClaims: ImportClaimsUseCase,
+    private readonly deleteAllClaims: DeleteAllClaimsUseCase,
   ) {}
 
   /** Reads a file into a preview; AI normalization runs only with `allowAi`. */
@@ -51,5 +58,12 @@ export class ImportsController {
   async import(@Body() body: unknown): Promise<ClaimImportResult> {
     const { claims } = parseBody(importClaimsInputSchema, body);
     return this.importClaims.execute(claims);
+  }
+
+  /** Wipes every claim, decisions included, so only supervisors may call it. */
+  @Roles('SUPERVISOR')
+  @Delete('claims')
+  deleteAll(): Promise<ClaimDeletionResult> {
+    return this.deleteAllClaims.execute();
   }
 }

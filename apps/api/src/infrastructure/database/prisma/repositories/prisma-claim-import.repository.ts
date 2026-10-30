@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ClaimImportRepository } from '../../../../domain/imports/claim-import.repository';
 import type {
+  ClaimDeletionResult,
   ClaimImportResult,
   ImportedClaim,
 } from '../../../../domain/imports/imported-claim';
@@ -52,6 +53,20 @@ export class PrismaClaimImportRepository extends ClaimImportRepository {
       }
     }
     return { importedCount, skipped };
+  }
+
+  async deleteAllClaims(): Promise<ClaimDeletionResult> {
+    return this.prisma.$transaction(async (transaction) => {
+      // Decisions restrict claim deletion, so the audit trail goes first.
+      await transaction.decision.deleteMany();
+      // Documents, diagnoses, and findings cascade with their claim.
+      const { count } = await transaction.claim.deleteMany();
+      await transaction.patient.deleteMany({ where: { claims: { none: {} } } });
+      await transaction.facility.deleteMany({
+        where: { claims: { none: {} } },
+      });
+      return { deletedCount: count };
+    });
   }
 
   private async importClaim({

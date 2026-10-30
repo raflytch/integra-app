@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DeleteAllClaimsUseCase } from './application/imports/delete-all-claims.use-case';
 import { ImportClaimsUseCase } from './application/imports/import-claims.use-case';
 import { PreviewClaimImportUseCase } from './application/imports/preview-claim-import.use-case';
 import { LlmClient } from './application/ports/llm-client.port';
@@ -25,6 +26,12 @@ import { ImportsController } from './presentation/controllers/imports.controller
       provide: ImportClaimsUseCase,
       useFactory: (claimImportRepository: ClaimImportRepository) =>
         new ImportClaimsUseCase(claimImportRepository),
+      inject: [ClaimImportRepository],
+    },
+    {
+      provide: DeleteAllClaimsUseCase,
+      useFactory: (claimImportRepository: ClaimImportRepository) =>
+        new DeleteAllClaimsUseCase(claimImportRepository),
       inject: [ClaimImportRepository],
     },
   ],
