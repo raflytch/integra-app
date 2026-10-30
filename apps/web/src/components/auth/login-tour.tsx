@@ -44,7 +44,8 @@ const LOGIN_TOUR_STEPS: TourStep[] = [
       },
       {
         label: 'supervisor@integra.local',
-        detail: 'Ditambah Ikhtisar, Eskalasi, dan Ringkasan Faskes.',
+        detail:
+          'Ditambah Dashboard, Eskalasi, Ringkasan Faskes, dan Penggunaan AI.',
         selectable: true,
       },
     ],

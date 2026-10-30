@@ -22,5 +22,6 @@ export const config = {
     '/escalations/:path*',
     '/facilities/:path*',
     '/imports/:path*',
+    '/ai-usage/:path*',
   ],
 };

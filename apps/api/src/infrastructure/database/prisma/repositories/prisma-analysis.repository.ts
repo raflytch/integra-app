@@ -93,6 +93,9 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
         extracted: extraction as unknown as Prisma.InputJsonObject,
         extractedModel: source.model,
         extractionPromptVersion: source.promptVersion,
+        extractionInputTokens: source.inputTokens,
+        extractionOutputTokens: source.outputTokens,
+        extractedAt: new Date(),
       },
     });
   }

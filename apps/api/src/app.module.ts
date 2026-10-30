@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
+import { AiUsageModule } from './ai-usage.module';
 import { AnalysisModule } from './analysis.module';
 import { AuthModule } from './auth.module';
 import { ClaimsModule } from './claims.module';
@@ -23,6 +24,7 @@ import { DomainExceptionFilter } from './presentation/filters/domain-exception.f
     SecurityModule,
     AuthModule,
     AnalysisModule,
+    AiUsageModule,
     ClaimsModule,
     FacilitiesModule,
     ImportsModule,

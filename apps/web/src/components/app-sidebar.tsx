@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { IconType } from 'react-icons';
 import {
   LuCircleHelp,
+  LuCpu,
   LuFileUp,
   LuHospital,
   LuLayoutDashboard,
@@ -66,9 +67,10 @@ const MENU_GROUPS: MenuGroup[] = [
     label: 'Supervisor',
     allowedRoles: ['SUPERVISOR'],
     items: [
-      { href: '/overview', label: 'Ikhtisar', icon: LuLayoutDashboard },
+      { href: '/overview', label: 'Dashboard', icon: LuLayoutDashboard },
       { href: '/escalations', label: 'Eskalasi', icon: LuShieldAlert },
       { href: '/facilities', label: 'Ringkasan Faskes', icon: LuHospital },
+      { href: '/ai-usage', label: 'Penggunaan AI', icon: LuCpu },
     ],
   },
 ];

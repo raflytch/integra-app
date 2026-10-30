@@ -4,7 +4,7 @@ import { ClaimOverview } from '@/components/overview/claim-overview';
 import { FacilityOverviewPanel } from '@/components/overview/facility-overview';
 import { PageHeader } from '@/components/page-header';
 
-export const metadata: Metadata = { title: 'Ikhtisar · INTEGRA' };
+export const metadata: Metadata = { title: 'Dashboard · INTEGRA' };
 
 function OverviewSection({
   title,
@@ -27,7 +27,7 @@ export default function OverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Ikhtisar"
+        title="Dashboard"
         description="Gambaran eksekutif antrean, hasil analisis AI, keputusan verifikator, dan pola per faskes."
       />
       <OverviewSection title="Klaim">

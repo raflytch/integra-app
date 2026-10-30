@@ -61,7 +61,7 @@ Ties fall back to `priorityScore` descending, `potentialGap` descending, then `i
 
 ## `GET /claims/statistics`
 
-Aggregates over every claim for the Ikhtisar charts and the queue status chips: `{ totalCount, analyzedCount, flaggedCount, totalPotentialGap, statusCounts: { PENDING, APPROVED, CLARIFICATION_REQUESTED, ESCALATED }, monthlyCounts: [{ month: "YYYY-MM", notAnalyzed, clean, flagged }] }`. `flaggedCount` counts claims with at least one finding; `monthlyCounts` groups by admission month, oldest first.
+Aggregates over every claim for the Dashboard charts and the queue status chips: `{ totalCount, analyzedCount, flaggedCount, totalPotentialGap, statusCounts: { PENDING, APPROVED, CLARIFICATION_REQUESTED, ESCALATED }, monthlyCounts: [{ month: "YYYY-MM", notAnalyzed, clean, flagged }] }`. `flaggedCount` counts claims with at least one finding; `monthlyCounts` groups by admission month, oldest first.
 
 ## `GET /facilities`
 
@@ -80,7 +80,7 @@ Example: [`facility-summary.example.json`](facility-summary.example.json). Retur
 | `sortBy`        | `facility` (name), `claimCount`, `flaggedClaimCount`, `EXISTENCE`, `CONSISTENCY`, `SIMILARITY`, `totalPotentialGap` | `totalPotentialGap` |
 | `sortDirection` | `asc`, `desc`                                                                                                       | `desc`              |
 
-Ties fall back to the facility `id`. The Ikhtisar charts request the first 100 facilities by `totalPotentialGap` and take their totals from `GET /claims/statistics`.
+Ties fall back to the facility `id`. The Dashboard charts request the first 100 facilities by `totalPotentialGap` and take their totals from `GET /claims/statistics`.
 
 ## Auth (M-11)
 
@@ -97,6 +97,13 @@ Every endpoint except `GET /health`, `POST /auth/login`, and `POST /auth/logout`
 ## `POST /claims/:id/decisions` (M-09)
 
 Body `{ action: APPROVE | REQUEST_CLARIFICATION | ESCALATE, reason }` with a trimmed reason of 10 to 1000 characters. `verifier_id` comes from the session, never the body. The claim status becomes `APPROVED`, `CLARIFICATION_REQUESTED`, or `ESCALATED` in the same transaction. Returns the decision in the `decisions` item shape.
+
+## `GET /ai-usage/summary` and `GET /ai-usage/claims`
+
+Both require `SUPERVISOR` and count only documents whose extraction recorded its tokens (`extraction_input_tokens`, `extraction_output_tokens`, `extracted_at`, saved with each successful M-03 call); seeded and older extractions are left out. Costs are estimates: tokens × `LLM_INPUT_PRICE_PER_MTOK_IDR` and `LLM_OUTPUT_PRICE_PER_MTOK_IDR` (rupiah per 1M tokens) / 1,000,000, and every cost field and `pricing` is `null` unless both prices are set.
+
+- `summary` returns `{ pricing: { inputPerMillionTokens, outputPerMillionTokens } | null, totals: { documentCount, claimCount, inputTokens, outputTokens, estimatedCost }, averageCostPerClaim, daily: [{ date: "YYYY-MM-DD", documentCount, inputTokens, outputTokens, estimatedCost }] }`. `daily` covers the last 30 Jakarta calendar days, oldest first, with zero days included.
+- `claims` takes `search` (claim number or facility name), `sortBy` (`claimNo`, `documentCount`, `inputTokens`, `outputTokens`, `lastExtractedAt`; default `lastExtractedAt`), `sortDirection` (default `desc`), `page`, and `pageSize` (at most 100) and returns `{ items: [{ claimId, claimNo, facilityName, documentCount, inputTokens, outputTokens, models, lastExtractedAt, estimatedCost }], total, page, pageSize }`.
 
 ## `POST /analysis/claims/:id` (T21)
 

@@ -247,6 +247,12 @@ model ClinicalDocument {
   extractedModel          String?      @map("extracted_model")
   /// `EXTRACTION_PROMPT_VERSION` used for `extracted`. Null like `extractedModel`.
   extractionPromptVersion String?      @map("extraction_prompt_version")
+  /// LLM input tokens billed for `extracted`. Null for seeded extractions and those saved before token tracking.
+  extractionInputTokens   Int?         @map("extraction_input_tokens")
+  /// LLM output tokens billed for `extracted`. Null like `extractionInputTokens`.
+  extractionOutputTokens  Int?         @map("extraction_output_tokens")
+  /// When `extracted` was saved. Null like `extractionInputTokens`.
+  extractedAt             DateTime?    @map("extracted_at") @db.Timestamptz(3)
 
   claim           Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
   findings        Finding[] @relation("FindingDocument")

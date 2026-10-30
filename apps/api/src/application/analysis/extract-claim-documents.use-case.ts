@@ -70,7 +70,12 @@ export class ExtractClaimDocumentsUseCase {
     await this.analysisRepository.saveExtraction(
       document.id,
       groundExtraction(output, document.content),
-      { model, promptVersion: EXTRACTION_PROMPT_VERSION },
+      {
+        model,
+        promptVersion: EXTRACTION_PROMPT_VERSION,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+      },
     );
     return usage;
   }

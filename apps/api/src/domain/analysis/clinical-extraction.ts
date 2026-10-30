@@ -41,10 +41,12 @@ export interface ClinicalExtraction {
   procedures: ExtractedProcedure[];
 }
 
-/** Which model and prompt produced an extraction, for audit. */
+/** Which model and prompt produced an extraction and what it cost, for audit. */
 export interface ExtractionSource {
   model: string;
   promptVersion: string;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 function canonicalizeTerm(name: string): string {
