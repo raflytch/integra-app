@@ -52,6 +52,8 @@
   --color-warning-ink: #b45309;
   --color-error: #ef4444;
   --color-error-ink: #b91c1c;
+  --color-info: #3b82f6;
+  --color-info-ink: #1d4ed8;
 }
 
 @theme inline {

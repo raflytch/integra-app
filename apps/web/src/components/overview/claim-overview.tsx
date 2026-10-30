@@ -39,7 +39,7 @@ const STATUS_ORDER: ClaimStatus[] = [
 ];
 
 const STATUS_COLORS: Record<ClaimStatus, string> = {
-  PENDING: 'var(--color-chart-neutral)',
+  PENDING: 'var(--color-info)',
   CLARIFICATION_REQUESTED: 'var(--color-warning)',
   ESCALATED: 'var(--color-error)',
   APPROVED: 'var(--color-success)',
