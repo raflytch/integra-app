@@ -1,7 +1,5 @@
 import type { DocumentType, FacilityType } from '../claims/claim-detail';
 
-export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
-
 /** One claim in the `integra-claims/v1` import format. Dates stay as written. */
 export interface ImportedClaim {
   claimNo: string;

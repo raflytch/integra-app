@@ -2,19 +2,32 @@ import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { json } from 'express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import type { Env } from './infrastructure/config/env.schema';
 
+/**
+ * Claim import files have no size rule; this only stops a single request from
+ * exhausting the API's memory. Bodies are parsed before the session guard
+ * runs, so the ceiling stays finite and applies to the import routes only.
+ */
+const IMPORT_BODY_LIMIT = '200mb';
+
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Body parsers are registered below so imports can take larger bodies.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   const config = app.get<ConfigService<Env, true>>(ConfigService);
 
   // Behind a reverse proxy, the rate limiter must key on the forwarded client IP.
   app.set('trust proxy', config.get('TRUST_PROXY_HOPS', { infer: true }));
 
-  // Claim import files (up to 2 MB) travel as JSON text; the Express default is 100 KB.
-  app.useBodyParser('json', { limit: '3mb' });
+  // Claim import files travel as JSON text; every other route keeps the
+  // Express default of 100 KB. The first parser that matches handles a body.
+  app.use('/imports/claims', json({ limit: IMPORT_BODY_LIMIT }));
+  app.use(json());
 
   app.useGlobalPipes(
     new ValidationPipe({

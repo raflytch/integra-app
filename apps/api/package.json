@@ -34,6 +34,7 @@
     "axios": "^1.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "express": "^5.2.1",
     "openai": "^7.25.0",
     "otplib": "^13.5.0",
     "pg": "^8.0.0",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@nestjs/cli": "^11.0.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.6",
     "eslint": "^9.0.0",

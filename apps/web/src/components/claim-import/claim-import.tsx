@@ -16,7 +16,7 @@ import {
   readImportNeedsAi,
 } from '@/services/import.service';
 import type { ClaimImportResult } from '@/types/import.types';
-import { ImportFilePicker, MAX_IMPORT_FILE_BYTES } from './import-file-picker';
+import { ImportFilePicker } from './import-file-picker';
 import { ImportPreviewTable } from './import-preview-table';
 
 interface SelectedFile {
@@ -170,10 +170,6 @@ export function ClaimImport() {
 
   async function handleFileSelected(file: File) {
     reset();
-    if (file.size > MAX_IMPORT_FILE_BYTES) {
-      setFileError('Ukuran file melebihi 2 MB.');
-      return;
-    }
     const nextFile = { name: file.name, content: await file.text() };
     if (!nextFile.content.trim()) {
       setFileError('File kosong.');
