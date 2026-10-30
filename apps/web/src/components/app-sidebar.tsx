@@ -38,6 +38,7 @@ import {
 import { useCurrentUser } from '@/hooks/use-current-user';
 import { LOGIN_PATH } from '@/lib/api-client';
 import { USER_ROLE_LABELS } from '@/lib/claim-labels';
+import { HOME_PATH_BY_ROLE } from '@/lib/return-path';
 import { useStartTour } from '@/providers/onboarding-provider';
 import { logOut } from '@/services/auth.service';
 import type { UserRole } from '@/types/auth.types';
@@ -57,7 +58,7 @@ interface MenuGroup {
 const MENU_GROUPS: MenuGroup[] = [
   {
     label: 'Verifikasi',
-    allowedRoles: ['VERIFIER', 'SUPERVISOR'],
+    allowedRoles: ['VERIFIER'],
     items: [
       { href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered },
       { href: '/imports', label: 'Impor Klaim', icon: LuFileUp },
@@ -98,6 +99,7 @@ export function AppSidebar() {
   const [isLogOutConfirmOpen, setIsLogOutConfirmOpen] = useState(false);
   const currentUser = currentUserQuery.data;
   const isCollapsed = state === 'collapsed' && !isMobile;
+  const isVerifier = currentUser?.role === 'VERIFIER';
   const visibleMenuGroups = MENU_GROUPS.filter(
     (menuGroup) =>
       currentUser && menuGroup.allowedRoles.includes(currentUser.role),
@@ -118,7 +120,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-sidebar-border">
       <SidebarHeader className="border-b border-sidebar-border p-3 group-data-[collapsible=icon]:px-2">
         <Link
-          href="/claims"
+          href={currentUser ? HOME_PATH_BY_ROLE[currentUser.role] : '/'}
           onClick={closeMobileSheet}
           className="flex items-center gap-2.5 overflow-hidden rounded-md group-data-[collapsible=icon]:justify-center"
         >
@@ -197,19 +199,21 @@ export function AppSidebar() {
           </div>
         )}
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => {
-                closeMobileSheet();
-                startTour();
-              }}
-              tooltip="Panduan"
-              className={MENU_BUTTON_CLASS_NAME}
-            >
-              <LuCircleHelp aria-hidden="true" />
-              <span>Panduan</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isVerifier && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => {
+                  closeMobileSheet();
+                  startTour();
+                }}
+                tooltip="Panduan"
+                className={MENU_BUTTON_CLASS_NAME}
+              >
+                <LuCircleHelp aria-hidden="true" />
+                <span>Panduan</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           {!isMobile && (
             <SidebarMenuItem>
               <SidebarMenuButton
