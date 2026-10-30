@@ -111,7 +111,7 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
     <section
       aria-labelledby="ai-analysis-heading"
       data-tour="claim-ai-analysis"
-      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-6 shadow-xs"
+      className="flex flex-col gap-4 rounded-xl border border-primary/30 bg-surface p-6 shadow-xs"
     >
       <div className="flex flex-col items-start gap-2">
         <div className="flex flex-wrap items-center gap-2">
@@ -129,7 +129,7 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         </div>
         <h2
           id="ai-analysis-heading"
-          className="text-body font-semibold tracking-display text-ink"
+          className="font-display text-body font-semibold tracking-display text-primary-hover"
         >
           {headline}
         </h2>
@@ -141,20 +141,22 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         unreadDocumentCount={unreadDocumentCount}
         isAnalyzed={claim.analyzedAt !== null}
       />
-      <div className="flex gap-3 rounded-lg border border-hairline bg-canvas px-4 py-3">
+      <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary-wash px-4 py-3">
         <LuLightbulb
-          className="mt-0.5 size-4 shrink-0 text-ink"
+          className="mt-0.5 size-4 shrink-0 text-primary-hover"
           aria-hidden="true"
         />
         <p className="text-small text-ink">
-          <span className="font-medium">Saran langkah berikutnya. </span>
+          <span className="font-semibold text-primary-hover">
+            Saran langkah berikutnya.{' '}
+          </span>
           {suggestion}
         </p>
       </div>
       <ol className="grid gap-3 sm:grid-cols-3">
         {ANALYSIS_STEPS.map((analysisStep, stepIndex) => (
           <li key={analysisStep.title} className="flex gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-hairline bg-canvas text-ink">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-wash text-primary-hover">
               <analysisStep.icon className="size-4" aria-hidden="true" />
             </span>
             <span className="flex flex-col gap-0.5">
