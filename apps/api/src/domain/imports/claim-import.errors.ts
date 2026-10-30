@@ -1,5 +1,5 @@
 import { DomainError } from '../shared/domain-error';
-import { MAX_IMPORT_CLAIMS, MAX_IMPORT_FILE_BYTES } from './imported-claim';
+import { MAX_IMPORT_FILE_BYTES } from './imported-claim';
 
 /** The file is not in the INTEGRA format; the client must confirm the paid AI step. */
 export class ImportNeedsAiError extends DomainError {
@@ -25,13 +25,5 @@ export class ImportFileTooLargeError extends DomainError {
 
   constructor() {
     super(`The file exceeds ${MAX_IMPORT_FILE_BYTES / 1024 / 1024} MB`);
-  }
-}
-
-export class ImportTooManyClaimsError extends DomainError {
-  readonly code = 'IMPORT_TOO_MANY_CLAIMS';
-
-  constructor() {
-    super(`The file holds more than ${MAX_IMPORT_CLAIMS} claims`);
   }
 }
