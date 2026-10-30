@@ -22,7 +22,6 @@ INTEGRA keeps Genesis's gallery-frame idea but leads with borders: every surface
 | Success        | `#10B981` | `success` (`success-ink` `#047857`) | Approved status, saved confirmations                                                     |
 | Warning        | `#F59E0B` | `warning` (`warning-ink` `#B45309`) | "Perlu klarifikasi", findings, pending caution, identical text                           |
 | Error          | `#EF4444` | `error` (`error-ink` `#B91C1C`)     | Escalation, high priority, validation errors, destructive actions                        |
-| Info           | `#3B82F6` | `info` (`info-ink` `#1D4ED8`)       | "Menunggu keputusan" status chip and its chart series                                    |
 
 INTEGRA green, taken from the logo wordmark, is reserved for interactive elements and the AI analysis card on the Kartu Klaim (`claim-card/ai-analysis-card.tsx`: `primary/30` card border, `primary-hover` headline, and `primary-wash` suggestion box and step tiles, so the AI result stands out): never for other decoration, static text, money, or status chips. Semantic colors appear as a 10% tint with a 30% border and their `*-ink` text tone, which keeps chip text above 4.5:1 contrast. The INTEGRA logo keeps its own colors and is never recolored. Light mode is the only theme for now. Color tokens live in a non-inline `@theme` block, so charts can reference them as `var(--color-warning)` and so on.
 

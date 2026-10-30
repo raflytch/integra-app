@@ -34,8 +34,8 @@
   }
 }
 
-/* Not inline: charts read these as CSS variables, e.g. var(--color-warning). */
-@theme {
+/* Static: charts read these as CSS variables (e.g. var(--color-chart-neutral)) that no utility class references. */
+@theme static {
   --color-chart-neutral: #d4d4d8;
   --color-canvas: #fafafa;
   --color-surface: #ffffff;
@@ -52,8 +52,6 @@
   --color-warning-ink: #b45309;
   --color-error: #ef4444;
   --color-error-ink: #b91c1c;
-  --color-info: #3b82f6;
-  --color-info-ink: #1d4ed8;
 }
 
 @theme inline {

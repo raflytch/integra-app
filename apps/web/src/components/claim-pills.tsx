@@ -34,7 +34,6 @@ const PILL_TONE_CLASS_NAMES = {
   success: 'border-success/30 bg-success/10 text-success-ink',
   warning: 'border-warning/30 bg-warning/10 text-warning-ink',
   error: 'border-error/30 bg-error/10 text-error-ink',
-  info: 'border-info/30 bg-info/10 text-info-ink',
   inverse: 'border-transparent bg-ink text-surface',
 } as const;
 
@@ -47,7 +46,7 @@ const CLAIM_STATUS_APPEARANCE: Record<
   ClaimStatus,
   { tone: PillTone; icon: IconType }
 > = {
-  PENDING: { tone: 'info', icon: LuCircleDashed },
+  PENDING: { tone: 'neutral', icon: LuCircleDashed },
   CLARIFICATION_REQUESTED: { tone: 'warning', icon: LuMessageSquareText },
   ESCALATED: { tone: 'error', icon: LuShieldAlert },
   APPROVED: { tone: 'success', icon: LuCircleCheck },
