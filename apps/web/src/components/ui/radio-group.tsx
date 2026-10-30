@@ -35,7 +35,7 @@ function RadioGroupItem({
         data-slot="radio-group-indicator"
         className="relative flex items-center justify-center"
       >
-        <LuCircle className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 fill-primary" />
+        <LuCircle className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 fill-current" />
       </RadioGroupPrimitive.Indicator>
     </RadioGroupPrimitive.Item>
   );

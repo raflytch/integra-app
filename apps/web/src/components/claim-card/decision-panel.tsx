@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { DECISION_ACTION_DETAILS } from '@/lib/claim-labels';
 import { formatDateTime } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { recordDecision } from '@/services/claim.service';
 import type { ClaimDecision, DecisionAction } from '@/types/claim.types';
 
@@ -30,6 +31,27 @@ export const DECISION_REASON_INPUT_ID = 'decision-reason';
 
 const MIN_REASON_LENGTH = 10;
 const MAX_REASON_LENGTH = 1000;
+const DECISION_TONE_CLASS_NAMES: Record<
+  DecisionAction,
+  { option: string; radio: string }
+> = {
+  APPROVE: {
+    option:
+      'has-[[data-state=checked]]:border-success has-[[data-state=checked]]:bg-success/10',
+    radio: 'text-success data-[state=checked]:border-success',
+  },
+  REQUEST_CLARIFICATION: {
+    option:
+      'has-[[data-state=checked]]:border-warning has-[[data-state=checked]]:bg-warning/10',
+    radio: 'text-warning data-[state=checked]:border-warning',
+  },
+  ESCALATE: {
+    option:
+      'has-[[data-state=checked]]:border-error has-[[data-state=checked]]:bg-error/10',
+    radio: 'text-error data-[state=checked]:border-error',
+  },
+};
+
 const DECISION_ACTIONS = Object.keys(
   DECISION_ACTION_DETAILS,
 ) as DecisionAction[];
@@ -132,12 +154,18 @@ export function DecisionPanel({
             <label
               key={action}
               htmlFor={`decision-${action}`}
-              className="flex cursor-pointer items-start gap-3 rounded-md border border-hairline px-3 py-2 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-primary-wash"
+              className={cn(
+                'flex cursor-pointer items-start gap-3 rounded-md border border-hairline px-3 py-2',
+                DECISION_TONE_CLASS_NAMES[action].option,
+              )}
             >
               <RadioGroupItem
                 id={`decision-${action}`}
                 value={action}
-                className="mt-0.5"
+                className={cn(
+                  'mt-0.5',
+                  DECISION_TONE_CLASS_NAMES[action].radio,
+                )}
               />
               <span className="flex flex-col gap-0.5">
                 <span className="text-small font-medium text-ink">
