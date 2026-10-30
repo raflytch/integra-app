@@ -247,6 +247,7 @@ export function AppSidebar() {
         title="Keluar dari INTEGRA?"
         description="Untuk masuk lagi, Anda perlu email dan kode dari aplikasi autentikator."
         confirmLabel="Ya, keluar"
+        isDestructive
         onConfirm={handleLogOut}
       />
     </Sidebar>
