@@ -120,7 +120,7 @@ export function AppSidebar() {
         <Link
           href="/claims"
           onClick={closeMobileSheet}
-          className="flex items-center justify-center gap-2.5 overflow-hidden rounded-md"
+          className="flex items-center gap-2.5 overflow-hidden rounded-md group-data-[collapsible=icon]:justify-center"
         >
           <Image
             src="/integra-mark-white.png"
