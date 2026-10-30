@@ -40,6 +40,7 @@ const PILL_TONE_CLASS_NAMES = {
 type PillTone = keyof typeof PILL_TONE_CLASS_NAMES;
 
 const SEVERITY_LEVEL_NUMERALS = ['I', 'II', 'III'];
+const SEVERITY_LEVEL_TONES: PillTone[] = ['outline', 'warning', 'error'];
 
 const CLAIM_STATUS_APPEARANCE: Record<
   ClaimStatus,
@@ -173,7 +174,7 @@ export function TestSignalPill({
 
 export function SeverityPill({ severityLevel }: { severityLevel: number }) {
   return (
-    <Pill tone="outline">
+    <Pill tone={SEVERITY_LEVEL_TONES[severityLevel - 1] ?? 'outline'}>
       Severity {SEVERITY_LEVEL_NUMERALS[severityLevel - 1] ?? severityLevel}
     </Pill>
   );
