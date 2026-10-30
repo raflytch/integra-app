@@ -2,7 +2,7 @@
 # One Dockerfile for the monorepo. Build from the repository root with a target:
 #   docker build --target api .      NestJS API runtime
 #   docker build --target web .      Next.js standalone runtime
-#   docker build --target migrate .  Prisma migrations and seed scripts
+#   docker build --target migrate .  Prisma migrations, evidence rules, and seed scripts
 
 ARG NODE_IMAGE=node:22-bookworm-slim
 
@@ -34,7 +34,8 @@ RUN npm run prisma:generate && npm run build --workspace=@app/api
 
 FROM api-build AS migrate
 WORKDIR /app/apps/api
-CMD ["npx", "prisma", "migrate", "deploy"]
+# Evidence rules are idempotent reference data, refreshed on every deploy.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed:rules"]
 
 FROM base AS api
 ENV NODE_ENV=production

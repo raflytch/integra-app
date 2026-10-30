@@ -7,7 +7,7 @@ Internet ──80/443──► caddy (automatic HTTPS for integraa.site)
                        ├── /api/*  ──► api  (NestJS :3001, /api prefix stripped)
                        └── /*      ──► web  (Next.js standalone :3000)
                      api ──► postgres (named volume, not published)
-                     migrate: `prisma migrate deploy`, runs before api on every `up`
+                     migrate: `prisma migrate deploy` + `seed:rules`, runs before api on every `up`
 ```
 
 | File                          | Purpose                                                        |
@@ -165,7 +165,7 @@ GHCR needs no extra secret: the workflow pushes with its own `GITHUB_TOKEN` and 
 
 ## 8. First deploy
 
-Merge the pull request into `main`, or run **Actions → CI/CD → Run workflow** on `main`. The `deploy` job uploads `docker-compose.yml` and `Caddyfile` to `/opt/integra`, pulls the images tagged with the commit SHA, runs migrations, and waits for the API health check.
+Merge the pull request into `main`, or run **Actions → CI/CD → Run workflow** on `main`. The `deploy` job uploads `docker-compose.yml` and `Caddyfile` to `/opt/integra`, pulls the images tagged with the commit SHA, runs migrations, seeds the Uji Ada evidence rules (`seed:rules`, idempotent, no claims), and waits for the API health check.
 
 On the VPS:
 
@@ -188,6 +188,7 @@ All commands run in `/opt/integra`.
 | Restart after `.env` edit | `docker compose up -d`                                                                                                       |
 | Roll back to a commit     | `sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=<commit-sha>/' .env && docker compose up -d` (migrations are forward-only)                |
 | Free demo seed            | `docker compose run --rm migrate npm run seed:demo`                                                                          |
+| Evidence rules only       | `docker compose run --rm migrate npm run seed:rules` (also runs on every deploy)                                             |
 | Backup database           | `docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > integra-$(date +%F).dump`          |
 | Restore database          | `docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean' < integra-YYYY-MM-DD.dump` |
 
