@@ -31,8 +31,12 @@ export function formatDateTime(timestamp: string): string {
   return dateTimeFormatter.format(new Date(timestamp));
 }
 
+/** Never rounds a partial ratio to 0% or 100%, so a few claims stay visible. */
 export function formatPercent(ratio: number): string {
-  return `${Math.round(ratio * 100)}%`;
+  const percent = ratio * 100;
+  if (percent > 0 && percent < 1) return '<1%';
+  if (percent > 99 && percent < 100) return '>99%';
+  return `${Math.round(percent)}%`;
 }
 
 export function countDaysBetween(startDate: string, endDate: string): number {
