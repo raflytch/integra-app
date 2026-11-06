@@ -24,7 +24,7 @@ export function FindingCitationItem({
 }) {
   if (citation.kind === 'MISSING_EVIDENCE') {
     return (
-      <div className="flex flex-col gap-1 rounded-lg border border-hairline bg-canvas px-3 py-2">
+      <div className="flex flex-col gap-1">
         <p className="text-caption text-ink-secondary">
           Bukti tidak ditemukan · {EVIDENCE_TYPE_LABELS[citation.evidenceType]}
         </p>

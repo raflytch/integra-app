@@ -9,6 +9,9 @@ import { DOCUMENT_TYPE_LABELS } from '@/lib/claim-labels';
 import { formatDateTime } from '@/lib/format';
 import type { ClaimDocument } from '@/types/claim.types';
 
+/** Sentence ends at . ! ? followed by whitespace, or at a line break; decimals stay intact. */
+const SENTENCE_BOUNDARY_PATTERN = /(?<=[.!?])\s+|\n+/;
+
 export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {
   return (
     <section
@@ -45,8 +48,17 @@ export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {
                   </span>
                 </span>
               </AccordionTrigger>
-              <AccordionContent className="text-small whitespace-pre-line text-ink-secondary">
-                {document.content}
+              <AccordionContent>
+                <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline text-small text-ink-secondary">
+                  {document.content
+                    .split(SENTENCE_BOUNDARY_PATTERN)
+                    .filter((sentence) => sentence.trim())
+                    .map((sentence, sentenceIndex) => (
+                      <li key={sentenceIndex} className="px-3 py-2">
+                        {sentence}
+                      </li>
+                    ))}
+                </ul>
               </AccordionContent>
             </AccordionItem>
           ))}

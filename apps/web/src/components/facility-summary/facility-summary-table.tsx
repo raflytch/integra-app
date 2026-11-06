@@ -246,14 +246,14 @@ export function FacilitySummaryTable() {
                   <TableCell className="min-w-56 whitespace-normal">
                     <FacilityIdentity summary={summary} />
                   </TableCell>
-                  <TableCell className="text-ink tabular-nums">
+                  <TableCell className="text-center text-ink tabular-nums">
                     {summary.claimCount}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">
                     <CountPill count={summary.flaggedClaimCount} />
                   </TableCell>
                   {TEST_TYPE_ORDER.map((testType) => (
-                    <TableCell key={testType}>
+                    <TableCell key={testType} className="text-center">
                       <CountPill count={summary.findingCounts[testType]} />
                     </TableCell>
                   ))}
