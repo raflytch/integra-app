@@ -42,6 +42,14 @@ function buildClickBlockers(spotlightRect: DOMRect): CSSProperties[] {
   ];
 }
 
+function buildSpotlightClipPath(spotlightRect: DOMRect): string {
+  const top = spotlightRect.top - SPOTLIGHT_PADDING_PX;
+  const bottom = spotlightRect.bottom + SPOTLIGHT_PADDING_PX;
+  const left = spotlightRect.left - SPOTLIGHT_PADDING_PX;
+  const right = spotlightRect.right + SPOTLIGHT_PADDING_PX;
+  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${left}px ${top}px, ${right}px ${top}px, ${right}px ${bottom}px, ${left}px ${bottom}px, ${left}px ${top}px)`;
+}
+
 /**
  * Renders one tour step: a spotlight around its target with a floating card,
  * or a centered dialog when the step has no target or the target is missing.
@@ -80,6 +88,10 @@ export function TourOverlay({
   if (!step.target || isTargetMissing) {
     return (
       <Dialog open onOpenChange={(isOpen) => !isOpen && onSkip()}>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 z-50 backdrop-blur-[2px]"
+        />
         <DialogContent
           showCloseButton={false}
           className="rounded-xl border-hairline bg-surface p-6 sm:max-w-md"
@@ -99,7 +111,7 @@ export function TourOverlay({
 
   if (!targetRect) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 backdrop-blur-[2px]">
         <Spinner
           className="size-6 text-primary-wash"
           aria-label="Memuat langkah panduan"
@@ -125,6 +137,11 @@ export function TourOverlay({
           style={blockerStyle}
         />
       ))}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-0 z-50 backdrop-blur-[2px]"
+        style={{ clipPath: buildSpotlightClipPath(targetRect) }}
+      />
       <div
         aria-hidden="true"
         className="pointer-events-none fixed z-50 rounded-lg border-2 border-primary motion-safe:transition-all motion-safe:duration-300 motion-safe:ease-out"

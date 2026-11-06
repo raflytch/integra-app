@@ -1,7 +1,12 @@
+import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 
-/** The AI reads every document of a claim through a paid LLM; one claim can take minutes. */
-const ANALYSIS_TIMEOUT_MS = 10 * 60 * 1000;
+/** A claim taking longer than this is reported to the verifier as timed out. */
+export const ANALYSIS_TIMEOUT_MS = 60 * 1000;
+
+export function isAnalysisTimeoutError(error: unknown): boolean {
+  return isAxiosError(error) && error.code === 'ECONNABORTED';
+}
 
 export interface ClaimAnalysisResult {
   extractedDocumentCount: number;

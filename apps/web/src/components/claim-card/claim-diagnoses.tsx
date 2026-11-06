@@ -23,9 +23,9 @@ export function ClaimDiagnoses({
       >
         Diagnosis
       </h2>
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
         {diagnoses.map((diagnosis) => (
-          <li key={diagnosis.id} className="flex items-start gap-3">
+          <li key={diagnosis.id} className="flex items-start gap-3 px-3 py-2.5">
             <span className="w-14 shrink-0 font-mono text-caption leading-5 text-ink-secondary">
               {diagnosis.icd10Code}
             </span>

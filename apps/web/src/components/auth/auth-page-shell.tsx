@@ -32,46 +32,36 @@ const PRODUCT_PRINCIPLES: {
 function BrandPanel() {
   return (
     <aside
-      className={`hidden flex-col justify-between gap-12 border-r border-hairline bg-canvas p-12 lg:flex ${DOT_GRID_CLASS_NAME}`}
+      className={`hidden flex-col items-center justify-center gap-12 border-r border-hairline bg-canvas p-12 lg:flex ${DOT_GRID_CLASS_NAME}`}
     >
       <Image
         src="/integra-logo.png"
         alt="INTEGRA"
-        width={200}
-        height={51}
+        width={320}
+        height={82}
         priority
       />
-      <div className="flex max-w-lg flex-col gap-10">
-        <div className="flex flex-col gap-4">
-          <p className="text-overline font-medium tracking-wider text-ink-secondary uppercase">
-            Verifikasi klaim JKN
-          </p>
-          <h2 className="font-display text-section font-semibold tracking-display text-ink xl:text-headline">
-            Detect with evidence. Decide with integrity.
-          </h2>
-          <p className="text-body text-ink-secondary">
-            Asisten peninjau klaim yang selalu berlandaskan bukti klinis.
-          </p>
-        </div>
-        <ul className="flex flex-col divide-y divide-hairline rounded-xl border border-hairline bg-surface shadow-xs">
-          {PRODUCT_PRINCIPLES.map((principle) => (
-            <li key={principle.title} className="flex gap-3 px-4 py-3">
-              <principle.icon
-                className="mt-0.5 size-4 shrink-0 text-ink"
-                aria-hidden="true"
-              />
-              <span className="flex flex-col gap-0.5">
-                <span className="text-small font-medium text-ink">
-                  {principle.title}
-                </span>
-                <span className="text-small text-ink-secondary">
-                  {principle.description}
-                </span>
+      <ul className="flex w-full max-w-md flex-col gap-3">
+        {PRODUCT_PRINCIPLES.map((principle) => (
+          <li
+            key={principle.title}
+            className="flex gap-3 rounded-xl border border-hairline bg-surface px-4 py-3 shadow-xs"
+          >
+            <principle.icon
+              className="mt-0.5 size-4 shrink-0 text-ink"
+              aria-hidden="true"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-small font-medium text-ink">
+                {principle.title}
               </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+              <span className="text-small text-ink-secondary">
+                {principle.description}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </aside>
   );
 }

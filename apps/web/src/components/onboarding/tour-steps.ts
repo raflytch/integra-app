@@ -20,7 +20,7 @@ export const OPEN_FIRST_CLAIM_STEP_ID = 'queue-first-claim';
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
-    title: 'Selamat datang di INTEGRA',
+    title: 'Selamat datang di',
     description:
       'Panduan singkat ini menunjukkan alur verifikasi dari antrean sampai keputusan. INTEGRA menandai klaim yang buktinya kurang, tidak konsisten, atau tersalin. Keputusan tetap di tangan Anda.',
     showsLogo: true,

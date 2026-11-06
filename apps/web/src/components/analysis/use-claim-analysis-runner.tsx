@@ -5,7 +5,10 @@ import { useRef, useState } from 'react';
 import { LuSparkles } from 'react-icons/lu';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatRupiah } from '@/lib/format';
-import { analyzeClaim } from '@/services/analysis.service';
+import {
+  analyzeClaim,
+  isAnalysisTimeoutError,
+} from '@/services/analysis.service';
 import { isNotFoundError } from '@/services/claim.service';
 import { AnalysisLoadingOverlay } from './analysis-loading-overlay';
 import { AnalysisResultDialog } from './analysis-result-dialog';
@@ -30,7 +33,7 @@ interface AnalysisRunSummary {
   /** Input plus output LLM tokens of every successful extraction. */
   tokenCount: number;
   unfinishedClaimCount: number;
-  stopReason: 'COMPLETED' | 'STOPPED' | 'AI_UNAVAILABLE';
+  stopReason: 'COMPLETED' | 'STOPPED' | 'TIMED_OUT' | 'AI_UNAVAILABLE';
 }
 
 type RunPhase = 'IDLE' | 'CONFIRMING' | 'RUNNING' | 'SHOWING_RESULT';
@@ -59,8 +62,11 @@ function describeConfirmation(targets: AnalysisTarget[]): string {
 
 function describeRun(summary: AnalysisRunSummary): string {
   const analyzedSentence = `AI menganalisis ${formatCount(summary.analyzedClaimCount)} dari ${formatCount(summary.requestedClaimCount)} klaim yang dipilih.`;
+  if (summary.stopReason === 'TIMED_OUT') {
+    return `${analyzedSentence} Analisis memakan waktu lebih dari 1 menit, jadi kami hentikan dan ${formatCount(summary.unfinishedClaimCount)} klaim belum selesai. Data Anda aman. Silakan coba lagi beberapa saat lagi. Jika masih gagal, hubungi tim IT.`;
+  }
   if (summary.stopReason === 'AI_UNAVAILABLE') {
-    return `${analyzedSentence} AI sedang tidak tersedia, jadi ${formatCount(summary.unfinishedClaimCount)} klaim lainnya belum dianalisis. Coba lagi beberapa saat lagi.`;
+    return `${analyzedSentence} Maaf, AI sedang tidak dapat dihubungi, jadi ${formatCount(summary.unfinishedClaimCount)} klaim belum dianalisis. Data Anda aman. Silakan coba lagi beberapa saat lagi. Jika masih gagal, hubungi tim IT.`;
   }
   if (summary.stopReason === 'STOPPED') {
     return `${analyzedSentence} Analisis dihentikan; ${formatCount(summary.unfinishedClaimCount)} klaim belum dianalisis.`;
@@ -132,7 +138,10 @@ export function useClaimAnalysisRunner() {
         } catch (error) {
           runSummary.unfinishedClaimCount += 1;
           // A claim deleted meanwhile is skipped; any other failure means the AI or API is down.
-          if (!isNotFoundError(error)) {
+          if (isAnalysisTimeoutError(error)) {
+            runSummary.stopReason = 'TIMED_OUT';
+            isStopRequestedRef.current = true;
+          } else if (!isNotFoundError(error)) {
             runSummary.stopReason = 'AI_UNAVAILABLE';
             isStopRequestedRef.current = true;
           }

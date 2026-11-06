@@ -1,6 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { IconType } from 'react-icons';
+import { LuCalendarDays, LuHospital, LuUser } from 'react-icons/lu';
 import {
   ClaimStatusPill,
   FacilityTypePill,
@@ -21,19 +23,24 @@ import { maskIdentifier, maskPersonName } from '@/lib/pii';
 import type { ClaimDetail } from '@/types/claim.types';
 
 function SummaryItem({
+  icon: Icon,
   label,
   value,
   detail,
   action,
 }: {
+  icon: IconType;
   label: string;
   value: string;
   detail: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-caption text-ink-secondary">{label}</dt>
+    <div className="flex min-w-0 flex-col gap-0.5 px-4 py-3">
+      <dt className="flex items-center gap-1.5 text-caption text-ink-secondary">
+        <Icon className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+        {label}
+      </dt>
       <dd className="truncate font-medium text-ink">{value}</dd>
       <dd className="truncate text-caption text-ink-secondary">{detail}</dd>
       {action && <dd className="-ml-2 pt-1">{action}</dd>}
@@ -77,13 +84,15 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
         <h1 className="font-display text-section font-semibold tracking-display text-ink">
           {primaryDiagnosis?.name ?? claim.inacbgCode}
         </h1>
-        <dl className="grid gap-4 text-small sm:grid-cols-3">
+        <dl className="grid divide-y divide-hairline rounded-xl border border-hairline bg-surface text-small sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <SummaryItem
+            icon={LuHospital}
             label="Faskes"
             value={claim.facility.name}
             detail={`${claim.facility.code} · ${claim.facility.city}`}
           />
           <SummaryItem
+            icon={LuUser}
             label="Pasien"
             value={
               isPatientDataVisible
@@ -98,6 +107,7 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
             action={<PatientDataToggle />}
           />
           <SummaryItem
+            icon={LuCalendarDays}
             label="Rawat inap"
             value={`${formatDate(claim.admittedAt)} – ${formatDate(claim.dischargedAt)}`}
             detail={`${lengthOfStayDays} hari`}

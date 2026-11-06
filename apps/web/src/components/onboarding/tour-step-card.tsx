@@ -31,24 +31,27 @@ export function TourStepCard({
 
   return (
     <div className="flex flex-col gap-4">
-      {step.showsLogo && (
-        <Image
-          src="/integra-logo.png"
-          alt="INTEGRA"
-          width={220}
-          height={56}
-          priority
-        />
-      )}
       <div className="flex flex-col gap-1.5">
         <p className="text-caption text-ink-secondary">
           Langkah {stepIndex + 1} dari {totalSteps}
         </p>
         <TitleElement
           id={titleId}
-          className="text-body font-semibold tracking-display text-ink"
+          className={cn(
+            'text-body font-semibold tracking-display text-ink',
+            step.showsLogo && 'flex flex-wrap items-center gap-2 text-subhead',
+          )}
         >
           {step.title}
+          {step.showsLogo && (
+            <Image
+              src="/integra-logo.png"
+              alt="INTEGRA"
+              width={118}
+              height={30}
+              priority
+            />
+          )}
         </TitleElement>
         <p className="text-small leading-normal text-ink-secondary">
           {isTargetMissing
