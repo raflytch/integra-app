@@ -10,7 +10,7 @@ import { useTourTarget } from '@/hooks/use-tour-target';
 const LOGIN_TOUR_STEPS: TourStep[] = [
   {
     id: 'login-welcome',
-    title: 'Selamat datang di INTEGRA',
+    title: 'Selamat datang di',
     description:
       'Asisten verifikasi klaim JKN yang menandai klaim dengan bukti kurang, tidak konsisten, atau tersalin. Panduan singkat ini menunjukkan cara masuk, termasuk dengan akun demo.',
     showsLogo: true,
