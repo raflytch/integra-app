@@ -18,6 +18,7 @@ import {
   DATASET_FILE_PATH,
   syntheticDatasetSchema,
 } from './synthetic/dataset.schema';
+import { upsertEvidenceRules } from './synthetic/upsert-evidence-rules';
 
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 
@@ -69,19 +70,7 @@ async function main(): Promise<void> {
       patientIdByRecordNo.set(patient.medicalRecordNo, id);
     }
 
-    for (const evidenceRule of dataset.evidenceRules) {
-      await prisma.evidenceRule.upsert({
-        where: {
-          icd10Code_evidenceType_expected: {
-            icd10Code: evidenceRule.icd10Code,
-            evidenceType: evidenceRule.evidenceType,
-            expected: evidenceRule.expected,
-          },
-        },
-        create: evidenceRule,
-        update: { guidelineRef: evidenceRule.guidelineRef },
-      });
-    }
+    await upsertEvidenceRules(prisma, dataset.evidenceRules);
 
     for (const claim of dataset.claims) {
       const facilityId = facilityIdByCode.get(claim.facilityCode);

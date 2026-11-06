@@ -92,6 +92,7 @@ Key variables in `apps/api/.env`:
 
 - `npm run seed:users` creates the demo accounts `verifikator@integra.local` and `supervisor@integra.local` and prints each TOTP setup key with a QR code. The QR code is also saved as a PNG in the gitignored `apps/api/.totp-qr/`. Add `-- --rotate` for a new key. Both demo accounts sign in with the email alone, without an authenticator code; every other account always needs its code.
 - `npm run seed:demo` creates 12 fictional facilities and 300 raw claims (April to September 2026, about 1,950 clinical documents) without calling the LLM. Every claim is unanalyzed and awaits a decision. For another size, use `npm run seed:demo -- --count=800` (up to 5,000). Rerunning it resets the `KLM-DEMO-*` claims with their findings and decisions, and the `RM-DEMO-*` patients.
+- `npm run seed:rules` loads only the Uji Ada evidence rules (no claims). It is idempotent, and production runs it on every deploy, so imported claims are judged without `seed:demo`.
 - `npm run seed:fixture` loads the UC-1 contract claim with its AI extraction and evidence rules from `docs/contracts`.
 - Anyone can create a verifier account from the login page: enter an email that has no account, confirm the prompt, scan the QR code with an authenticator app, and enter its 6-digit code within 5 minutes. The account is created only once the code matches.
 
@@ -117,6 +118,7 @@ AI analysis costs money. Nothing is analyzed until a verifier chooses it: click 
 | `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)                          |
 | `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR codes                 |
 | `npm run seed:demo`       | Reset `KLM-DEMO-*` claims to raw, unanalyzed data                        |
+| `npm run seed:rules`      | Load the Uji Ada evidence rules only (no claims, no LLM)                 |
 | `npm run seed:fixture`    | Load the UC-1 contract claim                                             |
 | `npm run llm:smoke`       | Two small LLM calls to check the configuration (paid)                    |
 | `npm run data:generate`   | Generate the synthetic dataset with the LLM (paid)                       |
