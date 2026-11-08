@@ -125,6 +125,8 @@ export class OpenAiLlmClient extends LlmClient {
           model: this.model,
           max_tokens: request.maxTokens ?? this.maxTokens,
           temperature: request.temperature,
+          // Thinking off: extraction only copies quotes, and thinking made it 4x slower.
+          reasoning_effort: 'none',
           messages: [
             ...(request.system
               ? [{ role: 'system' as const, content: request.system }]

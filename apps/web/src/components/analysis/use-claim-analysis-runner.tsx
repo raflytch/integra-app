@@ -6,11 +6,15 @@ import { LuSparkles } from 'react-icons/lu';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatRupiah } from '@/lib/format';
 import {
+  AnalysisStreamError,
   analyzeClaim,
   isAnalysisTimeoutError,
 } from '@/services/analysis.service';
 import { isNotFoundError } from '@/services/claim.service';
-import { AnalysisLoadingOverlay } from './analysis-loading-overlay';
+import {
+  AnalysisLoadingOverlay,
+  type ClaimRun,
+} from './analysis-loading-overlay';
 import { AnalysisResultDialog } from './analysis-result-dialog';
 
 /** Claims analyzed in parallel; the API also caps concurrent LLM calls. */
@@ -87,8 +91,7 @@ export function useClaimAnalysisRunner() {
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<RunPhase>('IDLE');
   const [targets, setTargets] = useState<AnalysisTarget[]>([]);
-  const [completedClaimCount, setCompletedClaimCount] = useState(0);
-  const [inFlightClaimNos, setInFlightClaimNos] = useState<string[]>([]);
+  const [claimRuns, setClaimRuns] = useState<ClaimRun[]>([]);
   const [isStopping, setIsStopping] = useState(false);
   const [summary, setSummary] = useState<AnalysisRunSummary | null>(null);
   const isStopRequestedRef = useRef(false);
@@ -114,16 +117,48 @@ export function useClaimAnalysisRunner() {
     };
     isStopRequestedRef.current = false;
     setIsStopping(false);
-    setCompletedClaimCount(0);
-    setInFlightClaimNos([]);
+    setClaimRuns(
+      targets.map((target) => ({
+        ...target,
+        steps: [],
+        state: { status: 'QUEUED' },
+      })),
+    );
     setPhase('RUNNING');
+
+    function updateClaimRun(
+      claimId: string,
+      update: (run: ClaimRun) => Partial<ClaimRun>,
+    ) {
+      setClaimRuns((runs) =>
+        runs.map((run) =>
+          run.id === claimId ? { ...run, ...update(run) } : run,
+        ),
+      );
+    }
 
     async function analyzeNextClaims() {
       while (pendingTargets.length > 0 && !isStopRequestedRef.current) {
         const target = pendingTargets.shift()!;
-        setInFlightClaimNos((claimNos) => [...claimNos, target.claimNo]);
+        const startedAt = Date.now();
+        updateClaimRun(target.id, () => ({
+          state: { status: 'RUNNING', startedAt },
+        }));
         try {
-          const result = await analyzeClaim(target.id);
+          const result = await analyzeClaim(target.id, (step) => {
+            const stepStartedAt = Date.now();
+            updateClaimRun(target.id, (run) => ({
+              steps: [...run.steps, { step, startedAt: stepStartedAt }],
+            }));
+          });
+          updateClaimRun(target.id, () => ({
+            state: {
+              status: 'DONE',
+              startedAt,
+              durationMs: Date.now() - startedAt,
+              result,
+            },
+          }));
           runSummary.extractedDocumentCount += result.extractedDocumentCount;
           runSummary.failedDocumentCount += result.failedDocumentCount;
           runSummary.tokenCount +=
@@ -138,18 +173,25 @@ export function useClaimAnalysisRunner() {
         } catch (error) {
           runSummary.unfinishedClaimCount += 1;
           // A claim deleted meanwhile is skipped; any other failure means the AI or API is down.
-          if (isAnalysisTimeoutError(error)) {
-            runSummary.stopReason = 'TIMED_OUT';
-            isStopRequestedRef.current = true;
-          } else if (!isNotFoundError(error)) {
-            runSummary.stopReason = 'AI_UNAVAILABLE';
+          const reason = isAnalysisTimeoutError(error)
+            ? 'TIMED_OUT'
+            : isNotFoundError(error) ||
+                (error instanceof AnalysisStreamError &&
+                  error.code === 'CLAIM_NOT_FOUND')
+              ? 'NOT_FOUND'
+              : 'AI_UNAVAILABLE';
+          if (reason !== 'NOT_FOUND') {
+            runSummary.stopReason = reason;
             isStopRequestedRef.current = true;
           }
-        } finally {
-          setInFlightClaimNos((claimNos) =>
-            claimNos.filter((claimNo) => claimNo !== target.claimNo),
-          );
-          setCompletedClaimCount((count) => count + 1);
+          updateClaimRun(target.id, () => ({
+            state: {
+              status: 'FAILED',
+              startedAt,
+              durationMs: Date.now() - startedAt,
+              reason,
+            },
+          }));
         }
       }
     }
@@ -202,9 +244,7 @@ export function useClaimAnalysisRunner() {
       />
       <AnalysisLoadingOverlay
         open={phase === 'RUNNING'}
-        completedClaimCount={completedClaimCount}
-        totalClaimCount={targets.length}
-        inFlightClaimNos={inFlightClaimNos}
+        claimRuns={claimRuns}
         isStopping={isStopping}
         onStop={stopAnalysis}
       />

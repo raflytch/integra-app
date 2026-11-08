@@ -5,7 +5,10 @@
 	encode zstd gzip
 
 	handle_path /api/* {
-		reverse_proxy api:3001
+		# Analysis streams its progress, so responses are passed on without buffering.
+		reverse_proxy api:3001 {
+			flush_interval -1
+		}
 	}
 
 	handle {

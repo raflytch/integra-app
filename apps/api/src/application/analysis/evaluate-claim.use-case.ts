@@ -8,6 +8,9 @@ import type { RunConsistencyTestUseCase } from './run-consistency-test.use-case'
 import type { RunExistenceTestUseCase } from './run-existence-test.use-case';
 import type { RunSimilarityTestUseCase } from './run-similarity-test.use-case';
 
+/** A detector about to run, reported so the client can show live progress. */
+export type DetectorStep = 'EXISTENCE' | 'CONSISTENCY' | 'SIMILARITY';
+
 export interface ClaimEvaluation {
   findingCount: number;
   potentialGap: number;
@@ -25,9 +28,13 @@ export class EvaluateClaimUseCase {
   async execute(
     claim: ClaimEvidence,
     evidenceRules: EvidenceRule[],
+    onStep: (step: DetectorStep) => void = () => {},
   ): Promise<ClaimEvaluation> {
+    onStep('EXISTENCE');
     await this.runExistenceTest.execute(claim, evidenceRules);
+    onStep('CONSISTENCY');
     await this.runConsistencyTest.execute(claim);
+    onStep('SIMILARITY');
     await this.runSimilarityTest.execute(claim);
 
     const findingSignals = await this.analysisRepository.findFindingSignals(

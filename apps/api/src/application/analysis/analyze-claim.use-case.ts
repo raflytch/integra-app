@@ -4,6 +4,7 @@ import { ExtractionUnavailableError } from '../../domain/analysis/extraction-una
 import { ClaimNotFoundError } from '../../domain/claims/claim-not-found.error';
 import {
   collectSecondaryDiagnosisCodes,
+  type DetectorStep,
   type EvaluateClaimUseCase,
 } from './evaluate-claim.use-case';
 import type {
@@ -22,6 +23,9 @@ export interface ClaimAnalysisResult {
   tokenUsage: LlmTokenUsage;
 }
 
+/** A stage of one claim's analysis, reported as it starts. */
+export type AnalysisStep = 'READING' | DetectorStep;
+
 /** Reads the claim's remaining documents with the AI, then runs the detectors. */
 export class AnalyzeClaimUseCase {
   constructor(
@@ -30,10 +34,14 @@ export class AnalyzeClaimUseCase {
     private readonly evaluateClaim: EvaluateClaimUseCase,
   ) {}
 
-  async execute(claimId: string): Promise<ClaimAnalysisResult> {
+  async execute(
+    claimId: string,
+    onStep: (step: AnalysisStep) => void = () => {},
+  ): Promise<ClaimAnalysisResult> {
     if (!(await this.analysisRepository.findClaimEvidence(claimId))) {
       throw new ClaimNotFoundError(claimId);
     }
+    onStep('READING');
     const { extractedDocumentCount, failedDocumentCount, tokenUsage } =
       await this.extractClaimDocuments.execute(claimId);
     if (extractedDocumentCount === 0 && failedDocumentCount > 0) {
@@ -56,7 +64,11 @@ export class AnalyzeClaimUseCase {
     const evidenceRules = await this.analysisRepository.findEvidenceRules(
       collectSecondaryDiagnosisCodes([claim]),
     );
-    const evaluation = await this.evaluateClaim.execute(claim, evidenceRules);
+    const evaluation = await this.evaluateClaim.execute(
+      claim,
+      evidenceRules,
+      onStep,
+    );
     return {
       extractedDocumentCount,
       failedDocumentCount,
