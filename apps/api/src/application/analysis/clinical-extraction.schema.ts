@@ -55,3 +55,14 @@ export const clinicalExtractionSchema = z.object({
     }),
   ),
 }) satisfies z.ZodType<ClinicalExtraction>;
+
+/** LLM output contract for several documents of one claim read in a single call. */
+export const claimDocumentsExtractionSchema = z.object({
+  documents: z.array(
+    clinicalExtractionSchema.extend({
+      documentId: z
+        .string()
+        .describe('The id attribute of the <document> this extraction is for'),
+    }),
+  ),
+});

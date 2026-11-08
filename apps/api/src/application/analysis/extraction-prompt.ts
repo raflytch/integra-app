@@ -20,13 +20,14 @@ function listTerms(terms: readonly string[]): string {
  * Saved with every extraction so evidence stays traceable to the prompt that
  * produced it. Bump it whenever the prompt or the output schema changes.
  */
-export const EXTRACTION_PROMPT_VERSION = 'extraction/v1';
+export const EXTRACTION_PROMPT_VERSION = 'extraction/v2';
 
 export const EXTRACTION_SYSTEM_PROMPT = [
-  'You extract clinical evidence from one Indonesian inpatient medical record document for a claim verification system.',
+  'You extract clinical evidence from the Indonesian inpatient medical record documents of one claim, for a claim verification system.',
+  'Each document is wrapped in <document id="…">. Return exactly one entry in `documents` per document, with its id as `documentId`, and extract each document on its own: never move evidence from one document to another.',
   'Rules:',
   '- Extract only what the document states. Never infer, summarize, or add knowledge.',
-  '- Every item needs `quote`: an exact substring copied character for character from the document. Items without a verbatim quote are discarded.',
+  '- Every item needs `quote`: an exact substring copied character for character from that document. Items without a verbatim quote are discarded.',
   '- Write `name` in lowercase Indonesian. When the document states one of these canonical terms or an explicit synonym, use the canonical term as `name`:',
   `  findings: ${listTerms(CANONICAL_TERMS.findings)}`,
   `  vital signs: ${listTerms(CANONICAL_TERMS.vitalSigns)}`,
@@ -41,6 +42,16 @@ export const EXTRACTION_SYSTEM_PROMPT = [
   '- Use empty arrays when a category has nothing.',
 ].join('\n');
 
-export function buildExtractionMessage(document: DocumentToExtract): string {
-  return `Jenis dokumen: ${DOCUMENT_TYPE_LABELS[document.type]}\n\n<document>\n${document.content}\n</document>`;
+/** Labels documents D1, D2, … so the model never has to copy long ids. */
+export function buildExtractionMessage(documents: DocumentToExtract[]): string {
+  return documents
+    .map(
+      (document, index) =>
+        `<document id="${documentLabel(index)}" jenis="${DOCUMENT_TYPE_LABELS[document.type]}">\n${document.content}\n</document>`,
+    )
+    .join('\n\n');
+}
+
+export function documentLabel(index: number): string {
+  return `D${index + 1}`;
 }
