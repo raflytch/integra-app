@@ -54,9 +54,14 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
     (diagnosis) => diagnosis.isPrimary,
   );
   const needsClarification = claim.findings.length > 0;
-  const unsupportedDiagnosisCount = claim.findings.filter(
+  const existenceFindings = claim.findings.filter(
     (finding) => finding.testType === 'EXISTENCE',
-  ).length;
+  );
+  const unsupportedDiagnosisCount = existenceFindings.length;
+  // The API leaves tariffGap null when the claim's tariff is not in the tariff schedule.
+  const isGapUnknown = existenceFindings.some(
+    (finding) => finding.tariffGap === null,
+  );
   const lengthOfStayDays = countDaysBetween(
     claim.admittedAt,
     claim.dischargedAt,
@@ -120,12 +125,16 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
             Potensi selisih tarif
           </p>
           <p className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
-            {formatRupiah(claim.potentialGap)}
+            {isGapUnknown && claim.potentialGap === 0
+              ? 'Tidak dapat dihitung'
+              : formatRupiah(claim.potentialGap)}
           </p>
           <p className="text-caption text-ink-secondary">
-            {unsupportedDiagnosisCount > 0
-              ? `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif setelah koreksi ${formatRupiah(claim.tariffAmount - claim.potentialGap)}.`
-              : 'Belum ada diagnosis tanpa bukti.'}
+            {unsupportedDiagnosisCount === 0
+              ? 'Belum ada diagnosis tanpa bukti.'
+              : isGapUnknown
+                ? `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif klaim ini tidak ada di tabel tarif, jadi selisihnya belum bisa dihitung.`
+                : `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif setelah koreksi ${formatRupiah(claim.tariffAmount - claim.potentialGap)}.`}
           </p>
         </div>
         <dl className="grid grid-cols-2 gap-2 text-small">
