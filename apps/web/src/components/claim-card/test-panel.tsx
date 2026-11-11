@@ -24,7 +24,6 @@ import {
 } from '@/components/ui/collapsible';
 import { TEST_TYPE_DETAILS } from '@/lib/claim-labels';
 import { formatPercent, formatRupiah } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import type {
   ClaimDocument,
   ClaimFinding,
@@ -110,14 +109,7 @@ export function TestPanelShell({
         <div className="flex items-center gap-2 px-6 py-4 group-data-[state=open]:border-b group-data-[state=open]:border-hairline">
           <h2 id={headingId} className="min-w-0">
             <CollapsibleTrigger className="flex items-center gap-4 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <span
-                className={cn(
-                  'flex size-9 shrink-0 items-center justify-center rounded-lg',
-                  hasFindings
-                    ? 'bg-warning/10 text-warning-ink'
-                    : 'bg-success/10 text-success-ink',
-                )}
-              >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-wash text-primary-hover">
                 <TestIcon className="size-4" aria-hidden="true" />
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">

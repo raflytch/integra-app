@@ -155,17 +155,14 @@ export function DecisionPanel({
               key={action}
               htmlFor={`decision-${action}`}
               className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-md border border-hairline px-3 py-2',
+                'flex cursor-pointer items-center gap-3 rounded-md border border-hairline px-3 py-2',
                 DECISION_TONE_CLASS_NAMES[action].option,
               )}
             >
               <RadioGroupItem
                 id={`decision-${action}`}
                 value={action}
-                className={cn(
-                  'mt-0.5',
-                  DECISION_TONE_CLASS_NAMES[action].radio,
-                )}
+                className={DECISION_TONE_CLASS_NAMES[action].radio}
               />
               <span className="flex flex-col gap-0.5">
                 <span className="text-small font-medium text-ink">
