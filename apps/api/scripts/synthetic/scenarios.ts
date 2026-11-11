@@ -2,6 +2,7 @@
  * Specification of the synthetic inpatient dataset (M-02). Everything here is
  * fictional: facilities, patients, and tariffs are invented for the demo.
  */
+import type { EvidenceRule } from '../../src/domain/analysis/claim-evidence';
 import type { InjectedCase } from './dataset.schema';
 
 export type DiseaseKey = 'DBD' | 'PNEUMONIA' | 'GASTROENTERITIS';
@@ -379,48 +380,49 @@ export const GLOBAL_RULES: readonly ContentRule[] = [
 /** Scenario whose rules and narrative produce the UC-3 base document set. */
 export const CLONING_BASE_SCENARIO: ScenarioName = 'NORMAL_DBD';
 
+const SHOCK_GUIDELINE_REF = 'Kriteria klinis syok hipovolemik';
+const RESPIRATORY_FAILURE_GUIDELINE_REF = 'Kriteria klinis gagal napas akut';
+// R57.0 (cardiogenic) is left out: fluid resuscitation is not its expected care.
+const HYPOVOLEMIC_SHOCK_CODES = ['R57.1', 'R57.9'] as const;
+
 /** Clinical evidence rules for secondary diagnoses, consumed by Uji Ada. */
-export const EVIDENCE_RULES = [
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'PROCEDURE',
-    expected: 'resusitasi cairan',
-    guidelineRef:
-      'PNPK Tata Laksana Infeksi Dengue pada Dewasa (perlu diverifikasi tim)',
-  },
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'FINDING',
-    expected: 'akral dingin',
-    guidelineRef:
-      'PNPK Tata Laksana Infeksi Dengue pada Dewasa (perlu diverifikasi tim)',
-  },
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'VITAL_SIGN',
-    expected: 'hipotensi',
-    guidelineRef:
-      'PNPK Tata Laksana Infeksi Dengue pada Dewasa (perlu diverifikasi tim)',
-  },
+export const EVIDENCE_RULES: readonly EvidenceRule[] = [
+  ...HYPOVOLEMIC_SHOCK_CODES.flatMap((icd10Code): EvidenceRule[] => [
+    {
+      icd10Code,
+      evidenceType: 'PROCEDURE',
+      expected: 'resusitasi cairan',
+      guidelineRef: SHOCK_GUIDELINE_REF,
+    },
+    {
+      icd10Code,
+      evidenceType: 'FINDING',
+      expected: 'akral dingin',
+      guidelineRef: SHOCK_GUIDELINE_REF,
+    },
+    {
+      icd10Code,
+      evidenceType: 'VITAL_SIGN',
+      expected: 'hipotensi',
+      guidelineRef: SHOCK_GUIDELINE_REF,
+    },
+  ]),
   {
     icd10Code: 'J96.0',
     evidenceType: 'MEDICATION',
     expected: 'oksigen',
-    guidelineRef:
-      'Pedoman Diagnosis dan Penatalaksanaan Pneumonia Komunitas PDPI (perlu diverifikasi tim)',
+    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
   },
   {
     icd10Code: 'J96.0',
     evidenceType: 'FINDING',
     expected: 'sesak napas',
-    guidelineRef:
-      'Pedoman Diagnosis dan Penatalaksanaan Pneumonia Komunitas PDPI (perlu diverifikasi tim)',
+    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
   },
   {
     icd10Code: 'J96.0',
     evidenceType: 'VITAL_SIGN',
     expected: 'desaturasi',
-    guidelineRef:
-      'Pedoman Diagnosis dan Penatalaksanaan Pneumonia Komunitas PDPI (perlu diverifikasi tim)',
+    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
   },
-] as const;
+];

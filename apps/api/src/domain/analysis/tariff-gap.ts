@@ -7,9 +7,14 @@ export function toInacbgGroupCode(inacbgCode: string): string {
 
 export function calculateTariffGaps(
   severityLevel: number,
+  claimTariff: number,
   unsupportedDiagnosisCount: number,
   findTariffForSeverity: (severityLevel: number) => number | null,
 ): (number | null)[] {
+  // An imported claim can carry a real tariff the schedule does not know; its gap is then unknown.
+  if (findTariffForSeverity(severityLevel) !== claimTariff) {
+    return Array.from({ length: unsupportedDiagnosisCount }, () => null);
+  }
   return Array.from(
     { length: unsupportedDiagnosisCount },
     (_, removedIndex) => {

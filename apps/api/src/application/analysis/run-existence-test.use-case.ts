@@ -1,8 +1,9 @@
 import type { AnalysisRepository } from '../../domain/analysis/analysis.repository';
-import type {
-  ClaimEvidence,
-  EvidenceRule,
-  NewFinding,
+import {
+  type ClaimEvidence,
+  type EvidenceRule,
+  type NewFinding,
+  toIcd10Category,
 } from '../../domain/analysis/claim-evidence';
 import {
   findLookalikeEvidence,
@@ -28,12 +29,26 @@ export class RunExistenceTestUseCase {
   ): Promise<void> {
     const unsupportedDiagnoses = findUnsupportedDiagnoses(claim, evidenceRules);
     const inacbgGroupCode = toInacbgGroupCode(claim.inacbgCode);
+    // Codes of one ICD-10 category describe one condition, so they lower severity once.
+    const categories = unsupportedDiagnoses.map(({ diagnosis }) =>
+      toIcd10Category(diagnosis.icd10Code),
+    );
+    const distinctCategories = [...new Set(categories)];
     const tariffGaps = calculateTariffGaps(
       claim.severityLevel,
-      unsupportedDiagnoses.length,
+      claim.tariffAmount,
+      distinctCategories.length,
       (severityLevel) =>
         this.tariffSchedule.findTariff(inacbgGroupCode, severityLevel),
     );
+
+    // A repeated category adds no further gap: 0 when known, null when unknown.
+    const findingTariffGap = (index: number) => {
+      const categoryGap =
+        tariffGaps[distinctCategories.indexOf(categories[index])];
+      const isFirstOfCategory = categories.indexOf(categories[index]) === index;
+      return isFirstOfCategory || categoryGap === null ? categoryGap : 0;
+    };
 
     const existenceFindings: NewFinding[] = unsupportedDiagnoses.map(
       ({ diagnosis, missingRules, missingEvidenceRatio, mentions }, index) => ({
@@ -55,7 +70,7 @@ export class RunExistenceTestUseCase {
         diagnosisId: diagnosis.id,
         relatedClaimId: null,
         similarity: null,
-        tariffGap: tariffGaps[index],
+        tariffGap: findingTariffGap(index),
       }),
     );
 
