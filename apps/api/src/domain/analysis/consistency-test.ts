@@ -24,15 +24,50 @@ const CLAIM_DOCUMENT_TYPES: ReadonlySet<DocumentType> = new Set([
   'MEDICAL_RESUME',
 ]);
 const MAX_CONTRADICTION_GAP_MS = 24 * 60 * 60 * 1000;
+const RESOLVING_FINDINGS: ReadonlySet<string> = new Set([
+  'demam',
+  'diare',
+  'muntah',
+  'nyeri perut',
+]);
+const MAX_AFEBRILE_TEMPERATURE_C = 37.5;
+const TEMPERATURE_PATTERN = /(\d{2}(?:[.,]\d+)?)/;
 const FIRST_SENTENCE_PATTERN = /^[^.!?\n]*[.!?]?/;
+const SENTENCE_BOUNDARY_PATTERN = /(?<=[.!?])\s+|\n+/;
+const ICD10_LABEL_PATTERN = /\([A-Z]\d{2}(?:\.\d{1,2})?\)/;
+const CLINICAL_NOTE_TYPES: ReadonlySet<DocumentType> = new Set([
+  'EXAM_NOTE',
+  'DAILY_NOTE',
+]);
+const CONFLICTING_MEDICATIONS: readonly {
+  medication: string;
+  description: string;
+  conflictingFindings: readonly string[];
+  conflictingIcd10Prefixes: readonly string[];
+}[] = [
+  {
+    medication: 'furosemid',
+    description: 'obat pembuang cairan',
+    conflictingFindings: ['diare', 'muntah', 'syok', 'hipotensi'],
+    conflictingIcd10Prefixes: ['A0', 'R57'],
+  },
+];
 
 export type InconsistencyCode =
-  'CONTRADICTED_FINDING' | 'FINDING_WITHOUT_ACTION' | 'IMPLAUSIBLE_TIME';
+  | 'CONTRADICTED_FINDING'
+  | 'FEVER_WITH_NORMAL_TEMPERATURE'
+  | 'FINDING_WITHOUT_ACTION'
+  | 'MEDICATION_CONFLICTS_CONDITION'
+  | 'IMPLAUSIBLE_TIME'
+  | 'CODING_LABEL_IN_CLINICAL_NOTE';
 
 const STRENGTH_BY_CODE: Readonly<Record<InconsistencyCode, number>> = {
   CONTRADICTED_FINDING: 0.9,
+  FEVER_WITH_NORMAL_TEMPERATURE: 0.8,
   FINDING_WITHOUT_ACTION: 0.7,
+  MEDICATION_CONFLICTS_CONDITION: 0.7,
   IMPLAUSIBLE_TIME: 0.6,
+  CODING_LABEL_IN_CLINICAL_NOTE: 0.5,
 };
 
 type QuoteCitation = Extract<FindingCitation, { kind: 'QUOTE' }>;
@@ -86,7 +121,9 @@ function findContradictedFindings(
   >();
   const claimedFindings = timedFindings.filter(
     (finding) =>
-      finding.isPresent && CLAIM_DOCUMENT_TYPES.has(finding.document.type),
+      finding.isPresent &&
+      CLAIM_DOCUMENT_TYPES.has(finding.document.type) &&
+      !RESOLVING_FINDINGS.has(finding.canonicalName),
   );
   const negatedDailyFindings = timedFindings.filter(
     (finding) => !finding.isPresent && finding.document.type === 'DAILY_NOTE',
@@ -119,6 +156,53 @@ function findContradictedFindings(
       quoteOf(negated.document, negated.quote),
     ],
   }));
+}
+
+function parseTemperature(value: string): number | null {
+  const match = value.match(TEMPERATURE_PATTERN);
+  return match ? Number(match[1].replace(',', '.')) : null;
+}
+
+function findFeversWithNormalTemperature(
+  timedFindings: TimedFinding[],
+): Inconsistency[] {
+  const checkedDocumentIds = new Set<string>();
+  return timedFindings.flatMap((fever) => {
+    const { document } = fever;
+    if (
+      !fever.isPresent ||
+      fever.canonicalName !== 'demam' ||
+      !CLAIM_DOCUMENT_TYPES.has(document.type) ||
+      checkedDocumentIds.has(document.id)
+    ) {
+      return [];
+    }
+    const normalTemperature = (document.extracted?.vitalSigns ?? []).find(
+      (vital) => {
+        const isTemperature =
+          vital.name.toLowerCase().includes('suhu') ||
+          /°\s*c/i.test(vital.value);
+        if (!isTemperature) return false;
+        const celsius = parseTemperature(vital.value);
+        return celsius !== null && celsius <= MAX_AFEBRILE_TEMPERATURE_C;
+      },
+    );
+    if (!normalTemperature) return [];
+    checkedDocumentIds.add(document.id);
+    return [
+      {
+        code: 'FEVER_WITH_NORMAL_TEMPERATURE' as const,
+        strength: STRENGTH_BY_CODE.FEVER_WITH_NORMAL_TEMPERATURE,
+        summary: `${capitalize(documentLabel(document))} menulis "${fever.quote}", tetapi suhu terukur di catatan yang sama hanya ${normalTemperature.value} (demam bila di atas ${String(MAX_AFEBRILE_TEMPERATURE_C).replace('.', ',')} °C).`,
+        documentId: document.id,
+        relatedDocumentId: null,
+        quotes: [
+          quoteOf(document, fever.quote),
+          quoteOf(document, normalTemperature.quote),
+        ],
+      },
+    ];
+  });
 }
 
 function findFindingsWithoutAction(
@@ -156,6 +240,85 @@ function findFindingsWithoutAction(
         documentId: finding.document.id,
         relatedDocumentId: null,
         quotes: [quoteOf(finding.document, finding.quote)],
+      },
+    ];
+  });
+}
+
+function findConflictingMedications(
+  claim: ClaimEvidence,
+  timedFindings: TimedFinding[],
+): Inconsistency[] {
+  return CONFLICTING_MEDICATIONS.flatMap((conflict) => {
+    const given = claim.documents
+      .flatMap((document) =>
+        (document.extracted?.medications ?? []).map((medication) => ({
+          document,
+          medication,
+        })),
+      )
+      .find(({ medication }) =>
+        `${medication.name} ${medication.quote}`
+          .toLowerCase()
+          .includes(conflict.medication),
+      );
+    if (!given) return [];
+
+    const conflictingFinding = timedFindings.find(
+      (finding) =>
+        finding.isPresent &&
+        conflict.conflictingFindings.includes(finding.canonicalName),
+    );
+    const conflictingDiagnoses = claim.diagnoses.filter((diagnosis) =>
+      conflict.conflictingIcd10Prefixes.some((prefix) =>
+        diagnosis.icd10Code.startsWith(prefix),
+      ),
+    );
+    const conditions = [
+      ...conflictingDiagnoses.map(
+        (diagnosis) => `${diagnosis.name} (${diagnosis.icd10Code})`,
+      ),
+      ...(conflictingFinding ? [conflictingFinding.canonicalName] : []),
+    ];
+    if (conditions.length === 0) return [];
+
+    return [
+      {
+        code: 'MEDICATION_CONFLICTS_CONDITION' as const,
+        strength: STRENGTH_BY_CODE.MEDICATION_CONFLICTS_CONDITION,
+        summary: `${capitalize(documentLabel(given.document))} memberikan "${given.medication.quote}" (${conflict.description}), padahal rekam medis mencatat ${conditions.join(', ')} yang justru membutuhkan cairan.`,
+        documentId: given.document.id,
+        relatedDocumentId: conflictingFinding?.document.id ?? null,
+        quotes: [
+          quoteOf(given.document, given.medication.quote),
+          ...(conflictingFinding
+            ? [quoteOf(conflictingFinding.document, conflictingFinding.quote)]
+            : []),
+        ],
+      },
+    ];
+  });
+}
+
+function findCodingLabelsInClinicalNotes(
+  claim: ClaimEvidence,
+): Inconsistency[] {
+  return claim.documents.flatMap((document) => {
+    if (!CLINICAL_NOTE_TYPES.has(document.type)) return [];
+    const labelledSentence = document.content
+      .split(SENTENCE_BOUNDARY_PATTERN)
+      .map((sentence) => sentence.trim())
+      .find((sentence) => ICD10_LABEL_PATTERN.test(sentence));
+    if (!labelledSentence) return [];
+    const label = labelledSentence.match(ICD10_LABEL_PATTERN)![0];
+    return [
+      {
+        code: 'CODING_LABEL_IN_CLINICAL_NOTE' as const,
+        strength: STRENGTH_BY_CODE.CODING_LABEL_IN_CLINICAL_NOTE,
+        summary: `${capitalize(documentLabel(document))} memuat label koding ICD-10 ${label} di tengah catatan klinis. Dokter biasanya tidak menulis kode diagnosis di anamnesis; ini tanda teks disalin dari templat atau sistem koding.`,
+        documentId: document.id,
+        relatedDocumentId: null,
+        quotes: [quoteOf(document, labelledSentence)],
       },
     ];
   });
@@ -219,7 +382,10 @@ export function findInconsistencies(claim: ClaimEvidence): Inconsistency[] {
   const timedFindings = collectTimedFindings(claim);
   return [
     ...findContradictedFindings(timedFindings),
+    ...findFeversWithNormalTemperature(timedFindings),
     ...findFindingsWithoutAction(claim, timedFindings),
+    ...findConflictingMedications(claim, timedFindings),
     ...findImplausibleTimes(claim),
+    ...findCodingLabelsInClinicalNotes(claim),
   ].sort((first, second) => second.strength - first.strength);
 }

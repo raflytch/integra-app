@@ -40,7 +40,7 @@
   --color-canvas: #fafafa;
   --color-surface: #ffffff;
   --color-subtle: #f4f4f5;
-  --color-hairline: #e8e8ec;
+  --color-hairline: #dcdce1;
   --color-ink: #0a0a0a;
   --color-ink-secondary: #6b6b6b;
   --color-ink-muted: #9c9c9c;
@@ -100,8 +100,8 @@
   --accent: #f4f4f5;
   --accent-foreground: #0a0a0a;
   --destructive: #ef4444;
-  --border: #e8e8ec;
-  --input: #e8e8ec;
+  --border: #dcdce1;
+  --input: #dcdce1;
   --ring: #00736b;
   --radius: 0.375rem;
   --sidebar: #132e2d;

@@ -16,6 +16,10 @@ export type FindingCitation =
       evidenceType: EvidenceType;
       expected: string;
       guidelineRef: string;
+      lookalike?: {
+        note: string;
+        quotes: { documentId: string; quote: string }[];
+      };
     }
   | { kind: 'QUOTE'; documentId: string; quote: string }
   | {

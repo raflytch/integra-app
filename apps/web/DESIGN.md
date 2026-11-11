@@ -14,7 +14,7 @@ INTEGRA keeps Genesis's gallery-frame idea but leads with borders: every surface
 | Background     | `#FAFAFA` | `canvas`, `background`              | Page background, table headers, inset boxes inside cards                                 |
 | Surface        | `#FFFFFF` | `surface`, `card`, `popover`        | Cards, panels, navigation, dialogs, menus                                                |
 | Subtle         | `#F4F4F5` | `subtle`                            | Neutral chips, hover rows, nav-link hover and active background                          |
-| Border         | `#E8E8EC` | `hairline`, `border`                | Card borders, dividers, input borders                                                    |
+| Border         | `#DCDCE1` | `hairline`, `border`                | Card borders, dividers, input borders                                                    |
 | Text Primary   | `#0A0A0A` | `ink`                               | Headings, body text, key values                                                          |
 | Text Secondary | `#6B6B6B` | `ink-secondary`                     | Descriptions, metadata, timestamps, labels                                               |
 | Neutral        | `#9C9C9C` | `ink-muted`                         | Placeholders, disabled text, decorative icons only (fails AA text)                       |
@@ -23,7 +23,7 @@ INTEGRA keeps Genesis's gallery-frame idea but leads with borders: every surface
 | Warning        | `#F59E0B` | `warning` (`warning-ink` `#B45309`) | "Perlu klarifikasi", findings, pending caution, identical text                           |
 | Error          | `#EF4444` | `error` (`error-ink` `#B91C1C`)     | Escalation, high priority, validation errors, destructive actions                        |
 
-INTEGRA green, taken from the logo wordmark, is reserved for interactive elements and the AI analysis card on the Kartu Klaim (`claim-card/ai-analysis-card.tsx`: `primary/30` card border, `primary-hover` headline, and `primary-wash` suggestion box and step tiles, so the AI result stands out): never for other decoration, static text, money, or status chips. Semantic colors appear as a 10% tint with a 30% border and their `*-ink` text tone, which keeps chip text above 4.5:1 contrast. The INTEGRA logo keeps its own colors and is never recolored. Light mode is the only theme for now. Color tokens live in a non-inline `@theme` block, so charts can reference them as `var(--color-warning)` and so on.
+INTEGRA green, taken from the logo wordmark, is reserved for interactive elements and the AI analysis card on the Kartu Klaim (`claim-card/ai-analysis-card.tsx`: `primary/30` card border, `primary-hover` headline, and `primary-wash` suggestion box and step tiles, so the AI result stands out, plus the matching `primary-wash` icon tiles of the three test panels in `claim-card/test-panel.tsx`): never for other decoration, static text, money, or status chips. Warning orange is only for what the user must notice (flag chips, missing evidence, tariff gaps), never for decorative icons; a test panel shows its result in its status chip, not its icon tile. Semantic colors appear as a 10% tint with a 30% border and their `*-ink` text tone, which keeps chip text above 4.5:1 contrast. The INTEGRA logo keeps its own colors and is never recolored. Light mode is the only theme for now. Color tokens live in a non-inline `@theme` block, so charts can reference them as `var(--color-warning)` and so on.
 
 ## Typography
 

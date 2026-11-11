@@ -55,6 +55,7 @@ export interface DemoClaim {
  * - `GENUINE_*`: secondary diagnosis with complete evidence.
  * - `SHOCK_NONSTANDARD`: real shock written without standard terms; flagged but valid.
  * - `EXAM_MANIPULATION`: exam note contradicted by the next daily note.
+ * - `FEVER_MISMATCH`: exam note claims high fever but records a normal temperature.
  * - `CLONING`: never drawn at random. After the base claims exist, normal
  *   claims in two facilities become clusters (6 in RS-SIM-011, 5 in
  *   RS-SIM-006, each within 60 days, different patients; a short cluster
@@ -74,6 +75,7 @@ export type ClaimProfile =
   | 'RESP_FAILURE_UPCODING'
   | 'SHOCK_NONSTANDARD'
   | 'EXAM_MANIPULATION'
+  | 'FEVER_MISMATCH'
   | 'CLONING';
 
 const PROFILE_DETAILS: Record<
@@ -139,6 +141,12 @@ const PROFILE_DETAILS: Record<
     injectedCase: ['EXAM_MANIPULATION'],
     isSuspicious: true,
   },
+  FEVER_MISMATCH: {
+    disease: 'DBD',
+    secondary: null,
+    injectedCase: ['EXAM_MANIPULATION'],
+    isSuspicious: true,
+  },
   CLONING: {
     disease: 'DBD',
     secondary: null,
@@ -160,6 +168,7 @@ const PROFILE_WEIGHTS: Record<RandomProfile, number> = {
   RESP_FAILURE_UPCODING: 6,
   SHOCK_NONSTANDARD: 3,
   EXAM_MANIPULATION: 5,
+  FEVER_MISMATCH: 4,
 };
 
 /** RS-SIM-001..004 come from the LLM dataset; the rest exist only in demo data. */
@@ -412,7 +421,12 @@ function buildExamNote(profile: ClaimProfile, random: Random): DocumentBuilder {
           'Akral dingin, TD 85/50 mmHg, CRT lebih dari 2 detik.',
         );
       } else {
-        addVitals(builder, random, bloodPressure(random), [38.2, 39.6]);
+        addVitals(
+          builder,
+          random,
+          bloodPressure(random),
+          profile === 'FEVER_MISMATCH' ? [36.8, 37.5] : [38.2, 39.6],
+        );
       }
       const platelets = `Trombosit ${random.int(45, 98)}.000/µL`;
       builder.sentence(`${platelets}.`);

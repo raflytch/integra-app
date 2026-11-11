@@ -19,6 +19,7 @@ const TOKEN_PATTERN = /[\p{L}\p{N}]+(?:\.\p{N}+)*/gu;
 const DECIMAL_COMMA_PATTERN = /(\p{N}),(?=\p{N})/gu;
 /** Sentence ends at . ! ? followed by whitespace or the end, or at a line break; decimals stay intact. */
 const SENTENCE_BOUNDARY_PATTERN = /(?<=[.!?])\s+|\n+/;
+const DIAGNOSIS_LINE_PATTERN = /^diagnosis\b|\([A-Z]\d{2}(?:\.\d{1,2})?\)/i;
 
 interface ComparedDocument {
   id: string;
@@ -64,6 +65,13 @@ function sortByDocumentType(documents: ComparedDocument[]): ComparedDocument[] {
     .map(({ document }) => document);
 }
 
+function splitComparableSentences(content: string): string[] {
+  return content
+    .split(SENTENCE_BOUNDARY_PATTERN)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence && !DIAGNOSIS_LINE_PATTERN.test(sentence));
+}
+
 function tokenize(text: string): string[] {
   return (
     text
@@ -76,7 +84,7 @@ function tokenize(text: string): string[] {
 function countShingles(claim: ComparedClaim): Map<string, number> {
   const tokens = tokenize(
     sortByDocumentType(claim.documents)
-      .map((document) => document.content)
+      .flatMap((document) => splitComparableSentences(document.content))
       .join('\n'),
   );
   const shingleCounts = new Map<string, number>();
@@ -95,10 +103,7 @@ function normalizeSentence(text: string): string {
 function collectSentences(claim: ComparedClaim): Map<string, Sentence> {
   const sentences = new Map<string, Sentence>();
   for (const document of sortByDocumentType(claim.documents)) {
-    for (const rawSentence of document.content.split(
-      SENTENCE_BOUNDARY_PATTERN,
-    )) {
-      const text = rawSentence.trim();
+    for (const text of splitComparableSentences(document.content)) {
       if (text.length < MIN_IDENTICAL_TEXT_LENGTH) continue;
       const key = normalizeSentence(text);
       if (!sentences.has(key)) {

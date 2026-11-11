@@ -12,14 +12,48 @@ INTEGRA never accuses anyone of fraud. Its only label is "perlu klarifikasi" (ne
 2. **The AI reads the medical record.** Analysis runs only on the claims the verifier selects (up to one page of 10 at a time), because every document is one paid LLM call. The AI extracts diagnoses, findings, vital signs, medications, and procedures. Each item must carry a quote that appears verbatim in the document; items without a matching quote are dropped.
 3. **Clinical rules judge.** Three deterministic tests run on the extraction:
 
-   | Test                               | What it checks                                                                                                                                                          |
-   | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | **Uji Ada** (existence)            | Secondary diagnoses without clinical evidence under the evidence rules (PNPK guidelines). Each unsupported diagnosis lowers severity and yields a potential tariff gap. |
-   | **Uji Konsisten** (consistency)    | Notes in one record that contradict each other, findings without the action they require, or note times outside the inpatient stay.                                     |
-   | **Uji Bukan Salinan** (not a copy) | Documents nearly identical to another patient's claim (TF-IDF and cosine similarity, no LLM). The shared sentences are highlighted in both claims.                      |
+   | Test                               | What it checks                                                                                                                                                                                                                                                                                                                 |
+   | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+   | **Uji Ada** (existence)            | Secondary diagnoses without clinical evidence under the evidence rules (PNPK guidelines). Each unsupported diagnosis lowers severity and yields a potential tariff gap.                                                                                                                                                        |
+   | **Uji Konsisten** (consistency)    | Notes in one record that contradict each other (symptoms that resolve, such as fever, count as improvement), fever without a raised temperature, findings without the action they require, medications that conflict with the condition, ICD-10 coding labels inside clinical notes, or note times outside the inpatient stay. |
+   | **Uji Bukan Salinan** (not a copy) | Documents nearly identical to another patient's claim (TF-IDF and cosine similarity, no LLM), ignoring diagnosis lines that same-diagnosis claims always share. The shared sentences are highlighted in both claims.                                                                                                           |
 
 4. **The queue is prioritized.** A priority score combines the strongest flag with the potential tariff gap, so the claims most worth reviewing come first.
 5. **The verifier decides.** On the claim card (Kartu Klaim), the verifier reads the AI summary, checks the quotes, and records a decision with a reason that becomes part of the audit trail.
+
+## Hardcoded rule parameters
+
+These values are set by the team for the demo and are not yet validated by BPJS or a medical team.
+
+**Uji Ada**
+
+- Flag a secondary diagnosis when at least 50% of its evidence is missing; each flag lowers severity by 1 level.
+- Evidence rules: Syok (R57.9) needs resusitasi cairan, akral dingin, hipotensi; Gagal napas akut (J96.0) needs oksigen, sesak napas, desaturasi.
+- Fluids shown as "looks like, but is not, resusitasi cairan" (display only): infus, cairan, ringer, asering, NaCl, normal saline, dekstrosa, D5, KA-EN, KAEN, kristaloid, koloid, gelofusin, loading, guyur, grojok.
+
+**Uji Konsisten**
+
+- Contradiction window: 24 hours. Symptoms that may resolve (not a contradiction): demam, diare, muntah, nyeri perut.
+- Fever needs a temperature above 37.5 °C in the same note.
+- Findings that require an action: sesak napas → oksigen; akral dingin → resusitasi cairan or ringer laktat.
+- Conflicting medication: furosemid with a diagnosis starting with A0 or R57, or with diare, muntah, syok, hipotensi.
+- Coding label: an ICD-10 code in parentheses, such as "(A09)", in an exam or daily note.
+- Signal strength: contradiction 90%, fever without raised temperature 80%, finding without action 70%, conflicting medication 70%, time outside the stay 60%, coding label 50%.
+
+**Uji Bukan Salinan**
+
+- Similarity threshold 65% (`SIMILARITY_THRESHOLD`); at most 5 similar claims per claim.
+- Ignored lines: sentences starting with "Diagnosis" or holding an ICD-10 code in parentheses.
+- Highlights: at most 3 shared sentences of at least 25 characters, skipping sentences shared by more than 10% of claims.
+
+**Priority and tariff**
+
+- Priority score = 70% × strongest signal + 30% × (potential gap ÷ claim tariff, at most 1).
+- Synthetic tariffs per severity I / II / III: A-4-14 Rp 4.2M / 5.73M / 9.85M; J-4-16 Rp 4.8M / 6.9M / 10.4M; K-4-17 Rp 2.9M / 3.8M / 5.6M.
+
+**Term synonyms**
+
+- dispnea, sesak → sesak napas; O2, nasal kanul → oksigen; RL → ringer laktat; paracetamol → parasetamol; ceftriaxone → seftriakson.
 
 ## Features
 
