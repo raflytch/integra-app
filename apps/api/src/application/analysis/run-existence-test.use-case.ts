@@ -4,7 +4,10 @@ import type {
   EvidenceRule,
   NewFinding,
 } from '../../domain/analysis/claim-evidence';
-import { findUnsupportedDiagnoses } from '../../domain/analysis/existence-test';
+import {
+  findLookalikeEvidence,
+  findUnsupportedDiagnoses,
+} from '../../domain/analysis/existence-test';
 import {
   calculateTariffGaps,
   toInacbgGroupCode,
@@ -43,6 +46,7 @@ export class RunExistenceTestUseCase {
             evidenceType: rule.evidenceType,
             expected: rule.expected,
             guidelineRef: rule.guidelineRef,
+            lookalike: findLookalikeEvidence(claim.documents, rule.expected),
           })),
           ...mentions,
         ],

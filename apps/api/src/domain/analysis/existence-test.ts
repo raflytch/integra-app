@@ -10,6 +10,34 @@ export interface UnsupportedDiagnosis {
   mentions: Extract<FindingCitation, { kind: 'QUOTE' }>[];
 }
 
+type QuoteCitation = Extract<FindingCitation, { kind: 'QUOTE' }>;
+
+const LOOKALIKE_EVIDENCE: Readonly<
+  Record<string, { terms: string[]; note: string }>
+> = {
+  'resusitasi cairan': {
+    terms: [
+      'infus',
+      'cairan',
+      'ringer',
+      'asering',
+      'nacl',
+      'normal saline',
+      'dekstrosa',
+      'd5',
+      'ka-en',
+      'kaen',
+      'kristaloid',
+      'koloid',
+      'gelofusin',
+      'loading',
+      'guyur',
+      'grojok',
+    ],
+    note: 'Ada pemberian cairan, tetapi tidak tertulis sebagai resusitasi. Resusitasi syok adalah cairan cepat dalam jumlah besar (bolus, misalnya 10–20 ml/kgBB dalam 15–60 menit), sedangkan infus dengan tetesan per menit biasanya cairan rumatan. Cek dosis dan kecepatannya.',
+  },
+};
+
 function normalizeClinicalText(text: string): string {
   return text.toLowerCase().replace(/\s+/g, ' ').trim();
 }
@@ -61,6 +89,32 @@ function findDiagnosisMentions(
         quote: diagnosis.quote,
       })),
   );
+}
+
+export function findLookalikeEvidence(
+  documents: ClaimEvidence['documents'],
+  expected: string,
+): { note: string; quotes: Omit<QuoteCitation, 'kind'>[] } | undefined {
+  const lookalike = LOOKALIKE_EVIDENCE[normalizeClinicalText(expected)];
+  if (!lookalike) return undefined;
+  const quotes = documents.flatMap(({ id, extracted }) =>
+    [...(extracted?.medications ?? []), ...(extracted?.procedures ?? [])]
+      .filter((item) => {
+        const itemText = normalizeClinicalText(`${item.name} ${item.quote}`);
+        return lookalike.terms.some((term) => itemText.includes(term));
+      })
+      .map((item) => ({ documentId: id, quote: item.quote })),
+  );
+  const uniqueQuotes = quotes.filter(
+    (quote, index) =>
+      quotes.findIndex(
+        (other) =>
+          other.documentId === quote.documentId && other.quote === quote.quote,
+      ) === index,
+  );
+  return uniqueQuotes.length > 0
+    ? { note: lookalike.note, quotes: uniqueQuotes }
+    : undefined;
 }
 
 export function findUnsupportedDiagnoses(

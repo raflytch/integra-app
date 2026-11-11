@@ -30,7 +30,14 @@ function buildClarificationReason(
   const expectedEvidence = missingEvidence
     .map((evidence) => evidence.expected)
     .join(', ');
-  return `Mohon lengkapi bukti untuk diagnosis sekunder ${diagnosisLabel}: ${expectedEvidence}. Bukti tersebut belum ditemukan di rekam medis klaim ini.`;
+  const lookalikeSentences = missingEvidence.flatMap((evidence) =>
+    evidence.lookalike
+      ? [
+          ` Tercatat ${evidence.lookalike.quotes.map(({ quote }) => `"${quote}"`).join(', ')}, tetapi tidak tertulis sebagai ${evidence.expected}; mohon jelaskan dosis dan kecepatannya bila itu ${evidence.expected}.`,
+        ]
+      : [],
+  );
+  return `Mohon lengkapi bukti untuk diagnosis sekunder ${diagnosisLabel}: ${expectedEvidence}. Bukti tersebut belum ditemukan di rekam medis klaim ini.${lookalikeSentences.join('')}`;
 }
 
 function UnsupportedDiagnosis({
@@ -104,15 +111,33 @@ function UnsupportedDiagnosis({
                 className="mt-0.5 size-4 shrink-0 text-ink-secondary"
                 aria-hidden="true"
               />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-small text-ink">{evidence.expected}</span>
                 <span className="text-caption text-ink-secondary">
                   {EVIDENCE_TYPE_LABELS[evidence.evidenceType]} ·{' '}
                   {evidence.guidelineRef}
                 </span>
-              </span>
+                {evidence.lookalike && (
+                  <div className="mt-2 flex flex-col gap-2 rounded-lg border border-hairline bg-canvas px-3 py-2.5">
+                    <p className="text-caption font-medium text-ink">
+                      Yang mirip di rekam medis, tetapi bukan{' '}
+                      {evidence.expected}
+                    </p>
+                    {evidence.lookalike.quotes.map((lookalikeQuote) => (
+                      <FindingCitationItem
+                        key={`${lookalikeQuote.documentId}-${lookalikeQuote.quote}`}
+                        citation={{ kind: 'QUOTE', ...lookalikeQuote }}
+                        documentsById={documentsById}
+                      />
+                    ))}
+                    <p className="text-caption text-ink-secondary">
+                      {evidence.lookalike.note}
+                    </p>
+                  </div>
+                )}
+              </div>
               <span className="shrink-0 text-caption text-ink-secondary">
-                Tidak ditemukan
+                {evidence.lookalike ? 'Belum terbukti' : 'Tidak ditemukan'}
               </span>
             </li>
           ))}
