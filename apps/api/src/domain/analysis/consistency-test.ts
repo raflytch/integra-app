@@ -1,5 +1,9 @@
 import type { DocumentType, FindingCitation } from '../claims/claim-detail';
-import type { ClaimEvidence, ClaimEvidenceDocument } from './claim-evidence';
+import {
+  type ClaimEvidence,
+  type ClaimEvidenceDocument,
+  toIcd10Category,
+} from './claim-evidence';
 import {
   capitalize,
   DOCUMENT_TYPE_LABELS,
@@ -35,6 +39,7 @@ const TEMPERATURE_PATTERN = /(\d{2}(?:[.,]\d+)?)/;
 const FIRST_SENTENCE_PATTERN = /^[^.!?\n]*[.!?]?/;
 const SENTENCE_BOUNDARY_PATTERN = /(?<=[.!?])\s+|\n+/;
 const ICD10_LABEL_PATTERN = /\([A-Z]\d{2}(?:\.\d{1,2})?\)/;
+const UNSPECIFIED_CODE_PATTERN = /^[A-Z]\d{2}\.9$/;
 const CLINICAL_NOTE_TYPES: ReadonlySet<DocumentType> = new Set([
   'EXAM_NOTE',
   'DAILY_NOTE',
@@ -59,7 +64,8 @@ export type InconsistencyCode =
   | 'FINDING_WITHOUT_ACTION'
   | 'MEDICATION_CONFLICTS_CONDITION'
   | 'IMPLAUSIBLE_TIME'
-  | 'CODING_LABEL_IN_CLINICAL_NOTE';
+  | 'CODING_LABEL_IN_CLINICAL_NOTE'
+  | 'DUPLICATE_DIAGNOSIS_CATEGORY';
 
 const STRENGTH_BY_CODE: Readonly<Record<InconsistencyCode, number>> = {
   CONTRADICTED_FINDING: 0.9,
@@ -68,6 +74,7 @@ const STRENGTH_BY_CODE: Readonly<Record<InconsistencyCode, number>> = {
   MEDICATION_CONFLICTS_CONDITION: 0.7,
   IMPLAUSIBLE_TIME: 0.6,
   CODING_LABEL_IN_CLINICAL_NOTE: 0.5,
+  DUPLICATE_DIAGNOSIS_CATEGORY: 0.7,
 };
 
 type QuoteCitation = Extract<FindingCitation, { kind: 'QUOTE' }>;
@@ -374,6 +381,53 @@ function findImplausibleTimes(claim: ClaimEvidence): Inconsistency[] {
   });
 }
 
+function findDuplicateDiagnosisCategories(
+  claim: ClaimEvidence,
+): Inconsistency[] {
+  const diagnosesByCategory = new Map<string, ClaimEvidence['diagnoses']>();
+  for (const diagnosis of claim.diagnoses) {
+    const category = toIcd10Category(diagnosis.icd10Code);
+    diagnosesByCategory.set(category, [
+      ...(diagnosesByCategory.get(category) ?? []),
+      diagnosis,
+    ]);
+  }
+  return [...diagnosesByCategory].flatMap(([category, diagnoses]) => {
+    const codes = new Set(diagnoses.map((diagnosis) => diagnosis.icd10Code));
+    // Only an unspecified ".9" code beside a specific one is a double code; S02.2 + S02.4 are two injuries.
+    const unspecifiedCode = [...codes].find((code) =>
+      UNSPECIFIED_CODE_PATTERN.test(code),
+    );
+    if (!unspecifiedCode || codes.size < 2) return [];
+    const quotes = claim.documents.flatMap((document) =>
+      (document.extracted?.diagnoses ?? [])
+        .filter(
+          (diagnosis) =>
+            diagnosis.icd10Code !== null && codes.has(diagnosis.icd10Code),
+        )
+        .map((diagnosis) => quoteOf(document, diagnosis.quote)),
+    );
+    const document =
+      claim.documents.find(({ id }) => id === quotes[0]?.documentId) ??
+      claim.documents.find(({ type }) => type === 'MEDICAL_RESUME') ??
+      claim.documents[0];
+    if (!document) return [];
+    const labels = diagnoses.map(
+      (diagnosis) => `${diagnosis.name} (${diagnosis.icd10Code})`,
+    );
+    return [
+      {
+        code: 'DUPLICATE_DIAGNOSIS_CATEGORY' as const,
+        strength: STRENGTH_BY_CODE.DUPLICATE_DIAGNOSIS_CATEGORY,
+        summary: `Klaim memuat ${labels.join(' dan ')} dari kategori ICD-10 yang sama (${category}). Kode ${unspecifiedCode} (tidak spesifik) tidak perlu dicatat bila kode spesifiknya sudah ada; kode ganda bisa menaikkan severity.`,
+        documentId: document.id,
+        relatedDocumentId: null,
+        quotes,
+      },
+    ];
+  });
+}
+
 /**
  * Uji Konsisten (M-05): notes in one medical record that do not agree with
  * each other. It never judges which note is clinically right.
@@ -387,5 +441,6 @@ export function findInconsistencies(claim: ClaimEvidence): Inconsistency[] {
     ...findConflictingMedications(claim, timedFindings),
     ...findImplausibleTimes(claim),
     ...findCodingLabelsInClinicalNotes(claim),
+    ...findDuplicateDiagnosisCategories(claim),
   ].sort((first, second) => second.strength - first.strength);
 }
