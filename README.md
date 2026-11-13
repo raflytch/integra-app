@@ -28,7 +28,7 @@ These values are set by the team for the demo and are not yet validated by BPJS 
 **Uji Ada**
 
 - Flag a secondary diagnosis when at least 50% of its evidence is missing; each flag lowers severity by 1 level.
-- Evidence rules: Syok (R57.9) needs resusitasi cairan, akral dingin, hipotensi; Gagal napas akut (J96.0) needs oksigen, sesak napas, desaturasi.
+- Evidence rules: Syok hipovolemik (R57.1) and Syok (R57.9) need resusitasi cairan, akral dingin, hipotensi; Gagal napas akut (J96.0) needs oksigen, sesak napas, desaturasi.
 - Fluids shown as "looks like, but is not, resusitasi cairan" (display only): infus, cairan, ringer, asering, NaCl, normal saline, dekstrosa, D5, KA-EN, KAEN, kristaloid, koloid, gelofusin, loading, guyur, grojok.
 
 **Uji Konsisten**

@@ -42,6 +42,11 @@ export interface ClaimEvidence {
   documents: ClaimEvidenceDocument[];
 }
 
+/** ICD-10 category, the code before the dot: "R57.1" -> "R57". */
+export function toIcd10Category(icd10Code: string): string {
+  return icd10Code.split('.')[0];
+}
+
 /** Detectors only judge a claim once the AI has read every document. */
 export function isFullyExtracted(claim: ClaimEvidence): boolean {
   return (

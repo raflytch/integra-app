@@ -5,6 +5,7 @@ coverage
 package-lock.json
 apps/api/src/generated
 apps/api/prisma/seed-data
+data
 apps/web/next-env.d.ts
 
 # Exported Lottie animations stay minified as delivered.
