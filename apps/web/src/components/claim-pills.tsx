@@ -205,6 +205,7 @@ export function TestSignalPill({
 }
 
 export function SeverityPill({ severityLevel }: { severityLevel: number }) {
+  if (severityLevel === 0) return null;
   return (
     <Pill tone={SEVERITY_LEVEL_TONES[severityLevel - 1] ?? 'outline'}>
       Severity {SEVERITY_LEVEL_NUMERALS[severityLevel - 1] ?? severityLevel}

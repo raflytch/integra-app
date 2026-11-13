@@ -110,7 +110,7 @@ const CLAIM_SORT_OPTIONS: SortOption<ClaimQueueSortKey>[] = [
   { key: 'findings', direction: 'desc', label: 'Tanda uji terbanyak' },
   { key: 'admittedAt', direction: 'desc', label: 'Tanggal masuk terbaru' },
   { key: 'admittedAt', direction: 'asc', label: 'Tanggal masuk terlama' },
-  { key: 'claimNo', direction: 'asc', label: 'No. klaim' },
+  { key: 'claimNo', direction: 'asc', label: 'No. SEP' },
   { key: 'facility', direction: 'asc', label: 'Faskes' },
   { key: 'status', direction: 'asc', label: 'Status' },
   { key: 'analyzedAt', direction: 'desc', label: 'Analisis AI terbaru' },
@@ -371,7 +371,7 @@ export function ClaimQueueTable({
         <TableSearch
           value={table.searchQuery}
           onChange={table.setSearchQuery}
-          placeholder="Cari no. klaim, diagnosis, faskes"
+          placeholder="Cari no. SEP, diagnosis, faskes"
         />
         <TableFilterSelect
           label="Keterangan rawat"
@@ -414,8 +414,8 @@ export function ClaimQueueTable({
         className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
       >
         <div className="hidden lg:block">
-          {/* Nine columns: 12px side padding lets them fit from 1280px wide. */}
-          <Table className="[&_td]:px-3 [&_th]:px-3">
+          {/* Nine columns: 8px side padding lets them fit from 1440px wide. */}
+          <Table className="[&_td]:px-2 [&_th]:px-2">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
@@ -439,7 +439,10 @@ export function ClaimQueueTable({
                   sortKey="admittedAt"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  className={CENTERED_COLUMN_CLASS_NAME}
+                  className={cn(
+                    'whitespace-normal',
+                    CENTERED_COLUMN_CLASS_NAME,
+                  )}
                 >
                   Keterangan rawat
                 </SortableTableHead>
@@ -520,7 +523,7 @@ export function ClaimQueueTable({
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="min-w-36 align-top whitespace-normal">
+                    <TableCell className="min-w-28 align-top whitespace-normal">
                       <div className="flex flex-col items-start gap-1">
                         <span className="text-ink">{claim.facility.name}</span>
                         <FacilityTypePill facilityType={claim.facility.type} />

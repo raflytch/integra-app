@@ -47,6 +47,12 @@ export interface ClaimPatient {
   birthDate: Date;
 }
 
+export interface ClaimProcedure {
+  id: string;
+  icd9cmCode: string;
+  name: string;
+}
+
 export interface ClaimDiagnosis {
   id: string;
   icd10Code: string;
@@ -99,6 +105,7 @@ export interface ClaimDetail {
   facility: ClaimFacility;
   patient: ClaimPatient;
   diagnoses: ClaimDiagnosis[];
+  procedures: ClaimProcedure[];
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: Decision[];

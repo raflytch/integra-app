@@ -24,7 +24,7 @@ export const canonicalClaimObjectSchema = z.object({
   admittedAt: z.iso.date(),
   dischargedAt: z.iso.date(),
   inacbgCode: requiredText,
-  severityLevel: z.number().int().min(1).max(3),
+  severityLevel: z.number().int().min(0).max(3),
   tariffAmount: z.number().positive(),
   diagnoses: z
     .array(
@@ -35,6 +35,9 @@ export const canonicalClaimObjectSchema = z.object({
       }),
     )
     .min(1),
+  procedures: z
+    .array(z.object({ icd9cmCode: requiredText, name: requiredText }))
+    .default([]),
   documents: z
     .array(
       z.object({
@@ -70,6 +73,14 @@ export const canonicalClaimSchema = canonicalClaimObjectSchema.superRefine(
         code: 'custom',
         path: ['dischargedAt'],
         message: 'Tanggal pulang rawat jalan harus sama dengan tanggal masuk',
+      });
+    }
+    if ((claim.careType === 'OUTPATIENT') !== (claim.severityLevel === 0)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['severityLevel'],
+        message:
+          'Severity rawat jalan harus 0, severity rawat inap harus 1 sampai 3',
       });
     }
     const primaryCount = claim.diagnoses.filter(
@@ -145,6 +156,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   severityLevel: 'Severity',
   tariffAmount: 'Tarif',
   diagnoses: 'Diagnosis',
+  procedures: 'Tindakan',
   documents: 'Dokumen',
 };
 

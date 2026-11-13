@@ -179,7 +179,7 @@ model Patient {
 /// DB constraints:
 /// - CHECK (discharged_at >= admitted_at)
 /// - CHECK (care_type <> 'OUTPATIENT' OR discharged_at = admitted_at)
-/// - CHECK (severity_level BETWEEN 1 AND 3)
+/// - CHECK (severity_level BETWEEN 0 AND 3)
 /// - CHECK (priority_score >= 0)
 model Claim {
   id            String         @id @default(uuid(7)) @db.Uuid
@@ -191,7 +191,7 @@ model Claim {
   dischargedAt  DateTime       @map("discharged_at") @db.Date
   /// INA-CBG group code, e.g. "I-4-10-II".
   inacbgCode    String         @map("inacbg_code")
-  /// INA-CBG severity level (1 = mild, 3 = severe).
+  /// INA-CBG severity level (1 = mild, 3 = severe; 0 for outpatient, which has no severity).
   severityLevel Int            @map("severity_level") @db.SmallInt
   /// Billed amount in rupiah.
   tariffAmount  Decimal        @map("tariff_amount") @db.Decimal(14, 2)
@@ -210,6 +210,7 @@ model Claim {
   facility        Facility           @relation(fields: [facilityId], references: [id])
   patient         Patient            @relation(fields: [patientId], references: [id])
   diagnoses       ClaimDiagnosis[]
+  procedures      ClaimProcedure[]
   documents       ClinicalDocument[]
   findings        Finding[]          @relation("FindingClaim")
   /// Findings on other claims that point at this one (cloning source).
@@ -239,6 +240,19 @@ model ClaimDiagnosis {
 
   @@unique([claimId, icd10Code])
   @@map("claim_diagnoses")
+}
+
+/// ICD-9-CM procedure coded on a claim.
+model ClaimProcedure {
+  id         String @id @default(uuid(7)) @db.Uuid
+  claimId    String @map("claim_id") @db.Uuid
+  icd9cmCode String @map("icd9cm_code")
+  name       String
+
+  claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@unique([claimId, icd9cmCode])
+  @@map("claim_procedures")
 }
 
 /// Free-text clinical document attached to a claim.

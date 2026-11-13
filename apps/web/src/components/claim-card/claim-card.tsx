@@ -100,6 +100,7 @@ export function ClaimCard({ claimId }: { claimId: string }) {
           )}
           <ClaimDiagnoses
             diagnoses={claim.diagnoses}
+            procedures={claim.procedures}
             findings={claim.findings}
           />
           <ClaimDocuments documents={claim.documents} />

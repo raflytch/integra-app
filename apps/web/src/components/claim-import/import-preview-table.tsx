@@ -76,7 +76,7 @@ type PreviewSortKey = keyof typeof PREVIEW_SORT_VALUES;
 const PREVIEW_SORT_OPTIONS: SortOption<PreviewSortKey>[] = [
   { key: 'index', direction: 'asc', label: 'Urutan file' },
   { key: 'status', direction: 'asc', label: 'Bermasalah dulu' },
-  { key: 'claimNo', direction: 'asc', label: 'Nomor klaim' },
+  { key: 'claimNo', direction: 'asc', label: 'Nomor SEP' },
   { key: 'admittedAt', direction: 'desc', label: 'Tanggal masuk terbaru' },
 ];
 
@@ -150,7 +150,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
         <TableSearch
           value={table.searchQuery}
           onChange={table.setSearchQuery}
-          placeholder="Cari nomor klaim, faskes, pasien, atau masalah"
+          placeholder="Cari nomor SEP, faskes, pasien, atau masalah"
         />
         <TableFilterSelect
           label="Status"
@@ -180,7 +180,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                 sort={table.sort}
                 onSort={table.toggleSort}
               >
-                Nomor klaim
+                Nomor SEP
               </SortableTableHead>
               <TableHead>Faskes dan pasien</TableHead>
               <SortableTableHead

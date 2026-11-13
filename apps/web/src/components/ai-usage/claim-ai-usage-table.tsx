@@ -52,7 +52,7 @@ const SORT_OPTIONS: SortOption<ClaimAiUsageSortKey>[] = [
   { key: 'inputTokens', direction: 'desc', label: 'Token input terbanyak' },
   { key: 'outputTokens', direction: 'desc', label: 'Token output terbanyak' },
   { key: 'documentCount', direction: 'desc', label: 'Dokumen terbanyak' },
-  { key: 'claimNo', direction: 'asc', label: 'Nomor klaim' },
+  { key: 'claimNo', direction: 'asc', label: 'Nomor SEP' },
 ];
 
 function ClaimIdentity({ usage }: { usage: ClaimAiUsage }) {
@@ -166,7 +166,7 @@ export function ClaimAiUsageTable() {
           <TableSearch
             value={table.searchQuery}
             onChange={table.setSearchQuery}
-            placeholder="Cari nomor klaim atau faskes"
+            placeholder="Cari nomor SEP atau faskes"
           />
           <TableSortSelect
             sort={table.sort}

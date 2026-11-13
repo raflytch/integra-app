@@ -14,9 +14,11 @@ import type {
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
 import {
-  SIMILAR_PATTERN_DAY_WINDOW,
+  codingOutlierKey,
+  type FacilityCodingRate,
+  findCodingOutliers,
+  type SimilarPattern,
   type SimilarPatternClaim,
-  toSimilarPattern,
 } from '../../../../domain/claims/similar-pattern';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
@@ -62,7 +64,7 @@ const QUEUE_ITEM_FIELDS = {
     take: 1,
   },
   findings: { select: { testType: true } },
-  _count: { select: { documents: true } },
+  _count: { select: { documents: true, diagnoses: true } },
 } satisfies Prisma.ClaimSelect;
 
 const QUEUE_ORDER_BY: Record<
@@ -128,14 +130,6 @@ function toQueueWhere(query: ClaimQueueQuery): Prisma.ClaimWhereInput {
   };
 }
 
-interface SimilarPatternPeerRow {
-  targetId: string;
-  id: string;
-  claimNo: string;
-  admittedAt: Date;
-  status: ClaimStatus;
-}
-
 @Injectable()
 export class PrismaClaimRepository extends ClaimRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -179,9 +173,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       ]),
     );
 
-    const similarPatternPeers = await this.findSimilarPatternPeers(
-      claims.map((claim) => claim.id),
-    );
+    const codingOutliers = findCodingOutliers(await this.findCodingRates());
 
     const items = claims.map(({ diagnoses, findings, _count, ...claim }) => ({
       ...claim,
@@ -193,7 +185,11 @@ export class PrismaClaimRepository extends ClaimRepository {
       extractedDocumentCount:
         extractedDocumentCountByClaimId.get(claim.id) ?? 0,
       hasSimilarPattern:
-        toSimilarPattern(similarPatternPeers.get(claim.id) ?? []) !== null,
+        _count.diagnoses > 1 &&
+        diagnoses[0] !== undefined &&
+        codingOutliers.has(
+          codingOutlierKey(claim.facility.id, diagnoses[0].icd10Code),
+        ),
     }));
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
@@ -254,6 +250,10 @@ export class PrismaClaimRepository extends ClaimRepository {
       include: {
         facility: true,
         patient: true,
+        procedures: {
+          select: { id: true, icd9cmCode: true, name: true },
+          orderBy: { icd9cmCode: 'asc' },
+        },
         diagnoses: {
           select: { id: true, icd10Code: true, name: true, isPrimary: true },
           orderBy: [{ isPrimary: 'desc' }, { icd10Code: 'asc' }],
@@ -304,6 +304,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       facility: claim.facility,
       patient: claim.patient,
       diagnoses: claim.diagnoses,
+      procedures: claim.procedures,
       documents: claim.documents.map(({ extracted, ...document }) => ({
         ...document,
         isExtracted: extracted !== null,
@@ -327,49 +328,75 @@ export class PrismaClaimRepository extends ClaimRepository {
         createdAt: finding.createdAt,
       })),
       decisions: claim.decisions,
-      similarPattern: toSimilarPattern(
-        (await this.findSimilarPatternPeers([claim.id])).get(claim.id) ?? [],
+      similarPattern: await this.findSimilarPattern(
+        claim.id,
+        claim.facilityId,
+        claim.diagnoses,
       ),
     };
   }
 
-  private async findSimilarPatternPeers(
-    claimIds: string[],
-  ): Promise<Map<string, SimilarPatternClaim[]>> {
-    if (claimIds.length === 0) return new Map();
-    const rows = await this.prisma.$queryRaw<SimilarPatternPeerRow[]>`
+  private findCodingRates(): Promise<FacilityCodingRate[]> {
+    return this.prisma.$queryRaw<FacilityCodingRate[]>`
+      SELECT
+        claims.facility_id AS "facilityId",
+        primary_diagnosis.icd10_code AS "primaryIcd10Code",
+        count(*)::int AS "caseCount",
+        count(*) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM claim_diagnoses secondary_diagnosis
+            WHERE secondary_diagnosis.claim_id = claims.id
+              AND NOT secondary_diagnosis.is_primary
+          )
+        )::int AS "secondaryCaseCount"
+      FROM claims
+      JOIN claim_diagnoses primary_diagnosis
+        ON primary_diagnosis.claim_id = claims.id
+        AND primary_diagnosis.is_primary
+      GROUP BY claims.facility_id, primary_diagnosis.icd10_code
+    `;
+  }
+
+  private async findSimilarPattern(
+    claimId: string,
+    facilityId: string,
+    diagnoses: { icd10Code: string; isPrimary: boolean }[],
+  ): Promise<SimilarPattern | null> {
+    const primaryDiagnosis = diagnoses.find((diagnosis) => diagnosis.isPrimary);
+    if (!primaryDiagnosis || diagnoses.length < 2) return null;
+    const codingOutlier = findCodingOutliers(await this.findCodingRates()).get(
+      codingOutlierKey(facilityId, primaryDiagnosis.icd10Code),
+    );
+    if (!codingOutlier) return null;
+    const claims = await this.prisma.$queryRaw<SimilarPatternClaim[]>`
       WITH diagnosis_sets AS (
         SELECT claim_id, string_agg(icd10_code, ',' ORDER BY icd10_code) AS codes
         FROM claim_diagnoses
         GROUP BY claim_id
-        HAVING count(*) > 1
+      ),
+      procedure_sets AS (
+        SELECT claims.id AS claim_id,
+          coalesce(string_agg(claim_procedures.icd9cm_code, ',' ORDER BY claim_procedures.icd9cm_code), '') AS codes
+        FROM claims
+        LEFT JOIN claim_procedures ON claim_procedures.claim_id = claims.id
+        GROUP BY claims.id
       )
       SELECT
-        target.id AS "targetId",
         peer.id,
         peer.claim_no AS "claimNo",
         peer.admitted_at AS "admittedAt",
         peer.status::text AS status
-      FROM claims target
-      JOIN diagnosis_sets target_set ON target_set.claim_id = target.id
-      JOIN claims peer
-        ON peer.id <> target.id
-        AND peer.facility_id = target.facility_id
-        AND peer.inacbg_code = target.inacbg_code
-        AND abs(peer.admitted_at - target.admitted_at) <= ${SIMILAR_PATTERN_DAY_WINDOW}
-      JOIN diagnosis_sets peer_set
-        ON peer_set.claim_id = peer.id
+      FROM claims peer
+      JOIN diagnosis_sets peer_set ON peer_set.claim_id = peer.id
+      JOIN diagnosis_sets target_set ON target_set.claim_id = ${claimId}::uuid
+      JOIN procedure_sets peer_procedures ON peer_procedures.claim_id = peer.id
+      JOIN procedure_sets target_procedures ON target_procedures.claim_id = ${claimId}::uuid
+      WHERE peer.id <> ${claimId}::uuid
+        AND peer.facility_id = ${facilityId}::uuid
         AND peer_set.codes = target_set.codes
-      WHERE target.id = ANY(${claimIds}::uuid[])
+        AND peer_procedures.codes = target_procedures.codes
       ORDER BY peer.admitted_at, peer.claim_no
     `;
-    const peersByClaimId = new Map<string, SimilarPatternClaim[]>();
-    for (const { targetId, ...peer } of rows) {
-      peersByClaimId.set(targetId, [
-        ...(peersByClaimId.get(targetId) ?? []),
-        peer,
-      ]);
-    }
-    return peersByClaimId;
+    return { ...codingOutlier, claims };
   }
 }

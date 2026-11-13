@@ -17,6 +17,7 @@ export interface CanonicalClaim {
   severityLevel: number;
   tariffAmount: number;
   diagnoses: { icd10Code: string; name: string; isPrimary: boolean }[];
+  procedures: { icd9cmCode: string; name: string }[];
   documents: { type: DocumentType; recordedAt: string; content: string }[];
 }
 

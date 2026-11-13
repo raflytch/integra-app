@@ -107,8 +107,8 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-caption text-ink-secondary">
-            {claim.claimNo}
+          <span className="text-caption text-ink-secondary">
+            No. SEP <span className="font-mono text-ink">{claim.claimNo}</span>
           </span>
           <CareTypePill careType={claim.careType} />
           <ClaimStatusPill status={claim.status} />

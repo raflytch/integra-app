@@ -24,6 +24,7 @@ export interface ImportedClaim {
   severityLevel: number;
   tariffAmount: number;
   diagnoses: { icd10Code: string; name: string; isPrimary: boolean }[];
+  procedures: { icd9cmCode: string; name: string }[];
   /** `recordedAt` is ISO 8601 with offset. */
   documents: { type: DocumentType; recordedAt: string; content: string }[];
 }

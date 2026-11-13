@@ -45,6 +45,12 @@ export interface ClaimDocument {
   isExtracted: boolean;
 }
 
+export interface ClaimProcedure {
+  id: string;
+  icd9cmCode: string;
+  name: string;
+}
+
 export interface ClaimDiagnosis {
   id: string;
   icd10Code: string;
@@ -75,7 +81,13 @@ export interface SimilarPatternClaim {
 }
 
 export interface SimilarPattern {
-  dayWindow: number;
+  primaryIcd10Code: string;
+  facilityCaseCount: number;
+  facilityRate: number;
+  percentileThreshold: number;
+  peerMedianRate: number;
+  comparedFacilityCount: number;
+  minFacilityCaseCount: number;
   claims: SimilarPatternClaim[];
 }
 
@@ -109,6 +121,7 @@ export interface ClaimDetail {
     birthDate: string;
   };
   diagnoses: ClaimDiagnosis[];
+  procedures: ClaimProcedure[];
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: ClaimDecision[];

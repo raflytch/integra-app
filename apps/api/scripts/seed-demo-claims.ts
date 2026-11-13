@@ -139,6 +139,14 @@ async function main(): Promise<void> {
             })),
           ),
         });
+        await transaction.claimProcedure.createMany({
+          data: claims.flatMap((claim) =>
+            claim.procedures.map((procedure) => ({
+              ...procedure,
+              claimId: claimIdByNo.get(claim.claimNo)!,
+            })),
+          ),
+        });
         await transaction.clinicalDocument.createMany({
           data: claims.flatMap((claim) =>
             claim.documents.map((document) => ({

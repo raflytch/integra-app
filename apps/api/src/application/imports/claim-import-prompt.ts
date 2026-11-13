@@ -18,7 +18,7 @@ export const CLAIM_IMPORT_SYSTEM_PROMPT = [
   '  - careType: OUTPATIENT (rawat jalan/RJ/RJTL/poliklinik, tanggal masuk sama dengan tanggal pulang) atau INPATIENT (rawat inap/RI/RITL/menginap);',
   '  - jenis kelamin: M (laki-laki/L/pria) atau F (perempuan/P/wanita);',
   '  - tipe faskes: A, B, C, atau D;',
-  '  - severityLevel: 1, 2, atau 3 (I, II, III); tariffAmount: angka rupiah tanpa titik ribuan atau simbol;',
+  '  - severityLevel: 1, 2, atau 3 (I, II, III) untuk rawat inap, 0 untuk rawat jalan; tariffAmount: angka rupiah tanpa titik ribuan atau simbol;',
   '  - isPrimary: true hanya untuk diagnosis utama.',
   'Bentuk setiap klaim (JSON schema):',
   JSON.stringify(z.toJSONSchema(canonicalClaimObjectSchema)),

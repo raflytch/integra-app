@@ -102,6 +102,7 @@ export class PrismaClaimImportRepository extends ClaimImportRepository {
           status: 'PENDING',
           injectedCase: [],
           diagnoses: { create: claim.diagnoses },
+          procedures: { create: claim.procedures },
           documents: {
             create: claim.documents.map((document) => ({
               ...document,
