@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   CARE_TYPE_LABELS,
   CLAIM_STATUS_LABELS,
-  DECISION_ACTION_DETAILS,
+  DECISION_RESULT_LABELS,
   TEST_TYPE_DETAILS,
 } from '@/lib/claim-labels';
 import { cn } from '@/lib/utils';
@@ -136,7 +136,7 @@ export function DecisionActionPill({ action }: { action: DecisionAction }) {
   const { tone, icon } = DECISION_ACTION_APPEARANCE[action];
   return (
     <Pill tone={tone} icon={icon}>
-      {DECISION_ACTION_DETAILS[action].label}
+      {DECISION_RESULT_LABELS[action]}
     </Pill>
   );
 }

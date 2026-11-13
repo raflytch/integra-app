@@ -44,6 +44,12 @@ export const DECISION_ACTION_DETAILS: Record<
   },
 };
 
+export const DECISION_RESULT_LABELS: Record<DecisionAction, string> = {
+  APPROVE: 'Setuju',
+  REQUEST_CLARIFICATION: 'Minta Klarifikasi',
+  ESCALATE: 'Eskalasi',
+};
+
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
   MEDICAL_RESUME: 'Resume medis',
   EXAM_NOTE: 'Catatan pemeriksaan',
