@@ -20,6 +20,7 @@ export const canonicalClaimObjectSchema = z.object({
     gender: z.enum(['M', 'F']),
     birthDate: z.iso.date(),
   }),
+  careType: z.enum(['OUTPATIENT', 'INPATIENT']),
   admittedAt: z.iso.date(),
   dischargedAt: z.iso.date(),
   inacbgCode: requiredText,
@@ -59,6 +60,16 @@ export const canonicalClaimSchema = canonicalClaimObjectSchema.superRefine(
         code: 'custom',
         path: ['dischargedAt'],
         message: 'Tanggal pulang lebih awal dari tanggal masuk',
+      });
+    }
+    if (
+      claim.careType === 'OUTPATIENT' &&
+      claim.dischargedAt !== claim.admittedAt
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['dischargedAt'],
+        message: 'Tanggal pulang rawat jalan harus sama dengan tanggal masuk',
       });
     }
     const primaryCount = claim.diagnoses.filter(
@@ -127,6 +138,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   'patient.name': 'Nama pasien',
   'patient.gender': 'Jenis kelamin pasien',
   'patient.birthDate': 'Tanggal lahir pasien',
+  careType: 'Keterangan rawat',
   admittedAt: 'Tanggal masuk',
   dischargedAt: 'Tanggal pulang',
   inacbgCode: 'Kode INA-CBG',

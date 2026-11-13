@@ -5,6 +5,7 @@
  * Everything is fictional.
  */
 import { SyntheticTariffSchedule } from '../../src/infrastructure/tariffs/synthetic-tariff-schedule';
+import type { CareType } from '../../src/domain/claims/claim-detail';
 import type { InjectedCase } from './dataset.schema';
 import { DISEASES, type DiseaseKey, FACILITIES } from './scenarios';
 
@@ -40,6 +41,7 @@ export interface DemoClaim {
   profile: ClaimProfile;
   facilityCode: string;
   patient: DemoPatient;
+  careType: CareType;
   admittedAt: Date;
   dischargedAt: Date;
   inacbgCode: string;
@@ -158,6 +160,8 @@ const PROFILE_DETAILS: Record<
 type RandomProfile = Exclude<ClaimProfile, 'CLONING'>;
 
 /** Base weights before a facility's risk multiplier is applied to suspicious profiles. */
+const OUTPATIENT_GE_SHARE = 0.5;
+
 const PROFILE_WEIGHTS: Record<RandomProfile, number> = {
   NORMAL_DBD: 20,
   NORMAL_PNEUMONIA: 18,
@@ -600,6 +604,7 @@ type ClaimContent = Pick<
   | 'tariffAmount'
   | 'diagnoses'
   | 'documents'
+  | 'careType'
   | 'dischargedAt'
 >;
 
@@ -645,7 +650,11 @@ function buildClaimContent(
       buildDailyNote(profile, random, careDay).build('DAILY_NOTE', noteTime),
     );
   }
-  const resumeTime = atJakartaTime(dischargedAt, 11);
+  const careType: CareType = lengthOfStay === 0 ? 'OUTPATIENT' : 'INPATIENT';
+  const resumeTime =
+    careType === 'OUTPATIENT'
+      ? new Date(examTime.getTime() + 2 * 60 * 60 * 1000)
+      : atJakartaTime(dischargedAt, 11);
   documents.push(
     buildMedicalResume(diagnoses, random).build('MEDICAL_RESUME', resumeTime),
   );
@@ -656,6 +665,7 @@ function buildClaimContent(
     tariffAmount,
     diagnoses,
     documents,
+    careType,
     dischargedAt,
   };
 }
@@ -669,8 +679,8 @@ const MIN_CLONING_CLUSTER_SIZE = 3;
 const EXAM_VITAL_SIGN_PATTERN =
   /TD \d+\/\d+ mmHg, nadi \d+ x\/menit, suhu \d+,\d °C\./;
 
-function isNormalProfile(profile: ClaimProfile): boolean {
-  return profile.startsWith('NORMAL_');
+function isCloningCandidate(claim: DemoClaim): boolean {
+  return claim.profile.startsWith('NORMAL_') && claim.careType === 'INPATIENT';
 }
 
 /** Normal claims of a facility inside the 60-day window that holds the most of them. */
@@ -680,8 +690,7 @@ function pickClusterMembers(
   size: number,
 ): DemoClaim[] {
   const eligibleClaims = claims.filter(
-    (claim) =>
-      claim.facilityCode === facilityCode && isNormalProfile(claim.profile),
+    (claim) => claim.facilityCode === facilityCode && isCloningCandidate(claim),
   );
   let bestWindow: DemoClaim[] = [];
   for (const windowStart of eligibleClaims) {
@@ -712,7 +721,7 @@ function pickBorrowedClaims(
   const pool = claims.filter(
     (claim) =>
       !members.includes(claim) &&
-      isNormalProfile(claim.profile) &&
+      isCloningCandidate(claim) &&
       claim.admittedAt >= windowStart &&
       claim.admittedAt < windowEnd,
   );
@@ -838,7 +847,10 @@ export function generateDemoClaims(
     const admittedAt = new Date(
       DATASET_START + admissionOffset * MILLISECONDS_PER_DAY,
     );
-    const lengthOfStay = random.int(3, secondary ? 7 : 5);
+    const lengthOfStay =
+      profile === 'NORMAL_GE' && random.chance(OUTPATIENT_GE_SHARE)
+        ? 0
+        : random.int(3, secondary ? 7 : 5);
     const age = random.int(18, 72);
     const patient: DemoPatient = {
       medicalRecordNo: `${DEMO_RECORD_NO_PREFIX}${sequence.padStart(6, '0')}`,

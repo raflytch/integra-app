@@ -1,5 +1,6 @@
 import type { UserRole } from '@/types/auth.types';
 import type {
+  CareType,
   ClaimStatus,
   DecisionAction,
   DocumentType,
@@ -13,6 +14,11 @@ export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
   APPROVED: 'Disetujui',
   CLARIFICATION_REQUESTED: 'Klarifikasi diminta',
   ESCALATED: 'Dieskalasi',
+};
+
+export const CARE_TYPE_LABELS: Record<CareType, string> = {
+  OUTPATIENT: 'Rawat Jalan',
+  INPATIENT: 'Rawat Inap',
 };
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {

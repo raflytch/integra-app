@@ -15,6 +15,7 @@
         "gender": "F",
         "birthDate": "1991-05-14"
       },
+      "careType": "INPATIENT",
       "admittedAt": "2026-10-01",
       "dischargedAt": "2026-10-04",
       "inacbgCode": "A-4-14-I",
@@ -69,6 +70,7 @@
         "gender": "M",
         "birthDate": "1968-11-02"
       },
+      "careType": "INPATIENT",
       "admittedAt": "2026-10-02",
       "dischargedAt": "2026-10-06",
       "inacbgCode": "J-4-16-II",

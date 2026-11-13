@@ -1,5 +1,6 @@
 import type { IconType } from 'react-icons';
 import {
+  LuBedDouble,
   LuCircleAlert,
   LuCircleCheck,
   LuCircleDashed,
@@ -11,16 +12,19 @@ import {
   LuMessageSquareText,
   LuShieldAlert,
   LuSparkles,
+  LuStethoscope,
 } from 'react-icons/lu';
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
+  CARE_TYPE_LABELS,
   CLAIM_STATUS_LABELS,
   DECISION_ACTION_DETAILS,
   TEST_TYPE_DETAILS,
 } from '@/lib/claim-labels';
 import { cn } from '@/lib/utils';
 import type {
+  CareType,
   ClaimStatus,
   DecisionAction,
   FacilityType,
@@ -34,6 +38,8 @@ const PILL_TONE_CLASS_NAMES = {
   success: 'border-success/30 bg-success/10 text-success-ink',
   warning: 'border-warning/30 bg-warning/10 text-warning-ink',
   error: 'border-error/30 bg-error/10 text-error-ink',
+  outpatient: 'border-outpatient/30 bg-outpatient/10 text-outpatient-ink',
+  inpatient: 'border-inpatient/30 bg-inpatient/10 text-inpatient-ink',
   inverse: 'border-transparent bg-ink text-surface',
 } as const;
 
@@ -59,6 +65,14 @@ const DECISION_ACTION_APPEARANCE: Record<
   APPROVE: CLAIM_STATUS_APPEARANCE.APPROVED,
   REQUEST_CLARIFICATION: CLAIM_STATUS_APPEARANCE.CLARIFICATION_REQUESTED,
   ESCALATE: CLAIM_STATUS_APPEARANCE.ESCALATED,
+};
+
+const CARE_TYPE_APPEARANCE: Record<
+  CareType,
+  { tone: PillTone; icon: IconType }
+> = {
+  OUTPATIENT: { tone: 'outpatient', icon: LuStethoscope },
+  INPATIENT: { tone: 'inpatient', icon: LuBedDouble },
 };
 
 const TEST_TYPE_ICONS: Record<TestType, IconType> = {
@@ -104,6 +118,15 @@ export function ClaimStatusPill({ status }: { status: ClaimStatus }) {
   return (
     <Pill tone={tone} icon={icon}>
       {CLAIM_STATUS_LABELS[status]}
+    </Pill>
+  );
+}
+
+export function CareTypePill({ careType }: { careType: CareType }) {
+  const { tone, icon } = CARE_TYPE_APPEARANCE[careType];
+  return (
+    <Pill tone={tone} icon={icon}>
+      {CARE_TYPE_LABELS[careType]}
     </Pill>
   );
 }

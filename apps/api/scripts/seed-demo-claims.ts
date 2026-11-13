@@ -92,7 +92,10 @@ async function main(): Promise<void> {
         });
         await transaction.claim.deleteMany({ where: demoClaimFilter });
         await transaction.patient.deleteMany({
-          where: { medicalRecordNo: { startsWith: DEMO_RECORD_NO_PREFIX } },
+          where: {
+            medicalRecordNo: { startsWith: DEMO_RECORD_NO_PREFIX },
+            claims: { none: {} },
+          },
         });
 
         await transaction.patient.createMany({
@@ -111,6 +114,7 @@ async function main(): Promise<void> {
             claimNo: claim.claimNo,
             facilityId: facilityIdByCode.get(claim.facilityCode)!,
             patientId: patientIdByRecordNo.get(claim.patient.medicalRecordNo)!,
+            careType: claim.careType,
             admittedAt: claim.admittedAt,
             dischargedAt: claim.dischargedAt,
             inacbgCode: claim.inacbgCode,

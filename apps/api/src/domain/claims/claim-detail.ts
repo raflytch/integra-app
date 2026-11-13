@@ -2,6 +2,7 @@ import type { Decision } from '../decisions/decision';
 
 export type ClaimStatus =
   'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
+export type CareType = 'OUTPATIENT' | 'INPATIENT';
 export type FacilityType = 'A' | 'B' | 'C' | 'D';
 export type Gender = 'M' | 'F';
 export type DocumentType =
@@ -85,6 +86,7 @@ export interface ClaimDetail {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: Date;
   dischargedAt: Date;
   inacbgCode: string;

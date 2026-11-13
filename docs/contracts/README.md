@@ -39,7 +39,7 @@ An array of citation objects, discriminated by `kind`:
 
 ## `GET /claims/:id` (M-08 Kartu Klaim)
 
-Example: [`claim-detail.example.json`](claim-detail.example.json). Returns `404 CLAIM_NOT_FOUND` for an unknown id. `documents` exclude `extracted` and expose `isExtracted` instead (true once M-03 has read the document); findings expose `relatedClaim` as `{ id, claimNo, facilityName }` (Uji Bukan Salinan) or `null` instead of a bare id. Findings are ordered by `testType`, then `strength` descending. `decisions` lists `{ id, action, reason, createdAt, verifier: { id, name } }`, newest first.
+Example: [`claim-detail.example.json`](claim-detail.example.json). Returns `404 CLAIM_NOT_FOUND` for an unknown id. `documents` exclude `extracted` and expose `isExtracted` instead (true once M-03 has read the document); findings expose `relatedClaim` as `{ id, claimNo, facilityName }` (Uji Bukan Salinan) or `null` instead of a bare id. Findings are ordered by `testType`, then `strength` descending. `decisions` lists `{ id, action, reason, createdAt, verifier: { id, name } }`, newest first. `careType` is `OUTPATIENT` (rawat jalan) or `INPATIENT` (rawat inap); `lengthOfStayDays` is `dischargedAt` minus `admittedAt` in days for `INPATIENT` and `null` for `OUTPATIENT`. Queue items carry the same two fields.
 
 ## `GET /claims` (M-07 antrean)
 
@@ -50,6 +50,7 @@ Example: [`claim-list.example.json`](claim-list.example.json). Returns one page,
 | `page`          | integer ≥ 1                                                                                                                           | `1`        |
 | `pageSize`      | integer 1 to 100                                                                                                                      | `10`       |
 | `status`        | `PENDING`, `APPROVED`, `CLARIFICATION_REQUESTED`, `ESCALATED`                                                                         | all        |
+| `careType`      | `OUTPATIENT` (rawat jalan), `INPATIENT` (rawat inap)                                                                                  | all        |
 | `facilityId`    | facility UUID                                                                                                                         | all        |
 | `search`        | up to 100 characters, case-insensitive: claim number, INA-CBG code, facility name, primary diagnosis name or ICD-10 code              | none       |
 | `analysis`      | `ANALYZED`, `NOT_ANALYZED`                                                                                                            | all        |
@@ -128,7 +129,7 @@ Uji Bukan Salinan (M-06) rules: no LLM. Candidates are other claims with the sam
 
 ## Claim import (`integra-claims/v1`)
 
-Example: [`claim-import.example.json`](claim-import.example.json), also served to the web app as `/templates/integra-claim-import.json`. The Zod schema in `apps/api/src/application/imports/claim-import.schema.ts` is the source of truth: `{ "format": "integra-claims/v1", "claims": [...] }`, where each claim has `claimNo`, `facility { code, name, type A|B|C|D, city }`, `patient { medicalRecordNo, name, gender M|F, birthDate }`, `admittedAt` and `dischargedAt` (`YYYY-MM-DD`), `inacbgCode`, `severityLevel` (1 to 3), `tariffAmount` (> 0), `diagnoses [{ icd10Code, name, isPrimary }]` (exactly one primary, no repeated code), and `documents [{ type, recordedAt (ISO 8601 with offset), content }]` (at least one). `dischargedAt` may not be before `admittedAt`. Imported claims never carry `injected_case`.
+Example: [`claim-import.example.json`](claim-import.example.json), also served to the web app as `/templates/integra-claim-import.json`. The Zod schema in `apps/api/src/application/imports/claim-import.schema.ts` is the source of truth: `{ "format": "integra-claims/v1", "claims": [...] }`, where each claim has `claimNo`, `facility { code, name, type A|B|C|D, city }`, `patient { medicalRecordNo, name, gender M|F, birthDate }`, `careType` (`OUTPATIENT` or `INPATIENT`), `admittedAt` and `dischargedAt` (`YYYY-MM-DD`), `inacbgCode`, `severityLevel` (1 to 3), `tariffAmount` (> 0), `diagnoses [{ icd10Code, name, isPrimary }]` (exactly one primary, no repeated code), and `documents [{ type, recordedAt (ISO 8601 with offset), content }]` (at least one). `dischargedAt` may not be before `admittedAt`, and an `OUTPATIENT` claim must be discharged the day it is admitted. Imported claims never carry `injected_case`.
 
 Both roles may import. Neither the file size nor the number of claims is limited; the API only caps a single import request body at 200 MB to protect its memory (`413` from Express, no `code`), while every other route keeps the 100 KB default.
 

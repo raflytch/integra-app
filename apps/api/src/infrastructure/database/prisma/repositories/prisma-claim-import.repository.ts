@@ -93,6 +93,7 @@ export class PrismaClaimImportRepository extends ClaimImportRepository {
           claimNo: claim.claimNo,
           facilityId,
           patientId,
+          careType: claim.careType,
           admittedAt: toDateOnly(claim.admittedAt),
           dischargedAt: toDateOnly(claim.dischargedAt),
           inacbgCode: claim.inacbgCode,

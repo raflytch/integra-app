@@ -41,6 +41,7 @@ const QUEUE_ITEM_FIELDS = {
   id: true,
   claimNo: true,
   status: true,
+  careType: true,
   admittedAt: true,
   dischargedAt: true,
   inacbgCode: true,
@@ -116,6 +117,7 @@ function toQueueWhere(query: ClaimQueueQuery): Prisma.ClaimWhereInput {
   }
   return {
     status: query.status,
+    careType: query.careType,
     facilityId: query.facilityId,
     AND: conditions,
   };
@@ -271,6 +273,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       id: claim.id,
       claimNo: claim.claimNo,
       status: claim.status,
+      careType: claim.careType,
       admittedAt: claim.admittedAt,
       dischargedAt: claim.dischargedAt,
       inacbgCode: claim.inacbgCode,

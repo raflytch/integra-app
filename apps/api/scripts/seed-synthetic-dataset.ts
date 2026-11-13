@@ -83,6 +83,7 @@ async function main(): Promise<void> {
       const claimFields = {
         facilityId,
         patientId,
+        careType: 'INPATIENT' as const,
         admittedAt: new Date(claim.admittedAt),
         dischargedAt: new Date(claim.dischargedAt),
         inacbgCode: claim.inacbgCode,

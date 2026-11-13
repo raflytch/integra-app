@@ -1,5 +1,3 @@
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
-
 const rupiahFormatter = new Intl.NumberFormat('id-ID', {
   style: 'currency',
   currency: 'IDR',
@@ -39,9 +37,8 @@ export function formatPercent(ratio: number): string {
   return `${Math.round(percent)}%`;
 }
 
-export function countDaysBetween(startDate: string, endDate: string): number {
-  const elapsedMs = new Date(endDate).getTime() - new Date(startDate).getTime();
-  return Math.round(elapsedMs / MILLISECONDS_PER_DAY);
+export function formatLengthOfStay(lengthOfStayDays: number | null): string {
+  return lengthOfStayDays === null ? '-' : `${lengthOfStayDays} hari`;
 }
 
 export function calculateAgeInYears(birthDate: string, onDate: string): number {

@@ -52,6 +52,10 @@
   --color-warning-ink: #b45309;
   --color-error: #ef4444;
   --color-error-ink: #b91c1c;
+  --color-outpatient: #3b82f6;
+  --color-outpatient-ink: #1d4ed8;
+  --color-inpatient: #8b5cf6;
+  --color-inpatient-ink: #6d28d9;
 }
 
 @theme inline {

@@ -5,7 +5,7 @@ import {
 } from './claim-import.schema';
 
 export const CLAIM_IMPORT_SYSTEM_PROMPT = [
-  `Anda menyusun ulang data klaim rawat inap BPJS Kesehatan dari sebuah file ke format baku INTEGRA (${CLAIM_IMPORT_FORMAT}).`,
+  `Anda menyusun ulang data klaim BPJS Kesehatan (rawat jalan atau rawat inap) dari sebuah file ke format baku INTEGRA (${CLAIM_IMPORT_FORMAT}).`,
   'Aturan wajib:',
   '- Hanya menyusun ulang. Jangan menambah, meringkas, menerjemahkan, atau memperbaiki isi.',
   '- `content` setiap dokumen disalin kata per kata dari file, persis seperti tertulis, termasuk angka dan tanda baca.',
@@ -15,6 +15,7 @@ export const CLAIM_IMPORT_SYSTEM_PROMPT = [
   '- Petakan nilai ke enum dan format baku:',
   '  - tipe dokumen: EXAM_NOTE (catatan pemeriksaan/IGD/anamnesis), DAILY_NOTE (catatan harian/CPPT/visite), PRESCRIPTION (resep/obat), PROCEDURE (tindakan/pemeriksaan penunjang), MEDICAL_RESUME (resume medis/ringkasan pulang);',
   '  - tanggal: YYYY-MM-DD; waktu dokumen: ISO 8601 dengan offset, pakai +07:00 jika file tidak menyebut zona waktu; jika dokumen hanya punya tanggal, pakai jam 00:00;',
+  '  - careType: OUTPATIENT (rawat jalan/RJ/RJTL/poliklinik, tanggal masuk sama dengan tanggal pulang) atau INPATIENT (rawat inap/RI/RITL/menginap);',
   '  - jenis kelamin: M (laki-laki/L/pria) atau F (perempuan/P/wanita);',
   '  - tipe faskes: A, B, C, atau D;',
   '  - severityLevel: 1, 2, atau 3 (I, II, III); tariffAmount: angka rupiah tanpa titik ribuan atau simbol;',

@@ -1,5 +1,6 @@
 export type ClaimStatus =
   'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
+export type CareType = 'OUTPATIENT' | 'INPATIENT';
 export type FacilityType = 'A' | 'B' | 'C' | 'D';
 export type Gender = 'M' | 'F';
 export type DocumentType =
@@ -70,8 +71,10 @@ export interface ClaimDetail {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: string;
   dischargedAt: string;
+  lengthOfStayDays: number | null;
   inacbgCode: string;
   severityLevel: number;
   tariffAmount: number;
@@ -103,8 +106,10 @@ export interface ClaimQueueItem {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: string;
   dischargedAt: string;
+  lengthOfStayDays: number | null;
   facility: { id: string; name: string; type: FacilityType };
   primaryDiagnosis: { icd10Code: string; name: string } | null;
   inacbgCode: string;
@@ -131,6 +136,7 @@ export type ClaimQueueSortKey =
 
 export interface ClaimQueueParams {
   status?: ClaimStatus;
+  careType?: CareType;
   facilityId?: string;
   search?: string;
   analysis?: 'ANALYZED' | 'NOT_ANALYZED';

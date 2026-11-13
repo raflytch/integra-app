@@ -1,4 +1,8 @@
-import type { DocumentType, FacilityType } from '../claims/claim-detail';
+import type {
+  CareType,
+  DocumentType,
+  FacilityType,
+} from '../claims/claim-detail';
 
 /** One claim in the `integra-claims/v1` import format. Dates stay as written. */
 export interface ImportedClaim {
@@ -11,6 +15,7 @@ export interface ImportedClaim {
     /** YYYY-MM-DD */
     birthDate: string;
   };
+  careType: CareType;
   /** YYYY-MM-DD */
   admittedAt: string;
   /** YYYY-MM-DD */
