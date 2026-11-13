@@ -1,9 +1,10 @@
 /**
  * Seeds hundreds of raw, template-based demo claims without calling the LLM.
- * Documents stay unextracted and claims stay "Menunggu keputusan", so the AI
- * analysis (claims selected in Antrean Klaim, or "Analisis dengan AI" on a claim) and the
- * verifier decisions happen in the app. Idempotent: it replaces only claims
- * numbered KLM-DEMO-* (with their findings and decisions) and their patients.
+ * Documents stay unextracted, so the AI analysis (claims selected in Antrean
+ * Klaim, or "Analisis dengan AI" on a claim) happens in the app. A few claims
+ * get a sample decision of each kind from the demo verifier. Idempotent: it
+ * replaces only claims whose SEP number starts with 9900R (with their findings
+ * and decisions) and their patients.
  *
  *   npm run seed:demo                      # 300 claims
  *   npm run seed:demo -- --count=800       # custom size
@@ -13,9 +14,14 @@ import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { DocumentType } from '../src/domain/claims/claim-detail';
+import type { DecisionAction } from '../src/domain/decisions/decision';
+import { CLAIM_STATUS_BY_DECISION_ACTION } from '../src/domain/decisions/decision';
+import { DEMO_ACCOUNTS } from '../src/domain/users/demo-accounts';
 import { type Env, validateEnv } from '../src/infrastructure/config/env.schema';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import {
+  type ClaimProfile,
   DEMO_CLAIM_NO_PREFIX,
   DEMO_FACILITIES,
   DEMO_RECORD_NO_PREFIX,
@@ -28,6 +34,36 @@ const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 300;
 const MAX_CLAIM_COUNT = 5000;
 const DATASET_SEED = 20260401;
+const DECISIONS_PER_KIND = 3;
+
+const SAMPLE_DECISIONS: {
+  profiles: ClaimProfile[];
+  action: DecisionAction;
+  reason: string;
+  missingDocumentTypes: DocumentType[];
+}[] = [
+  {
+    profiles: ['GENUINE_SHOCK', 'GENUINE_RESP_FAILURE'],
+    action: 'APPROVE',
+    reason:
+      'Diagnosis sekunder didukung bukti klinis lengkap di rekam medis, klaim dibayar sesuai pengajuan.',
+    missingDocumentTypes: [],
+  },
+  {
+    profiles: ['SHOCK_UPCODING', 'RESP_FAILURE_UPCODING'],
+    action: 'REQUEST_CLARIFICATION',
+    reason:
+      'Diagnosis sekunder belum didukung bukti tindakan dan catatan perkembangan pasien. Mohon faskes melengkapi lewat VEDIKA.',
+    missingDocumentTypes: ['PROCEDURE', 'DAILY_NOTE'],
+  },
+  {
+    profiles: ['CLONING'],
+    action: 'ESCALATE',
+    reason:
+      'Dokumen klinis hampir identik dengan klaim pasien lain di faskes yang sama, perlu ditinjau tim anti-fraud.',
+    missingDocumentTypes: [],
+  },
+];
 
 @Module({
   imports: [
@@ -155,6 +191,42 @@ async function main(): Promise<void> {
             })),
           ),
         });
+
+        const demoVerifier = await transaction.user.findUnique({
+          where: { email: DEMO_ACCOUNTS[0].email },
+          select: { id: true },
+        });
+        if (!demoVerifier) {
+          logger.warn(
+            'Akun verifikator demo belum ada; jalankan npm run seed:users agar keputusan contoh ikut dibuat.',
+          );
+          return;
+        }
+        for (const sample of SAMPLE_DECISIONS) {
+          const sampleClaims = claims
+            .filter((claim) => sample.profiles.includes(claim.profile))
+            .slice(0, DECISIONS_PER_KIND);
+          for (const claim of sampleClaims) {
+            const claimId = claimIdByNo.get(claim.claimNo)!;
+            await transaction.decision.create({
+              data: {
+                claimId,
+                verifierId: demoVerifier.id,
+                action: sample.action,
+                reason: sample.reason,
+                documentRequests: {
+                  create: sample.missingDocumentTypes.map((documentType) => ({
+                    documentType,
+                  })),
+                },
+              },
+            });
+            await transaction.claim.update({
+              where: { id: claimId },
+              data: { status: CLAIM_STATUS_BY_DECISION_ACTION[sample.action] },
+            });
+          }
+        }
       },
       { timeout: 120_000 },
     );

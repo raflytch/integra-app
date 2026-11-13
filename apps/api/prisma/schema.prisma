@@ -370,10 +370,23 @@ model Decision {
   createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
 
   /// Restrict: deleting a claim must not silently erase its audit trail.
-  claim    Claim @relation(fields: [claimId], references: [id], onDelete: Restrict)
-  verifier User  @relation(fields: [verifierId], references: [id], onDelete: Restrict)
+  claim            Claim                     @relation(fields: [claimId], references: [id], onDelete: Restrict)
+  verifier         User                      @relation(fields: [verifierId], references: [id], onDelete: Restrict)
+  documentRequests DecisionDocumentRequest[]
 
   @@index([claimId, createdAt(sort: Desc)])
   @@index([verifierId])
   @@map("decisions")
+}
+
+model DecisionDocumentRequest {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  decisionId   String       @map("decision_id") @db.Uuid
+  documentType DocumentType @map("document_type")
+  receivedAt   DateTime?    @map("received_at") @db.Timestamptz(3)
+
+  decision Decision @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  @@unique([decisionId, documentType])
+  @@map("decision_document_requests")
 }

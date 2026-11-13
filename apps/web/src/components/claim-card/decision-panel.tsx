@@ -4,9 +4,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LuCircleCheck } from 'react-icons/lu';
 import Link from 'next/link';
 import type { FormEvent } from 'react';
-import { DecisionActionPill } from '@/components/claim-pills';
+import { DecisionActionPill, Pill } from '@/components/claim-pills';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Field,
   FieldDescription,
@@ -15,18 +16,54 @@ import {
 } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { DECISION_ACTION_DETAILS } from '@/lib/claim-labels';
+import {
+  DECISION_ACTION_DETAILS,
+  DOCUMENT_TYPE_LABELS,
+} from '@/lib/claim-labels';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { recordDecision } from '@/services/claim.service';
-import type { ClaimDecision, DecisionAction } from '@/types/claim.types';
+import type {
+  ClaimDecision,
+  ClaimFinding,
+  DecisionAction,
+  DocumentType,
+  EvidenceType,
+} from '@/types/claim.types';
 
 export interface DecisionDraft {
   action: DecisionAction | '';
   reason: string;
+  missingDocumentTypes: DocumentType[];
 }
 
-export const EMPTY_DECISION_DRAFT: DecisionDraft = { action: '', reason: '' };
+export const EMPTY_DECISION_DRAFT: DecisionDraft = {
+  action: '',
+  reason: '',
+  missingDocumentTypes: [],
+};
+
+const DOCUMENT_TYPES = Object.keys(DOCUMENT_TYPE_LABELS) as DocumentType[];
+const DOCUMENT_TYPE_BY_EVIDENCE_TYPE: Record<EvidenceType, DocumentType> = {
+  MEDICATION: 'PRESCRIPTION',
+  PROCEDURE: 'PROCEDURE',
+  FINDING: 'EXAM_NOTE',
+  VITAL_SIGN: 'EXAM_NOTE',
+};
+
+export function suggestMissingDocumentTypes(
+  findings: ClaimFinding[],
+): DocumentType[] {
+  const suggested = new Set<DocumentType>();
+  for (const finding of findings) {
+    for (const citation of finding.citations) {
+      if (citation.kind === 'MISSING_EVIDENCE') {
+        suggested.add(DOCUMENT_TYPE_BY_EVIDENCE_TYPE[citation.evidenceType]);
+      }
+    }
+  }
+  return DOCUMENT_TYPES.filter((documentType) => suggested.has(documentType));
+}
 export const DECISION_REASON_INPUT_ID = 'decision-reason';
 
 const MIN_REASON_LENGTH = 10;
@@ -68,6 +105,17 @@ function DecisionHistory({ decisions }: { decisions: ClaimDecision[] }) {
             <span className="text-small text-ink-secondary">
               {decision.reason}
             </span>
+            {decision.missingDocuments.length > 0 && (
+              <span className="text-caption text-ink-secondary">
+                Dokumen kurang:{' '}
+                {decision.missingDocuments
+                  .map(
+                    (missingDocument) =>
+                      DOCUMENT_TYPE_LABELS[missingDocument.documentType],
+                  )
+                  .join(', ')}
+              </span>
+            )}
             <span className="text-caption text-ink-secondary">
               {decision.verifier.name} · {formatDateTime(decision.createdAt)}
             </span>
@@ -83,16 +131,26 @@ export function DecisionPanel({
   decisions,
   draft,
   onDraftChange,
+  recommendation,
+  suggestedDocumentTypes,
 }: {
   claimId: string;
   decisions: ClaimDecision[];
   draft: DecisionDraft;
   onDraftChange: (draft: DecisionDraft) => void;
+  recommendation: DecisionAction | null;
+  suggestedDocumentTypes: DocumentType[];
 }) {
   const queryClient = useQueryClient();
+  const isClarification = draft.action === 'REQUEST_CLARIFICATION';
   const decisionMutation = useMutation({
     mutationFn: (action: DecisionAction) =>
-      recordDecision(claimId, { action, reason: draft.reason }),
+      recordDecision(claimId, {
+        action,
+        reason: draft.reason,
+        missingDocumentTypes:
+          action === 'REQUEST_CLARIFICATION' ? draft.missingDocumentTypes : [],
+      }),
     onSuccess: () => {
       onDraftChange(EMPTY_DECISION_DRAFT);
       return queryClient.invalidateQueries({ queryKey: ['claims'] });
@@ -102,7 +160,37 @@ export function DecisionPanel({
   const canSubmit =
     draft.action !== '' &&
     draft.reason.trim().length >= MIN_REASON_LENGTH &&
+    (!isClarification || draft.missingDocumentTypes.length > 0) &&
     !decisionMutation.isPending;
+
+  function changeAction(action: DecisionAction) {
+    const shouldSuggestDocuments =
+      action === 'REQUEST_CLARIFICATION' &&
+      draft.missingDocumentTypes.length === 0;
+    onDraftChange({
+      ...draft,
+      action,
+      missingDocumentTypes: shouldSuggestDocuments
+        ? suggestedDocumentTypes
+        : draft.missingDocumentTypes,
+    });
+  }
+
+  function toggleMissingDocument(
+    documentType: DocumentType,
+    isChecked: boolean,
+  ) {
+    onDraftChange({
+      ...draft,
+      missingDocumentTypes: isChecked
+        ? DOCUMENT_TYPES.filter(
+            (type) =>
+              type === documentType ||
+              draft.missingDocumentTypes.includes(type),
+          )
+        : draft.missingDocumentTypes.filter((type) => type !== documentType),
+    });
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -144,9 +232,7 @@ export function DecisionPanel({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <RadioGroup
           value={draft.action}
-          onValueChange={(action) =>
-            onDraftChange({ ...draft, action: action as DecisionAction })
-          }
+          onValueChange={(action) => changeAction(action as DecisionAction)}
           aria-label="Pilih keputusan"
           className="gap-2"
         >
@@ -165,8 +251,11 @@ export function DecisionPanel({
                 className={DECISION_TONE_CLASS_NAMES[action].radio}
               />
               <span className="flex flex-col gap-0.5">
-                <span className="text-small font-medium text-ink">
+                <span className="flex flex-wrap items-center gap-1.5 text-small font-medium text-ink">
                   {DECISION_ACTION_DETAILS[action].label}
+                  {action === recommendation && (
+                    <Pill tone="outline">Rekomendasi INTEGRA</Pill>
+                  )}
                 </span>
                 <span className="text-caption text-ink-secondary">
                   {DECISION_ACTION_DETAILS[action].description}
@@ -175,6 +264,38 @@ export function DecisionPanel({
             </label>
           ))}
         </RadioGroup>
+        {isClarification && (
+          <fieldset className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
+            <legend className="sr-only">Dokumen yang kurang</legend>
+            <span className="text-small font-medium text-ink">
+              Dokumen yang kurang
+            </span>
+            <span className="text-caption text-ink-secondary">
+              Faskes melengkapinya di VEDIKA. Centang minimal satu.
+            </span>
+            {DOCUMENT_TYPES.map((documentType) => (
+              <label
+                key={documentType}
+                htmlFor={`missing-${documentType}`}
+                className="flex cursor-pointer items-center gap-2 text-small text-ink"
+              >
+                <Checkbox
+                  id={`missing-${documentType}`}
+                  checked={draft.missingDocumentTypes.includes(documentType)}
+                  onCheckedChange={(isChecked) =>
+                    toggleMissingDocument(documentType, isChecked === true)
+                  }
+                />
+                {DOCUMENT_TYPE_LABELS[documentType]}
+                {suggestedDocumentTypes.includes(documentType) && (
+                  <span className="text-caption text-ink-secondary">
+                    (disarankan dari Uji Ada)
+                  </span>
+                )}
+              </label>
+            ))}
+          </fieldset>
+        )}
         <Field>
           <FieldLabel htmlFor={DECISION_REASON_INPUT_ID} className="text-ink">
             Alasan

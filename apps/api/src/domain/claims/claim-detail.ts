@@ -1,4 +1,5 @@
 import type { Decision } from '../decisions/decision';
+import type { ClaimVerification } from './claim-verification';
 import type { SimilarPattern } from './similar-pattern';
 
 export type ClaimStatus =
@@ -110,4 +111,5 @@ export interface ClaimDetail {
   findings: ClaimFinding[];
   decisions: Decision[];
   similarPattern: SimilarPattern | null;
+  verification: ClaimVerification | null;
 }

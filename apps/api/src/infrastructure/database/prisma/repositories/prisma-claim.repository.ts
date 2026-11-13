@@ -13,6 +13,7 @@ import type {
   SortDirection,
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
+import { assessClaim } from '../../../../domain/claims/claim-verification';
 import {
   codingOutlierKey,
   type FacilityCodingRate,
@@ -23,7 +24,7 @@ import {
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { countFindingsByTestType } from './finding-counts';
-import { DECISION_FIELDS } from './prisma-decision.repository';
+import { DECISION_FIELDS, toDecision } from './prisma-decision.repository';
 
 const CITATION_KINDS = new Set<FindingCitation['kind']>([
   'MISSING_EVIDENCE',
@@ -327,7 +328,8 @@ export class PrismaClaimRepository extends ClaimRepository {
         tariffGap: finding.tariffGap?.toNumber() ?? null,
         createdAt: finding.createdAt,
       })),
-      decisions: claim.decisions,
+      decisions: claim.decisions.map(toDecision),
+      verification: assessClaim(claim.findings, claim.analyzedAt),
       similarPattern: await this.findSimilarPattern(
         claim.id,
         claim.facilityId,

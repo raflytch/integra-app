@@ -16,6 +16,13 @@ export interface ClaimDecision {
   reason: string;
   createdAt: string;
   verifier: { id: string; name: string };
+  missingDocuments: { documentType: DocumentType; receivedAt: string | null }[];
+}
+
+export interface ClaimVerification {
+  score: number;
+  recommendation: DecisionAction;
+  reason: string;
 }
 
 export type FindingCitation =
@@ -126,6 +133,7 @@ export interface ClaimDetail {
   findings: ClaimFinding[];
   decisions: ClaimDecision[];
   similarPattern: SimilarPattern | null;
+  verification: ClaimVerification | null;
 }
 
 export interface ClaimQueueItem {
