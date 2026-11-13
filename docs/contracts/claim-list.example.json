@@ -29,7 +29,8 @@
         "SIMILARITY": 0
       },
       "documentCount": 5,
-      "extractedDocumentCount": 5
+      "extractedDocumentCount": 5,
+      "hasSimilarPattern": false
     }
   ],
   "total": 1,

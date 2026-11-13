@@ -1,4 +1,5 @@
 import type { Decision } from '../decisions/decision';
+import type { SimilarPattern } from './similar-pattern';
 
 export type ClaimStatus =
   'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
@@ -101,4 +102,5 @@ export interface ClaimDetail {
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: Decision[];
+  similarPattern: SimilarPattern | null;
 }

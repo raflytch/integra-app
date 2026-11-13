@@ -13,6 +13,11 @@ import type {
   SortDirection,
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
+import {
+  SIMILAR_PATTERN_DAY_WINDOW,
+  type SimilarPatternClaim,
+  toSimilarPattern,
+} from '../../../../domain/claims/similar-pattern';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { countFindingsByTestType } from './finding-counts';
@@ -123,6 +128,14 @@ function toQueueWhere(query: ClaimQueueQuery): Prisma.ClaimWhereInput {
   };
 }
 
+interface SimilarPatternPeerRow {
+  targetId: string;
+  id: string;
+  claimNo: string;
+  admittedAt: Date;
+  status: ClaimStatus;
+}
+
 @Injectable()
 export class PrismaClaimRepository extends ClaimRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -166,6 +179,10 @@ export class PrismaClaimRepository extends ClaimRepository {
       ]),
     );
 
+    const similarPatternPeers = await this.findSimilarPatternPeers(
+      claims.map((claim) => claim.id),
+    );
+
     const items = claims.map(({ diagnoses, findings, _count, ...claim }) => ({
       ...claim,
       tariffAmount: claim.tariffAmount.toNumber(),
@@ -175,6 +192,8 @@ export class PrismaClaimRepository extends ClaimRepository {
       documentCount: _count.documents,
       extractedDocumentCount:
         extractedDocumentCountByClaimId.get(claim.id) ?? 0,
+      hasSimilarPattern:
+        toSimilarPattern(similarPatternPeers.get(claim.id) ?? []) !== null,
     }));
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
@@ -308,6 +327,49 @@ export class PrismaClaimRepository extends ClaimRepository {
         createdAt: finding.createdAt,
       })),
       decisions: claim.decisions,
+      similarPattern: toSimilarPattern(
+        (await this.findSimilarPatternPeers([claim.id])).get(claim.id) ?? [],
+      ),
     };
+  }
+
+  private async findSimilarPatternPeers(
+    claimIds: string[],
+  ): Promise<Map<string, SimilarPatternClaim[]>> {
+    if (claimIds.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<SimilarPatternPeerRow[]>`
+      WITH diagnosis_sets AS (
+        SELECT claim_id, string_agg(icd10_code, ',' ORDER BY icd10_code) AS codes
+        FROM claim_diagnoses
+        GROUP BY claim_id
+        HAVING count(*) > 1
+      )
+      SELECT
+        target.id AS "targetId",
+        peer.id,
+        peer.claim_no AS "claimNo",
+        peer.admitted_at AS "admittedAt",
+        peer.status::text AS status
+      FROM claims target
+      JOIN diagnosis_sets target_set ON target_set.claim_id = target.id
+      JOIN claims peer
+        ON peer.id <> target.id
+        AND peer.facility_id = target.facility_id
+        AND peer.inacbg_code = target.inacbg_code
+        AND abs(peer.admitted_at - target.admitted_at) <= ${SIMILAR_PATTERN_DAY_WINDOW}
+      JOIN diagnosis_sets peer_set
+        ON peer_set.claim_id = peer.id
+        AND peer_set.codes = target_set.codes
+      WHERE target.id = ANY(${claimIds}::uuid[])
+      ORDER BY peer.admitted_at, peer.claim_no
+    `;
+    const peersByClaimId = new Map<string, SimilarPatternClaim[]>();
+    for (const { targetId, ...peer } of rows) {
+      peersByClaimId.set(targetId, [
+        ...(peersByClaimId.get(targetId) ?? []),
+        peer,
+      ]);
+    }
+    return peersByClaimId;
   }
 }

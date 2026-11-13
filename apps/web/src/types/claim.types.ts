@@ -67,6 +67,18 @@ export interface ClaimFinding {
   createdAt: string;
 }
 
+export interface SimilarPatternClaim {
+  id: string;
+  claimNo: string;
+  admittedAt: string;
+  status: ClaimStatus;
+}
+
+export interface SimilarPattern {
+  dayWindow: number;
+  claims: SimilarPatternClaim[];
+}
+
 export interface ClaimDetail {
   id: string;
   claimNo: string;
@@ -100,6 +112,7 @@ export interface ClaimDetail {
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: ClaimDecision[];
+  similarPattern: SimilarPattern | null;
 }
 
 export interface ClaimQueueItem {
@@ -122,6 +135,7 @@ export interface ClaimQueueItem {
   findingCounts: Record<TestType, number>;
   documentCount: number;
   extractedDocumentCount: number;
+  hasSimilarPattern: boolean;
 }
 
 export type ClaimQueueSortKey =

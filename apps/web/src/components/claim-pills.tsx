@@ -10,6 +10,7 @@ import {
   LuGauge,
   LuGitCompareArrows,
   LuMessageSquareText,
+  LuRepeat,
   LuShieldAlert,
   LuSparkles,
   LuStethoscope,
@@ -144,6 +145,14 @@ export function NeedsClarificationPill() {
   return (
     <Pill tone="warning" icon={LuFlag}>
       Perlu klarifikasi
+    </Pill>
+  );
+}
+
+export function SimilarPatternPill() {
+  return (
+    <Pill tone="warning" icon={LuRepeat}>
+      Pola mirip
     </Pill>
   );
 }

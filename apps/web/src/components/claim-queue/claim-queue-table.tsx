@@ -17,6 +17,7 @@ import {
   NotAnalyzedPill,
   PriorityPill,
   SeverityPill,
+  SimilarPatternPill,
   TestSignalPill,
 } from '@/components/claim-pills';
 import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
@@ -515,6 +516,7 @@ export function ClaimQueueTable({
                         <div className="flex flex-wrap gap-1">
                           <PriorityPill priorityScore={claim.priorityScore} />
                           <SeverityPill severityLevel={claim.severityLevel} />
+                          {claim.hasSimilarPattern && <SimilarPatternPill />}
                         </div>
                       </div>
                     </TableCell>
@@ -602,6 +604,7 @@ export function ClaimQueueTable({
                     <CareTypePill careType={claim.careType} />
                     <PriorityPill priorityScore={claim.priorityScore} />
                     <SeverityPill severityLevel={claim.severityLevel} />
+                    {claim.hasSimilarPattern && <SimilarPatternPill />}
                   </div>
                 </div>
                 <div className="flex flex-col gap-0.5 text-small">

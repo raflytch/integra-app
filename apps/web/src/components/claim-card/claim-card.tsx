@@ -16,6 +16,7 @@ import {
   EMPTY_DECISION_DRAFT,
 } from './decision-panel';
 import { ExistencePanel } from './existence-panel';
+import { SimilarPatternPanel } from './similar-pattern-panel';
 import { TestPanel } from './test-panel';
 
 function focusDecisionReason() {
@@ -91,6 +92,12 @@ export function ClaimCard({ claimId }: { claimId: string }) {
             draft={decisionDraft}
             onDraftChange={setDecisionDraft}
           />
+          {claim.similarPattern && (
+            <SimilarPatternPanel
+              claim={claim}
+              similarPattern={claim.similarPattern}
+            />
+          )}
           <ClaimDiagnoses
             diagnoses={claim.diagnoses}
             findings={claim.findings}

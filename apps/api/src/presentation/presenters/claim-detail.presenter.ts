@@ -27,6 +27,13 @@ export function presentClaimDetail(claimDetail: ClaimDetail) {
       createdAt: finding.createdAt.toISOString(),
     })),
     decisions: claimDetail.decisions.map(presentDecision),
+    similarPattern: claimDetail.similarPattern && {
+      ...claimDetail.similarPattern,
+      claims: claimDetail.similarPattern.claims.map((similarClaim) => ({
+        ...similarClaim,
+        admittedAt: toDateOnly(similarClaim.admittedAt),
+      })),
+    },
   };
 }
 

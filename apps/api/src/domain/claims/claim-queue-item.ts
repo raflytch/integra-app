@@ -25,6 +25,7 @@ export interface ClaimQueueItem {
   documentCount: number;
   /** Documents already read by the AI; the claim is analyzed when it equals `documentCount`. */
   extractedDocumentCount: number;
+  hasSimilarPattern: boolean;
 }
 
 export const CLAIM_QUEUE_SORT_KEYS = [
