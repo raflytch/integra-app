@@ -85,7 +85,7 @@ export function ImportFilePicker({
           <code className="rounded-sm bg-subtle px-1 font-mono text-caption">
             integra-claims/v1
           </code>
-          ) langsung dibaca tanpa AI. Setiap klaim memuat nomor klaim, faskes,
+          ) langsung dibaca tanpa AI. Setiap klaim memuat nomor SEP, faskes,
           pasien, tanggal masuk dan pulang, INA-CBG, severity, tarif, diagnosis
           (tepat satu utama), dan dokumen klinis.
         </p>

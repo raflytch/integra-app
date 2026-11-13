@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
 import { LuCalendarDays, LuHospital, LuUser } from 'react-icons/lu';
 import {
+  CareTypePill,
   ClaimStatusPill,
   FacilityTypePill,
   NeedsClarificationPill,
@@ -15,8 +16,8 @@ import { usePatientDataVisibility } from '@/hooks/use-patient-data-visibility';
 import { GENDER_LABELS } from '@/lib/claim-labels';
 import {
   calculateAgeInYears,
-  countDaysBetween,
   formatDate,
+  formatLengthOfStay,
   formatRupiah,
 } from '@/lib/format';
 import { maskIdentifier, maskPersonName } from '@/lib/pii';
@@ -48,6 +49,43 @@ function SummaryItem({
   );
 }
 
+function CareSummaryItem({ claim }: { claim: ClaimDetail }) {
+  const careDates =
+    claim.careType === 'OUTPATIENT'
+      ? [{ label: 'Tanggal kunjungan', value: formatDate(claim.admittedAt) }]
+      : [
+          { label: 'Tanggal masuk', value: formatDate(claim.admittedAt) },
+          { label: 'Tanggal pulang', value: formatDate(claim.dischargedAt) },
+        ];
+  const careRows = [
+    ...careDates,
+    { label: 'LOS', value: formatLengthOfStay(claim.lengthOfStayDays) },
+  ];
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5 px-4 py-3">
+      <dt className="flex items-center gap-1.5 text-caption text-ink-secondary">
+        <LuCalendarDays
+          className="size-3.5 shrink-0 text-primary"
+          aria-hidden="true"
+        />
+        Keterangan rawat
+      </dt>
+      <dd>
+        <CareTypePill careType={claim.careType} />
+      </dd>
+      {careRows.map((row) => (
+        <dd
+          key={row.label}
+          className="flex items-baseline justify-between gap-3"
+        >
+          <span className="text-caption text-ink-secondary">{row.label}</span>
+          <span className="font-medium text-ink tabular-nums">{row.value}</span>
+        </dd>
+      ))}
+    </div>
+  );
+}
+
 export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
   const { isPatientDataVisible } = usePatientDataVisibility();
   const primaryDiagnosis = claim.diagnoses.find(
@@ -58,13 +96,8 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
     (finding) => finding.testType === 'EXISTENCE',
   );
   const unsupportedDiagnosisCount = existenceFindings.length;
-  // The API leaves tariffGap null when the claim's tariff is not in the tariff schedule.
   const isGapUnknown = existenceFindings.some(
     (finding) => finding.tariffGap === null,
-  );
-  const lengthOfStayDays = countDaysBetween(
-    claim.admittedAt,
-    claim.dischargedAt,
   );
   const patientAge = calculateAgeInYears(
     claim.patient.birthDate,
@@ -78,9 +111,10 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-caption text-ink-secondary">
-            {claim.claimNo}
+          <span className="text-caption text-ink-secondary">
+            No. SEP <span className="font-mono text-ink">{claim.claimNo}</span>
           </span>
+          <CareTypePill careType={claim.careType} />
           <ClaimStatusPill status={claim.status} />
           {needsClarification && <NeedsClarificationPill />}
           <PriorityPill priorityScore={claim.priorityScore} />
@@ -111,12 +145,7 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
             } · ${GENDER_LABELS[claim.patient.gender]} · ${patientAge} tahun`}
             action={<PatientDataToggle />}
           />
-          <SummaryItem
-            icon={LuCalendarDays}
-            label="Rawat inap"
-            value={`${formatDate(claim.admittedAt)} – ${formatDate(claim.dischargedAt)}`}
-            detail={`${lengthOfStayDays} hari`}
-          />
+          <CareSummaryItem claim={claim} />
         </dl>
       </div>
       <div className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72">

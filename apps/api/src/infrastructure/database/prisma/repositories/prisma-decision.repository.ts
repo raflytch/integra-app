@@ -5,6 +5,7 @@ import type {
   NewDecision,
 } from '../../../../domain/decisions/decision';
 import { DecisionRepository } from '../../../../domain/decisions/decision.repository';
+import type { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 
 export const DECISION_FIELDS = {
@@ -13,7 +14,18 @@ export const DECISION_FIELDS = {
   reason: true,
   createdAt: true,
   verifier: { select: { id: true, name: true } },
+  documentRequests: {
+    select: { documentType: true, receivedAt: true },
+    orderBy: { documentType: 'asc' },
+  },
 } as const;
+
+export function toDecision({
+  documentRequests,
+  ...decision
+}: Prisma.DecisionGetPayload<{ select: typeof DECISION_FIELDS }>): Decision {
+  return { ...decision, missingDocuments: documentRequests };
+}
 
 @Injectable()
 export class PrismaDecisionRepository extends DecisionRepository {
@@ -25,9 +37,17 @@ export class PrismaDecisionRepository extends DecisionRepository {
     newDecision: NewDecision,
     resultingClaimStatus: ClaimStatus,
   ): Promise<Decision> {
+    const { missingDocumentTypes, ...decisionFields } = newDecision;
     const [decision] = await this.prisma.$transaction([
       this.prisma.decision.create({
-        data: newDecision,
+        data: {
+          ...decisionFields,
+          documentRequests: {
+            create: missingDocumentTypes.map((documentType) => ({
+              documentType,
+            })),
+          },
+        },
         select: DECISION_FIELDS,
       }),
       this.prisma.claim.update({
@@ -35,6 +55,6 @@ export class PrismaDecisionRepository extends DecisionRepository {
         data: { status: resultingClaimStatus },
       }),
     ]);
-    return decision;
+    return toDecision(decision);
   }
 }

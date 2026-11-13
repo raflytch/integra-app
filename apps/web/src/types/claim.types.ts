@@ -1,5 +1,6 @@
 export type ClaimStatus =
   'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
+export type CareType = 'OUTPATIENT' | 'INPATIENT';
 export type FacilityType = 'A' | 'B' | 'C' | 'D';
 export type Gender = 'M' | 'F';
 export type DocumentType =
@@ -15,6 +16,13 @@ export interface ClaimDecision {
   reason: string;
   createdAt: string;
   verifier: { id: string; name: string };
+  missingDocuments: { documentType: DocumentType; receivedAt: string | null }[];
+}
+
+export interface ClaimVerification {
+  score: number;
+  recommendation: DecisionAction;
+  reason: string;
 }
 
 export type FindingCitation =
@@ -44,6 +52,12 @@ export interface ClaimDocument {
   isExtracted: boolean;
 }
 
+export interface ClaimProcedure {
+  id: string;
+  icd9cmCode: string;
+  name: string;
+}
+
 export interface ClaimDiagnosis {
   id: string;
   icd10Code: string;
@@ -66,12 +80,32 @@ export interface ClaimFinding {
   createdAt: string;
 }
 
+export interface SimilarPatternClaim {
+  id: string;
+  claimNo: string;
+  admittedAt: string;
+  status: ClaimStatus;
+}
+
+export interface SimilarPattern {
+  primaryIcd10Code: string;
+  facilityCaseCount: number;
+  facilityRate: number;
+  percentileThreshold: number;
+  peerMedianRate: number;
+  comparedFacilityCount: number;
+  minFacilityCaseCount: number;
+  claims: SimilarPatternClaim[];
+}
+
 export interface ClaimDetail {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: string;
   dischargedAt: string;
+  lengthOfStayDays: number | null;
   inacbgCode: string;
   severityLevel: number;
   tariffAmount: number;
@@ -94,17 +128,22 @@ export interface ClaimDetail {
     birthDate: string;
   };
   diagnoses: ClaimDiagnosis[];
+  procedures: ClaimProcedure[];
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: ClaimDecision[];
+  similarPattern: SimilarPattern | null;
+  verification: ClaimVerification | null;
 }
 
 export interface ClaimQueueItem {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: string;
   dischargedAt: string;
+  lengthOfStayDays: number | null;
   facility: { id: string; name: string; type: FacilityType };
   primaryDiagnosis: { icd10Code: string; name: string } | null;
   inacbgCode: string;
@@ -117,6 +156,7 @@ export interface ClaimQueueItem {
   findingCounts: Record<TestType, number>;
   documentCount: number;
   extractedDocumentCount: number;
+  hasSimilarPattern: boolean;
 }
 
 export type ClaimQueueSortKey =
@@ -131,6 +171,7 @@ export type ClaimQueueSortKey =
 
 export interface ClaimQueueParams {
   status?: ClaimStatus;
+  careType?: CareType;
   facilityId?: string;
   search?: string;
   analysis?: 'ANALYZED' | 'NOT_ANALYZED';

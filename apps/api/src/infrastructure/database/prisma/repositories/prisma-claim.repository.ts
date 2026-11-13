@@ -13,10 +13,18 @@ import type {
   SortDirection,
 } from '../../../../domain/claims/claim-queue-item';
 import { ClaimRepository } from '../../../../domain/claims/claim.repository';
+import { assessClaim } from '../../../../domain/claims/claim-verification';
+import {
+  codingOutlierKey,
+  type FacilityCodingRate,
+  findCodingOutliers,
+  type SimilarPattern,
+  type SimilarPatternClaim,
+} from '../../../../domain/claims/similar-pattern';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { countFindingsByTestType } from './finding-counts';
-import { DECISION_FIELDS } from './prisma-decision.repository';
+import { DECISION_FIELDS, toDecision } from './prisma-decision.repository';
 
 const CITATION_KINDS = new Set<FindingCitation['kind']>([
   'MISSING_EVIDENCE',
@@ -41,6 +49,7 @@ const QUEUE_ITEM_FIELDS = {
   id: true,
   claimNo: true,
   status: true,
+  careType: true,
   admittedAt: true,
   dischargedAt: true,
   inacbgCode: true,
@@ -56,7 +65,7 @@ const QUEUE_ITEM_FIELDS = {
     take: 1,
   },
   findings: { select: { testType: true } },
-  _count: { select: { documents: true } },
+  _count: { select: { documents: true, diagnoses: true } },
 } satisfies Prisma.ClaimSelect;
 
 const QUEUE_ORDER_BY: Record<
@@ -116,6 +125,7 @@ function toQueueWhere(query: ClaimQueueQuery): Prisma.ClaimWhereInput {
   }
   return {
     status: query.status,
+    careType: query.careType,
     facilityId: query.facilityId,
     AND: conditions,
   };
@@ -164,6 +174,8 @@ export class PrismaClaimRepository extends ClaimRepository {
       ]),
     );
 
+    const codingOutliers = findCodingOutliers(await this.findCodingRates());
+
     const items = claims.map(({ diagnoses, findings, _count, ...claim }) => ({
       ...claim,
       tariffAmount: claim.tariffAmount.toNumber(),
@@ -173,6 +185,12 @@ export class PrismaClaimRepository extends ClaimRepository {
       documentCount: _count.documents,
       extractedDocumentCount:
         extractedDocumentCountByClaimId.get(claim.id) ?? 0,
+      hasSimilarPattern:
+        _count.diagnoses > 1 &&
+        diagnoses[0] !== undefined &&
+        codingOutliers.has(
+          codingOutlierKey(claim.facility.id, diagnoses[0].icd10Code),
+        ),
     }));
     return { items, total, page: query.page, pageSize: query.pageSize };
   }
@@ -233,6 +251,10 @@ export class PrismaClaimRepository extends ClaimRepository {
       include: {
         facility: true,
         patient: true,
+        procedures: {
+          select: { id: true, icd9cmCode: true, name: true },
+          orderBy: { icd9cmCode: 'asc' },
+        },
         diagnoses: {
           select: { id: true, icd10Code: true, name: true, isPrimary: true },
           orderBy: [{ isPrimary: 'desc' }, { icd10Code: 'asc' }],
@@ -271,6 +293,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       id: claim.id,
       claimNo: claim.claimNo,
       status: claim.status,
+      careType: claim.careType,
       admittedAt: claim.admittedAt,
       dischargedAt: claim.dischargedAt,
       inacbgCode: claim.inacbgCode,
@@ -282,6 +305,7 @@ export class PrismaClaimRepository extends ClaimRepository {
       facility: claim.facility,
       patient: claim.patient,
       diagnoses: claim.diagnoses,
+      procedures: claim.procedures,
       documents: claim.documents.map(({ extracted, ...document }) => ({
         ...document,
         isExtracted: extracted !== null,
@@ -304,7 +328,77 @@ export class PrismaClaimRepository extends ClaimRepository {
         tariffGap: finding.tariffGap?.toNumber() ?? null,
         createdAt: finding.createdAt,
       })),
-      decisions: claim.decisions,
+      decisions: claim.decisions.map(toDecision),
+      verification: assessClaim(claim.findings, claim.analyzedAt),
+      similarPattern: await this.findSimilarPattern(
+        claim.id,
+        claim.facilityId,
+        claim.diagnoses,
+      ),
     };
+  }
+
+  private findCodingRates(): Promise<FacilityCodingRate[]> {
+    return this.prisma.$queryRaw<FacilityCodingRate[]>`
+      SELECT
+        claims.facility_id AS "facilityId",
+        primary_diagnosis.icd10_code AS "primaryIcd10Code",
+        count(*)::int AS "caseCount",
+        count(*) FILTER (
+          WHERE EXISTS (
+            SELECT 1 FROM claim_diagnoses secondary_diagnosis
+            WHERE secondary_diagnosis.claim_id = claims.id
+              AND NOT secondary_diagnosis.is_primary
+          )
+        )::int AS "secondaryCaseCount"
+      FROM claims
+      JOIN claim_diagnoses primary_diagnosis
+        ON primary_diagnosis.claim_id = claims.id
+        AND primary_diagnosis.is_primary
+      GROUP BY claims.facility_id, primary_diagnosis.icd10_code
+    `;
+  }
+
+  private async findSimilarPattern(
+    claimId: string,
+    facilityId: string,
+    diagnoses: { icd10Code: string; isPrimary: boolean }[],
+  ): Promise<SimilarPattern | null> {
+    const primaryDiagnosis = diagnoses.find((diagnosis) => diagnosis.isPrimary);
+    if (!primaryDiagnosis || diagnoses.length < 2) return null;
+    const codingOutlier = findCodingOutliers(await this.findCodingRates()).get(
+      codingOutlierKey(facilityId, primaryDiagnosis.icd10Code),
+    );
+    if (!codingOutlier) return null;
+    const claims = await this.prisma.$queryRaw<SimilarPatternClaim[]>`
+      WITH diagnosis_sets AS (
+        SELECT claim_id, string_agg(icd10_code, ',' ORDER BY icd10_code) AS codes
+        FROM claim_diagnoses
+        GROUP BY claim_id
+      ),
+      procedure_sets AS (
+        SELECT claims.id AS claim_id,
+          coalesce(string_agg(claim_procedures.icd9cm_code, ',' ORDER BY claim_procedures.icd9cm_code), '') AS codes
+        FROM claims
+        LEFT JOIN claim_procedures ON claim_procedures.claim_id = claims.id
+        GROUP BY claims.id
+      )
+      SELECT
+        peer.id,
+        peer.claim_no AS "claimNo",
+        peer.admitted_at AS "admittedAt",
+        peer.status::text AS status
+      FROM claims peer
+      JOIN diagnosis_sets peer_set ON peer_set.claim_id = peer.id
+      JOIN diagnosis_sets target_set ON target_set.claim_id = ${claimId}::uuid
+      JOIN procedure_sets peer_procedures ON peer_procedures.claim_id = peer.id
+      JOIN procedure_sets target_procedures ON target_procedures.claim_id = ${claimId}::uuid
+      WHERE peer.id <> ${claimId}::uuid
+        AND peer.facility_id = ${facilityId}::uuid
+        AND peer_set.codes = target_set.codes
+        AND peer_procedures.codes = target_procedures.codes
+      ORDER BY peer.admitted_at, peer.claim_no
+    `;
+    return { ...codingOutlier, claims };
   }
 }

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { usePatientDataVisibility } from '@/hooks/use-patient-data-visibility';
 import { useTableControls } from '@/hooks/use-table-controls';
+import { CARE_TYPE_LABELS } from '@/lib/claim-labels';
 import { formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { maskPersonName } from '@/lib/pii';
@@ -75,14 +76,16 @@ type PreviewSortKey = keyof typeof PREVIEW_SORT_VALUES;
 const PREVIEW_SORT_OPTIONS: SortOption<PreviewSortKey>[] = [
   { key: 'index', direction: 'asc', label: 'Urutan file' },
   { key: 'status', direction: 'asc', label: 'Bermasalah dulu' },
-  { key: 'claimNo', direction: 'asc', label: 'Nomor klaim' },
-  { key: 'admittedAt', direction: 'desc', label: 'Rawat inap terbaru' },
+  { key: 'claimNo', direction: 'asc', label: 'Nomor SEP' },
+  { key: 'admittedAt', direction: 'desc', label: 'Tanggal masuk terbaru' },
 ];
 
 function formatAdmission({ claim }: ClaimPreviewRow): string {
-  return claim
-    ? `${formatDate(claim.admittedAt)} – ${formatDate(claim.dischargedAt)}`
-    : '-';
+  if (!claim) return '-';
+  const careTypeLabel = CARE_TYPE_LABELS[claim.careType];
+  return claim.careType === 'OUTPATIENT'
+    ? `${careTypeLabel} · ${formatDate(claim.admittedAt)}`
+    : `${careTypeLabel} · ${formatDate(claim.admittedAt)} – ${formatDate(claim.dischargedAt)}`;
 }
 
 function PreviewIssues({ issues }: { issues: string[] }) {
@@ -147,7 +150,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
         <TableSearch
           value={table.searchQuery}
           onChange={table.setSearchQuery}
-          placeholder="Cari nomor klaim, faskes, pasien, atau masalah"
+          placeholder="Cari nomor SEP, faskes, pasien, atau masalah"
         />
         <TableFilterSelect
           label="Status"
@@ -177,7 +180,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                 sort={table.sort}
                 onSort={table.toggleSort}
               >
-                Nomor klaim
+                Nomor SEP
               </SortableTableHead>
               <TableHead>Faskes dan pasien</TableHead>
               <SortableTableHead
@@ -186,7 +189,7 @@ export function ImportPreviewTable({ rows }: { rows: ClaimPreviewRow[] }) {
                 onSort={table.toggleSort}
                 className={CENTERED_COLUMN_CLASS_NAME}
               >
-                Rawat inap
+                Keterangan rawat
               </SortableTableHead>
               <SortableTableHead
                 sortKey="status"

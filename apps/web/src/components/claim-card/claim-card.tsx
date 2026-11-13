@@ -14,8 +14,11 @@ import {
   DECISION_REASON_INPUT_ID,
   DecisionPanel,
   EMPTY_DECISION_DRAFT,
+  suggestMissingDocumentTypes,
 } from './decision-panel';
 import { ExistencePanel } from './existence-panel';
+import { VerificationCard } from './verification-card';
+import { SimilarPatternPanel } from './similar-pattern-panel';
 import { TestPanel } from './test-panel';
 
 function focusDecisionReason() {
@@ -53,14 +56,21 @@ export function ClaimCard({ claimId }: { claimId: string }) {
   const findingsOfType = (testType: TestType) =>
     claim.findings.filter((finding) => finding.testType === testType);
 
+  const suggestedDocumentTypes = suggestMissingDocumentTypes(claim.findings);
+
   function requestClarification(reason: string) {
-    setDecisionDraft({ action: 'REQUEST_CLARIFICATION', reason });
+    setDecisionDraft({
+      action: 'REQUEST_CLARIFICATION',
+      reason,
+      missingDocumentTypes: suggestedDocumentTypes,
+    });
     focusDecisionReason();
   }
 
   return (
     <div className="flex flex-col gap-6">
       <ClaimSummary claim={claim} />
+      <VerificationCard claim={claim} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-4">
           <AiAnalysisCard claim={claim} />
@@ -90,9 +100,18 @@ export function ClaimCard({ claimId }: { claimId: string }) {
             decisions={claim.decisions}
             draft={decisionDraft}
             onDraftChange={setDecisionDraft}
+            recommendation={claim.verification?.recommendation ?? null}
+            suggestedDocumentTypes={suggestedDocumentTypes}
           />
+          {claim.similarPattern && (
+            <SimilarPatternPanel
+              claim={claim}
+              similarPattern={claim.similarPattern}
+            />
+          )}
           <ClaimDiagnoses
             diagnoses={claim.diagnoses}
+            procedures={claim.procedures}
             findings={claim.findings}
           />
           <ClaimDocuments documents={claim.documents} />

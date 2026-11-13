@@ -1,4 +1,4 @@
-import type { DocumentType, FacilityType } from './claim.types';
+import type { CareType, DocumentType, FacilityType } from './claim.types';
 
 /** One claim in the `integra-claims/v1` import format. */
 export interface CanonicalClaim {
@@ -10,12 +10,14 @@ export interface CanonicalClaim {
     gender: 'M' | 'F';
     birthDate: string;
   };
+  careType: CareType;
   admittedAt: string;
   dischargedAt: string;
   inacbgCode: string;
   severityLevel: number;
   tariffAmount: number;
   diagnoses: { icd10Code: string; name: string; isPrimary: boolean }[];
+  procedures: { icd9cmCode: string; name: string }[];
   documents: { type: DocumentType; recordedAt: string; content: string }[];
 }
 

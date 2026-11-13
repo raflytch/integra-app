@@ -4,8 +4,10 @@
       "id": "01920000-0000-7000-8000-000000000101",
       "claimNo": "KLM-2026-08-0101",
       "status": "PENDING",
+      "careType": "INPATIENT",
       "admittedAt": "2026-08-03",
       "dischargedAt": "2026-08-07",
+      "lengthOfStayDays": 4,
       "facility": {
         "id": "01920000-0000-7000-8000-000000000001",
         "name": "RSU Sehat Sentosa",
@@ -27,7 +29,8 @@
         "SIMILARITY": 0
       },
       "documentCount": 5,
-      "extractedDocumentCount": 5
+      "extractedDocumentCount": 5,
+      "hasSimilarPattern": false
     }
   ],
   "total": 1,

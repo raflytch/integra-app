@@ -1,5 +1,6 @@
 import type { UserRole } from '@/types/auth.types';
 import type {
+  CareType,
   ClaimStatus,
   DecisionAction,
   DocumentType,
@@ -13,6 +14,11 @@ export const CLAIM_STATUS_LABELS: Record<ClaimStatus, string> = {
   APPROVED: 'Disetujui',
   CLARIFICATION_REQUESTED: 'Klarifikasi diminta',
   ESCALATED: 'Dieskalasi',
+};
+
+export const CARE_TYPE_LABELS: Record<CareType, string> = {
+  OUTPATIENT: 'Rawat Jalan',
+  INPATIENT: 'Rawat Inap',
 };
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
@@ -36,6 +42,12 @@ export const DECISION_ACTION_DETAILS: Record<
     label: 'Eskalasi',
     description: 'Tinjau bersama tim anti-fraud, misalnya pola salinan.',
   },
+};
+
+export const DECISION_RESULT_LABELS: Record<DecisionAction, string> = {
+  APPROVE: 'Setuju',
+  REQUEST_CLARIFICATION: 'Minta Klarifikasi',
+  ESCALATE: 'Eskalasi',
 };
 
 export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {

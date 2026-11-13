@@ -1,4 +1,4 @@
-import type { ClaimStatus } from '../claims/claim-detail';
+import type { ClaimStatus, DocumentType } from '../claims/claim-detail';
 
 export type DecisionAction = 'APPROVE' | 'REQUEST_CLARIFICATION' | 'ESCALATE';
 
@@ -17,6 +17,12 @@ export interface Decision {
   reason: string;
   createdAt: Date;
   verifier: { id: string; name: string };
+  missingDocuments: MissingDocument[];
+}
+
+export interface MissingDocument {
+  documentType: DocumentType;
+  receivedAt: Date | null;
 }
 
 export interface NewDecision {
@@ -24,4 +30,5 @@ export interface NewDecision {
   verifierId: string;
   action: DecisionAction;
   reason: string;
+  missingDocumentTypes: DocumentType[];
 }

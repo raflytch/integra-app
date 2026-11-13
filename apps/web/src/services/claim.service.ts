@@ -7,6 +7,7 @@ import type {
   ClaimQueueParams,
   ClaimStatistics,
   DecisionAction,
+  DocumentType,
 } from '@/types/claim.types';
 
 /** One page of the queue; the API filters, searches, and sorts. */
@@ -29,7 +30,11 @@ export async function fetchClaimDetail(claimId: string): Promise<ClaimDetail> {
 
 export async function recordDecision(
   claimId: string,
-  decisionInput: { action: DecisionAction; reason: string },
+  decisionInput: {
+    action: DecisionAction;
+    reason: string;
+    missingDocumentTypes: DocumentType[];
+  },
 ): Promise<ClaimDecision> {
   const response = await apiClient.post<ClaimDecision>(
     `/claims/${claimId}/decisions`,

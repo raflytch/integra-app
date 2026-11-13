@@ -10,12 +10,14 @@ import {
   useClaimAnalysisRunner,
 } from '@/components/analysis/use-claim-analysis-runner';
 import {
+  CareTypePill,
   ClaimStatusPill,
   FacilityTypePill,
   NeedsClarificationPill,
   NotAnalyzedPill,
   PriorityPill,
   SeverityPill,
+  SimilarPatternPill,
   TestSignalPill,
 } from '@/components/claim-pills';
 import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
@@ -44,17 +46,18 @@ import {
 import { useServerTableControls } from '@/hooks/use-server-table-controls';
 import type { TableSort } from '@/hooks/use-table-controls';
 import { isClaimAnalyzed } from '@/lib/claim-analysis';
-import { TEST_TYPE_ORDER } from '@/lib/claim-labels';
+import { CARE_TYPE_LABELS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
 import {
-  countDaysBetween,
   formatDate,
   formatDateTime,
+  formatLengthOfStay,
   formatRupiah,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { fetchClaimQueuePage } from '@/services/claim.service';
 import { fetchFacilityOptions } from '@/services/facility.service';
 import type {
+  CareType,
   ClaimQueueItem,
   ClaimQueueParams,
   ClaimQueueSortKey,
@@ -63,12 +66,19 @@ import type {
 import { ClaimQueueEmpty, ClaimQueueSkeleton } from './claim-queue-states';
 
 const CLAIMS_PER_PAGE = 10;
-const COLUMN_COUNT = 8;
+const COLUMN_COUNT = 9;
 const ALL = 'ALL';
 
+type CareTypeFilter = typeof ALL | CareType;
 type AnalysisFilter = typeof ALL | 'ANALYZED' | 'NOT_ANALYZED';
 type SignalFilter = typeof ALL | 'FLAGGED' | 'CLEAN';
 type AnalysisTimeOrder = typeof ALL | 'NEWEST' | 'OLDEST';
+
+const CARE_TYPE_FILTER_OPTIONS: FilterOption<CareTypeFilter>[] = [
+  { value: ALL, label: 'Semua' },
+  { value: 'OUTPATIENT', label: CARE_TYPE_LABELS.OUTPATIENT },
+  { value: 'INPATIENT', label: CARE_TYPE_LABELS.INPATIENT },
+];
 
 const ANALYSIS_FILTER_OPTIONS: FilterOption<AnalysisFilter>[] = [
   { value: ALL, label: 'Semua' },
@@ -98,9 +108,9 @@ const CLAIM_SORT_OPTIONS: SortOption<ClaimQueueSortKey>[] = [
   { ...INITIAL_CLAIM_SORT, label: 'Prioritas tertinggi' },
   { key: 'potentialGap', direction: 'desc', label: 'Potensi selisih terbesar' },
   { key: 'findings', direction: 'desc', label: 'Tanda uji terbanyak' },
-  { key: 'admittedAt', direction: 'desc', label: 'Rawat inap terbaru' },
-  { key: 'admittedAt', direction: 'asc', label: 'Rawat inap terlama' },
-  { key: 'claimNo', direction: 'asc', label: 'No. klaim' },
+  { key: 'admittedAt', direction: 'desc', label: 'Tanggal masuk terbaru' },
+  { key: 'admittedAt', direction: 'asc', label: 'Tanggal masuk terlama' },
+  { key: 'claimNo', direction: 'asc', label: 'No. SEP' },
   { key: 'facility', direction: 'asc', label: 'Faskes' },
   { key: 'status', direction: 'asc', label: 'Status' },
   { key: 'analyzedAt', direction: 'desc', label: 'Analisis AI terbaru' },
@@ -153,6 +163,35 @@ function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+function CareDates({ claim }: { claim: ClaimQueueItem }) {
+  if (claim.careType === 'OUTPATIENT') {
+    return (
+      <span className="text-caption text-ink-secondary">
+        Kunjungan{' '}
+        <span className="text-ink tabular-nums">
+          {formatDate(claim.admittedAt)}
+        </span>
+      </span>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-0.5 text-caption text-ink-secondary">
+      <span>
+        Masuk{' '}
+        <span className="text-ink tabular-nums">
+          {formatDate(claim.admittedAt)}
+        </span>
+      </span>
+      <span>
+        Pulang{' '}
+        <span className="text-ink tabular-nums">
+          {formatDate(claim.dischargedAt)}
+        </span>
+      </span>
     </div>
   );
 }
@@ -218,6 +257,7 @@ export function ClaimQueueTable({
   emptyDescription: string;
 }) {
   const router = useRouter();
+  const [careTypeFilter, setCareTypeFilter] = useState<CareTypeFilter>(ALL);
   const [facilityFilter, setFacilityFilter] = useState<string>(ALL);
   const [analysisFilter, setAnalysisFilter] = useState<AnalysisFilter>(ALL);
   const [signalFilter, setSignalFilter] = useState<SignalFilter>(ALL);
@@ -226,6 +266,7 @@ export function ClaimQueueTable({
 
   const queueParams: ClaimQueueParams = {
     status,
+    careType: toFilterParam(careTypeFilter),
     facilityId: toFilterParam(facilityFilter),
     search: table.debouncedSearchQuery || undefined,
     analysis: toFilterParam(analysisFilter),
@@ -258,6 +299,7 @@ export function ClaimQueueTable({
   const claimPage = claimQueueQuery.data;
   const hasSearchOrFilter =
     Boolean(table.debouncedSearchQuery) ||
+    careTypeFilter !== ALL ||
     facilityFilter !== ALL ||
     analysisFilter !== ALL ||
     signalFilter !== ALL;
@@ -312,6 +354,7 @@ export function ClaimQueueTable({
 
   function resetSearchAndFilters() {
     table.setSearchQuery('');
+    setCareTypeFilter(ALL);
     setFacilityFilter(ALL);
     setAnalysisFilter(ALL);
     setSignalFilter(ALL);
@@ -328,7 +371,13 @@ export function ClaimQueueTable({
         <TableSearch
           value={table.searchQuery}
           onChange={table.setSearchQuery}
-          placeholder="Cari no. klaim, diagnosis, faskes"
+          placeholder="Cari no. SEP, diagnosis, faskes"
+        />
+        <TableFilterSelect
+          label="Keterangan rawat"
+          value={careTypeFilter}
+          options={CARE_TYPE_FILTER_OPTIONS}
+          onChange={changeFilter(setCareTypeFilter)}
         />
         <TableFilterSelect
           label="Faskes"
@@ -365,8 +414,8 @@ export function ClaimQueueTable({
         className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
       >
         <div className="hidden lg:block">
-          {/* Eight columns: 12px side padding lets them fit from 1280px wide. */}
-          <Table className="[&_td]:px-3 [&_th]:px-3">
+          {/* Nine columns: 8px side padding lets them fit from 1440px wide. */}
+          <Table className="[&_td]:px-2 [&_th]:px-2">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
@@ -390,10 +439,16 @@ export function ClaimQueueTable({
                   sortKey="admittedAt"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  className={CENTERED_COLUMN_CLASS_NAME}
+                  className={cn(
+                    'whitespace-normal',
+                    CENTERED_COLUMN_CLASS_NAME,
+                  )}
                 >
-                  Rawat inap
+                  Keterangan rawat
                 </SortableTableHead>
+                <TableHead className={CENTERED_COLUMN_CLASS_NAME}>
+                  LOS
+                </TableHead>
                 <SortableTableHead
                   sortKey="findings"
                   sort={table.sort}
@@ -464,10 +519,11 @@ export function ClaimQueueTable({
                         <div className="flex flex-wrap gap-1">
                           <PriorityPill priorityScore={claim.priorityScore} />
                           <SeverityPill severityLevel={claim.severityLevel} />
+                          {claim.hasSimilarPattern && <SimilarPatternPill />}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="min-w-36 align-top whitespace-normal">
+                    <TableCell className="min-w-28 align-top whitespace-normal">
                       <div className="flex flex-col items-start gap-1">
                         <span className="text-ink">{claim.facility.name}</span>
                         <FacilityTypePill facilityType={claim.facility.type} />
@@ -476,18 +532,18 @@ export function ClaimQueueTable({
                     <TableCell
                       className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
                     >
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-ink">
-                          {formatDate(claim.admittedAt)}
-                        </span>
-                        <span className="text-caption text-ink-secondary">
-                          {countDaysBetween(
-                            claim.admittedAt,
-                            claim.dischargedAt,
-                          )}{' '}
-                          hari
-                        </span>
+                      <div className="flex flex-col items-center gap-1">
+                        <CareTypePill careType={claim.careType} />
+                        <CareDates claim={claim} />
                       </div>
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        'align-top text-ink tabular-nums',
+                        CENTERED_COLUMN_CLASS_NAME,
+                      )}
+                    >
+                      {formatLengthOfStay(claim.lengthOfStayDays)}
                     </TableCell>
                     <TableCell className="align-top">
                       <FindingSignals claim={claim} />
@@ -548,8 +604,10 @@ export function ClaimQueueTable({
                   </span>
                   <div className="flex flex-wrap gap-1">
                     <ClaimStatusPill status={claim.status} />
+                    <CareTypePill careType={claim.careType} />
                     <PriorityPill priorityScore={claim.priorityScore} />
                     <SeverityPill severityLevel={claim.severityLevel} />
+                    {claim.hasSimilarPattern && <SimilarPatternPill />}
                   </div>
                 </div>
                 <div className="flex flex-col gap-0.5 text-small">
@@ -557,10 +615,11 @@ export function ClaimQueueTable({
                     {claim.facility.name}
                     <FacilityTypePill facilityType={claim.facility.type} />
                   </span>
-                  <span className="text-caption text-ink-secondary">
-                    Rawat inap {formatDate(claim.admittedAt)} ·{' '}
-                    {countDaysBetween(claim.admittedAt, claim.dischargedAt)}{' '}
-                    hari
+                  <span className="text-caption text-ink-secondary tabular-nums">
+                    {claim.careType === 'OUTPATIENT'
+                      ? `Kunjungan ${formatDate(claim.admittedAt)}`
+                      : `Masuk ${formatDate(claim.admittedAt)} · Pulang ${formatDate(claim.dischargedAt)}`}{' '}
+                    · LOS {formatLengthOfStay(claim.lengthOfStayDays)}
                   </span>
                 </div>
                 <FindingSignals claim={claim} />

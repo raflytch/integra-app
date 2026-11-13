@@ -1,7 +1,10 @@
 import type { Decision } from '../decisions/decision';
+import type { ClaimVerification } from './claim-verification';
+import type { SimilarPattern } from './similar-pattern';
 
 export type ClaimStatus =
   'PENDING' | 'APPROVED' | 'CLARIFICATION_REQUESTED' | 'ESCALATED';
+export type CareType = 'OUTPATIENT' | 'INPATIENT';
 export type FacilityType = 'A' | 'B' | 'C' | 'D';
 export type Gender = 'M' | 'F';
 export type DocumentType =
@@ -45,6 +48,12 @@ export interface ClaimPatient {
   birthDate: Date;
 }
 
+export interface ClaimProcedure {
+  id: string;
+  icd9cmCode: string;
+  name: string;
+}
+
 export interface ClaimDiagnosis {
   id: string;
   icd10Code: string;
@@ -85,6 +94,7 @@ export interface ClaimDetail {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: Date;
   dischargedAt: Date;
   inacbgCode: string;
@@ -96,7 +106,10 @@ export interface ClaimDetail {
   facility: ClaimFacility;
   patient: ClaimPatient;
   diagnoses: ClaimDiagnosis[];
+  procedures: ClaimProcedure[];
   documents: ClaimDocument[];
   findings: ClaimFinding[];
   decisions: Decision[];
+  similarPattern: SimilarPattern | null;
+  verification: ClaimVerification | null;
 }

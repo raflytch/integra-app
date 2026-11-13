@@ -85,6 +85,7 @@ async function main(): Promise<void> {
     claimNo: fixture.claimNo,
     facilityId: facility.id,
     patientId: patient.id,
+    careType: fixture.careType,
     admittedAt: new Date(fixture.admittedAt),
     dischargedAt: new Date(fixture.dischargedAt),
     inacbgCode: fixture.inacbgCode,

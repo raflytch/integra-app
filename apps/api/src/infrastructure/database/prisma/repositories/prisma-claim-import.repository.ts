@@ -93,6 +93,7 @@ export class PrismaClaimImportRepository extends ClaimImportRepository {
           claimNo: claim.claimNo,
           facilityId,
           patientId,
+          careType: claim.careType,
           admittedAt: toDateOnly(claim.admittedAt),
           dischargedAt: toDateOnly(claim.dischargedAt),
           inacbgCode: claim.inacbgCode,
@@ -101,6 +102,7 @@ export class PrismaClaimImportRepository extends ClaimImportRepository {
           status: 'PENDING',
           injectedCase: [],
           diagnoses: { create: claim.diagnoses },
+          procedures: { create: claim.procedures },
           documents: {
             create: claim.documents.map((document) => ({
               ...document,

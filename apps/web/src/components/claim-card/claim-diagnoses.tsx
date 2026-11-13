@@ -1,11 +1,17 @@
 import { MissingEvidencePill, Pill } from '@/components/claim-pills';
-import type { ClaimDiagnosis, ClaimFinding } from '@/types/claim.types';
+import type {
+  ClaimDiagnosis,
+  ClaimFinding,
+  ClaimProcedure,
+} from '@/types/claim.types';
 
 export function ClaimDiagnoses({
   diagnoses,
+  procedures,
   findings,
 }: {
   diagnoses: ClaimDiagnosis[];
+  procedures: ClaimProcedure[];
   findings: ClaimFinding[];
 }) {
   const flaggedDiagnosisIds = new Set(
@@ -43,6 +49,28 @@ export function ClaimDiagnoses({
           </li>
         ))}
       </ul>
+      <h3 className="mt-4 mb-2 text-caption text-ink-secondary">
+        Tindakan (ICD-9-CM)
+      </h3>
+      {procedures.length === 0 ? (
+        <p className="text-small text-ink-secondary">
+          Tidak ada kode tindakan.
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
+          {procedures.map((procedure) => (
+            <li
+              key={procedure.id}
+              className="flex items-start gap-3 px-3 py-2.5"
+            >
+              <span className="w-14 shrink-0 font-mono text-caption leading-5 text-ink-secondary">
+                {procedure.icd9cmCode}
+              </span>
+              <span className="text-small text-ink">{procedure.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

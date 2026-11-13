@@ -1,4 +1,8 @@
-import type { DocumentType, FacilityType } from '../claims/claim-detail';
+import type {
+  CareType,
+  DocumentType,
+  FacilityType,
+} from '../claims/claim-detail';
 
 /** One claim in the `integra-claims/v1` import format. Dates stay as written. */
 export interface ImportedClaim {
@@ -11,6 +15,7 @@ export interface ImportedClaim {
     /** YYYY-MM-DD */
     birthDate: string;
   };
+  careType: CareType;
   /** YYYY-MM-DD */
   admittedAt: string;
   /** YYYY-MM-DD */
@@ -19,6 +24,7 @@ export interface ImportedClaim {
   severityLevel: number;
   tariffAmount: number;
   diagnoses: { icd10Code: string; name: string; isPrimary: boolean }[];
+  procedures: { icd9cmCode: string; name: string }[];
   /** `recordedAt` is ISO 8601 with offset. */
   documents: { type: DocumentType; recordedAt: string; content: string }[];
 }

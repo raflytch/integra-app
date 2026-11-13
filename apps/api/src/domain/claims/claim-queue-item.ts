@@ -1,9 +1,15 @@
-import type { ClaimStatus, FacilityType, TestType } from './claim-detail';
+import type {
+  CareType,
+  ClaimStatus,
+  FacilityType,
+  TestType,
+} from './claim-detail';
 
 export interface ClaimQueueItem {
   id: string;
   claimNo: string;
   status: ClaimStatus;
+  careType: CareType;
   admittedAt: Date;
   dischargedAt: Date;
   facility: { id: string; name: string; type: FacilityType };
@@ -19,6 +25,7 @@ export interface ClaimQueueItem {
   documentCount: number;
   /** Documents already read by the AI; the claim is analyzed when it equals `documentCount`. */
   extractedDocumentCount: number;
+  hasSimilarPattern: boolean;
 }
 
 export const CLAIM_QUEUE_SORT_KEYS = [
@@ -43,6 +50,7 @@ export const MAX_CLAIM_QUEUE_PAGE_SIZE = 100;
 /** One page of the queue, filtered, searched, and sorted by the database. */
 export interface ClaimQueueQuery {
   status?: ClaimStatus;
+  careType?: CareType;
   facilityId?: string;
   /** Matches claim number, primary diagnosis name or ICD-10 code, INA-CBG code, and facility name. */
   search?: string;

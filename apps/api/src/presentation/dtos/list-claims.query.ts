@@ -9,7 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import type { ClaimStatus } from '../../domain/claims/claim-detail';
+import type { CareType, ClaimStatus } from '../../domain/claims/claim-detail';
 import {
   type AnalysisFilter,
   CLAIM_QUEUE_SORT_KEYS,
@@ -25,6 +25,7 @@ const CLAIM_STATUSES: ClaimStatus[] = [
   'CLARIFICATION_REQUESTED',
   'ESCALATED',
 ];
+const CARE_TYPES: CareType[] = ['OUTPATIENT', 'INPATIENT'];
 const ANALYSIS_FILTERS: AnalysisFilter[] = ['ANALYZED', 'NOT_ANALYZED'];
 const SIGNAL_FILTERS: SignalFilter[] = ['FLAGGED', 'CLEAN'];
 const SORT_DIRECTIONS: SortDirection[] = ['asc', 'desc'];
@@ -33,6 +34,10 @@ export class ListClaimsQuery {
   @IsOptional()
   @IsIn(CLAIM_STATUSES)
   status?: ClaimStatus;
+
+  @IsOptional()
+  @IsIn(CARE_TYPES)
+  careType?: CareType;
 
   @IsOptional()
   @IsUUID()
