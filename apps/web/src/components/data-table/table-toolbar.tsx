@@ -1,13 +1,26 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { LuSearch, LuX } from 'react-icons/lu';
+import { type ReactNode, useState } from 'react';
+import { LuCheck, LuChevronDown, LuSearch, LuX } from 'react-icons/lu';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -88,23 +101,57 @@ export function TableFilterSelect<Value extends string>({
   options: FilterOption<Value>[];
   onChange: (value: Value) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find((option) => option.value === value);
+
   return (
-    <Select
-      value={value}
-      onValueChange={(selectedValue) => onChange(selectedValue as Value)}
-    >
-      <SelectTrigger aria-label={label} className={SELECT_TRIGGER_CLASS_NAME}>
-        <span className="text-ink-secondary">{label}:</span>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-label={`${label}: ${selectedOption?.label ?? ''}`}
+          className="h-9 w-full justify-start gap-2 border-input bg-surface px-3 text-left text-small font-normal text-ink hover:bg-surface sm:w-auto sm:min-w-40"
+        >
+          <span className="text-ink-secondary">{label}:</span>
+          <span className="min-w-0 flex-1 truncate">
+            {selectedOption?.label}
+          </span>
+          <LuChevronDown aria-hidden="true" className="text-ink-secondary" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-0">
+        <Command>
+          <CommandInput placeholder={`Cari ${label.toLowerCase()}…`} />
+          <CommandList>
+            <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={`${option.label} ${option.value}`}
+                  onSelect={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                >
+                  <LuCheck
+                    aria-hidden="true"
+                    className={cn(
+                      'text-primary',
+                      option.value === value ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 
