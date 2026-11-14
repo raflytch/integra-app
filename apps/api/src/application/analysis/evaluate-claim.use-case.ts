@@ -3,6 +3,7 @@ import type {
   ClaimEvidence,
   EvidenceRule,
 } from '../../domain/analysis/claim-evidence';
+import { countSecondaryDiagnosisEvidence } from '../../domain/analysis/existence-test';
 import { calculatePriorityScore } from '../../domain/analysis/priority-score';
 import type { RunConsistencyTestUseCase } from './run-consistency-test.use-case';
 import type { RunExistenceTestUseCase } from './run-existence-test.use-case';
@@ -44,6 +45,7 @@ export class EvaluateClaimUseCase {
       (gapTotal, signal) => gapTotal + (signal.tariffGap ?? 0),
       0,
     );
+    const evidenceCount = countSecondaryDiagnosisEvidence(claim, evidenceRules);
     await this.analysisRepository.saveClaimScores(claim.claimId, {
       potentialGap,
       priorityScore: calculatePriorityScore(
@@ -52,6 +54,8 @@ export class EvaluateClaimUseCase {
         claim.tariffAmount,
       ),
       analyzedAt: new Date(),
+      requiredEvidenceCount: evidenceCount.requiredCount,
+      foundEvidenceCount: evidenceCount.foundCount,
     });
     return { findingCount: findingSignals.length, potentialGap };
   }

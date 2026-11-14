@@ -117,39 +117,76 @@ export function findLookalikeEvidence(
     : undefined;
 }
 
-export function findUnsupportedDiagnoses(
-  claim: ClaimEvidence,
-  evidenceRules: EvidenceRule[],
-): UnsupportedDiagnosis[] {
-  const evidenceTexts = collectEvidenceTexts(claim.documents);
-  const isEvidencePresent = (rule: EvidenceRule) => {
+function evidencePresenceChecker(
+  documents: ClaimEvidence['documents'],
+): (rule: EvidenceRule) => boolean {
+  const evidenceTexts = collectEvidenceTexts(documents);
+  return (rule) => {
     const expectedEvidence = normalizeClinicalText(rule.expected);
     return evidenceTexts[rule.evidenceType].some((evidenceText) =>
       evidenceText.includes(expectedEvidence),
     );
   };
+}
 
-  const unsupportedDiagnoses = claim.diagnoses
+function secondaryDiagnosisRules(
+  claim: ClaimEvidence,
+  evidenceRules: EvidenceRule[],
+): { diagnosis: ClaimEvidence['diagnoses'][number]; rules: EvidenceRule[] }[] {
+  return claim.diagnoses
     .filter((diagnosis) => !diagnosis.isPrimary)
-    .flatMap((diagnosis) => {
-      const diagnosisRules = evidenceRules.filter(
+    .map((diagnosis) => ({
+      diagnosis,
+      rules: evidenceRules.filter(
         (rule) => rule.icd10Code === diagnosis.icd10Code,
-      );
-      if (diagnosisRules.length === 0) return [];
-      const missingRules = diagnosisRules.filter(
-        (rule) => !isEvidencePresent(rule),
-      );
-      const missingEvidenceRatio = missingRules.length / diagnosisRules.length;
-      if (missingEvidenceRatio < MIN_MISSING_EVIDENCE_RATIO) return [];
-      return [
-        {
-          diagnosis,
-          missingRules,
-          missingEvidenceRatio,
-          mentions: findDiagnosisMentions(claim.documents, diagnosis.icd10Code),
-        },
-      ];
-    });
+      ),
+    }));
+}
+
+export interface EvidenceCount {
+  requiredCount: number;
+  foundCount: number;
+}
+
+export function countSecondaryDiagnosisEvidence(
+  claim: ClaimEvidence,
+  evidenceRules: EvidenceRule[],
+): EvidenceCount {
+  const isEvidencePresent = evidencePresenceChecker(claim.documents);
+  const rules = secondaryDiagnosisRules(claim, evidenceRules).flatMap(
+    (diagnosisRules) => diagnosisRules.rules,
+  );
+  return {
+    requiredCount: rules.length,
+    foundCount: rules.filter(isEvidencePresent).length,
+  };
+}
+
+export function findUnsupportedDiagnoses(
+  claim: ClaimEvidence,
+  evidenceRules: EvidenceRule[],
+): UnsupportedDiagnosis[] {
+  const isEvidencePresent = evidencePresenceChecker(claim.documents);
+
+  const unsupportedDiagnoses = secondaryDiagnosisRules(
+    claim,
+    evidenceRules,
+  ).flatMap(({ diagnosis, rules: diagnosisRules }) => {
+    if (diagnosisRules.length === 0) return [];
+    const missingRules = diagnosisRules.filter(
+      (rule) => !isEvidencePresent(rule),
+    );
+    const missingEvidenceRatio = missingRules.length / diagnosisRules.length;
+    if (missingEvidenceRatio < MIN_MISSING_EVIDENCE_RATIO) return [];
+    return [
+      {
+        diagnosis,
+        missingRules,
+        missingEvidenceRatio,
+        mentions: findDiagnosisMentions(claim.documents, diagnosis.icd10Code),
+      },
+    ];
+  });
 
   return unsupportedDiagnoses.sort(
     (first, second) => second.missingEvidenceRatio - first.missingEvidenceRatio,

@@ -39,6 +39,8 @@ export abstract class AnalysisRepository {
       potentialGap: number;
       priorityScore: number;
       analyzedAt: Date;
+      requiredEvidenceCount: number;
+      foundEvidenceCount: number;
     },
   ): Promise<void>;
 }

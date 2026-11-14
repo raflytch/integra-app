@@ -20,7 +20,9 @@ export interface ClaimDecision {
 }
 
 export interface ClaimVerification {
-  score: number;
+  evidenceRate: number;
+  requiredEvidenceCount: number;
+  foundEvidenceCount: number;
   recommendation: DecisionAction;
   reason: string;
 }

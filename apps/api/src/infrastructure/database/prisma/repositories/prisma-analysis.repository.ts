@@ -174,6 +174,8 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
       potentialGap: number;
       priorityScore: number;
       analyzedAt: Date;
+      requiredEvidenceCount: number;
+      foundEvidenceCount: number;
     },
   ): Promise<void> {
     await this.prisma.claim.update({ where: { id: claimId }, data: scores });
