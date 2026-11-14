@@ -165,7 +165,7 @@ GHCR needs no extra secret: the workflow pushes with its own `GITHUB_TOKEN` and 
 
 ## 8. First deploy
 
-Merge the pull request into `main`, or run **Actions → CI/CD → Run workflow** on `main`. The `deploy` job uploads `docker-compose.yml` and `Caddyfile` to `/opt/integra`, pulls the images tagged with the commit SHA, runs migrations, seeds the Uji Ada evidence rules (`seed:rules`, idempotent, no claims), and waits for the API health check.
+Merge the pull request into `main`, or run **Actions → CI/CD → Run workflow** on `main`. The `deploy` job uploads `docker-compose.yml` and `Caddyfile` to `/opt/integra`, pulls the images tagged with the commit SHA, runs migrations, seeds the Uji Ada evidence rules (`seed:rules`, idempotent, no claims), and waits for the API health check. A manual run can also tick **seed_demo** to replace the demo claims (`seed:demo`) after the deploy; this removes their decisions and AI analysis, so pushes to `main` never do it.
 
 On the VPS:
 
