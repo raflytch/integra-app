@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { careTypeOfInacbgCode } from '../../domain/claims/inacbg-code';
 import type { ImportedClaim } from '../../domain/imports/imported-claim';
 
 export const CLAIM_IMPORT_FORMAT = 'integra-claims/v1';
@@ -73,6 +74,14 @@ export const canonicalClaimSchema = canonicalClaimObjectSchema.superRefine(
         code: 'custom',
         path: ['dischargedAt'],
         message: 'Tanggal pulang rawat jalan harus sama dengan tanggal masuk',
+      });
+    }
+    if (careTypeOfInacbgCode(claim.inacbgCode) !== claim.careType) {
+      context.addIssue({
+        code: 'custom',
+        path: ['inacbgCode'],
+        message:
+          'Digit ke-2 kode INA-CBG harus 1, 4, 6, atau 8 untuk rawat inap dan 2, 3, 5, 7, atau 9 untuk rawat jalan',
       });
     }
     if ((claim.careType === 'OUTPATIENT') !== (claim.severityLevel === 0)) {

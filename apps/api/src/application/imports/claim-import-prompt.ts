@@ -15,7 +15,7 @@ export const CLAIM_IMPORT_SYSTEM_PROMPT = [
   '- Petakan nilai ke enum dan format baku:',
   '  - tipe dokumen: EXAM_NOTE (catatan pemeriksaan/IGD/anamnesis), DAILY_NOTE (catatan harian/CPPT/visite), PRESCRIPTION (resep/obat), PROCEDURE (tindakan/pemeriksaan penunjang), MEDICAL_RESUME (resume medis/ringkasan pulang);',
   '  - tanggal: YYYY-MM-DD; waktu dokumen: ISO 8601 dengan offset, pakai +07:00 jika file tidak menyebut zona waktu; jika dokumen hanya punya tanggal, pakai jam 00:00;',
-  '  - careType: OUTPATIENT (rawat jalan/RJ/RJTL/poliklinik, tanggal masuk sama dengan tanggal pulang) atau INPATIENT (rawat inap/RI/RITL/menginap);',
+  '  - careType: OUTPATIENT (rawat jalan/RJ/RJTL/poliklinik, tanggal masuk sama dengan tanggal pulang) atau INPATIENT (rawat inap/RI/RITL/menginap); jika file tidak menyebut jenis rawat, baca digit ke-2 kode INA-CBG: 1, 4, 6, 8 rawat inap; 2, 3, 5, 7, 9 rawat jalan;',
   '  - jenis kelamin: M (laki-laki/L/pria) atau F (perempuan/P/wanita);',
   '  - tipe faskes: A, B, C, atau D;',
   '  - severityLevel: 1, 2, atau 3 (I, II, III) untuk rawat inap, 0 untuk rawat jalan; tariffAmount: angka rupiah tanpa titik ribuan atau simbol;',
