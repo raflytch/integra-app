@@ -20,7 +20,9 @@ export interface ClaimDecision {
 }
 
 export interface ClaimVerification {
-  score: number;
+  evidenceRate: number;
+  requiredEvidenceCount: number;
+  foundEvidenceCount: number;
   recommendation: DecisionAction;
   reason: string;
 }
@@ -91,10 +93,9 @@ export interface SimilarPattern {
   primaryIcd10Code: string;
   facilityCaseCount: number;
   facilityRate: number;
-  percentileThreshold: number;
-  peerMedianRate: number;
+  meanRate: number;
+  anomalyThreshold: number;
   comparedFacilityCount: number;
-  minFacilityCaseCount: number;
   claims: SimilarPatternClaim[];
 }
 

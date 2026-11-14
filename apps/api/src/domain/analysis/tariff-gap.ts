@@ -1,5 +1,5 @@
 const LOWEST_SEVERITY_LEVEL = 1;
-const SEVERITY_SUFFIX_PATTERN = /-(I{1,3})$/;
+const SEVERITY_SUFFIX_PATTERN = /-(0|I{1,3})$/;
 
 export function toInacbgGroupCode(inacbgCode: string): string {
   return inacbgCode.replace(SEVERITY_SUFFIX_PATTERN, '');

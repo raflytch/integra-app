@@ -1,13 +1,8 @@
 import { LuCircleCheck, LuCircleDashed } from 'react-icons/lu';
-import { DecisionActionPill, Pill } from '@/components/claim-pills';
+import { DecisionActionPill } from '@/components/claim-pills';
 import { DOCUMENT_TYPE_LABELS } from '@/lib/claim-labels';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatPercent } from '@/lib/format';
 import type { ClaimDecision, ClaimDetail } from '@/types/claim.types';
-
-const SCORE_FORMATTER = new Intl.NumberFormat('id-ID', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 function MissingDocumentChecklist({ decision }: { decision: ClaimDecision }) {
   return (
@@ -81,33 +76,40 @@ export function VerificationCard({ claim }: { claim: ClaimDetail }) {
         )}
       </div>
       <div className="flex flex-col gap-2 rounded-lg border border-hairline bg-canvas p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-small font-semibold text-ink">
-            Rekomendasi INTEGRA
-          </h3>
-          <Pill tone="outline">Asumsi</Pill>
-        </div>
+        <h3 className="text-small font-semibold text-ink">
+          Rekomendasi INTEGRA
+        </h3>
         {verification ? (
           <>
             <div className="flex flex-wrap items-center gap-3">
               <DecisionActionPill action={verification.recommendation} />
-              <span className="text-small text-ink-secondary">
-                Skor korelasi{' '}
-                <span className="font-display text-subhead font-semibold text-ink tabular-nums">
-                  {SCORE_FORMATTER.format(verification.score)}
+              {verification.requiredEvidenceCount > 0 ? (
+                <span className="text-small text-ink-secondary">
+                  Kelengkapan bukti{' '}
+                  <span className="font-display text-subhead font-semibold text-ink tabular-nums">
+                    {formatPercent(verification.evidenceRate)}
+                  </span>{' '}
+                  ({verification.foundEvidenceCount} dari{' '}
+                  {verification.requiredEvidenceCount} bukti wajib)
                 </span>
-              </span>
+              ) : (
+                <span className="text-small text-ink-secondary">
+                  Tidak ada diagnosis sekunder yang perlu bukti
+                </span>
+              )}
             </div>
             <p className="text-small text-ink">{verification.reason}</p>
             <p className="text-caption text-ink-secondary">
-              Skor dan ambang masih asumsi: skor = 1 dikurangi kekuatan temuan
-              terkuat; 0,80 ke atas Setujui, 0,50 sampai 0,79 Minta klarifikasi,
-              di bawah 0,50 atau ada dokumen tersalin Eskalasi.
+              Dokumen tersalin: Eskalasi (Permenkes 16/2019). Bukti belum 100%
+              atau ada temuan lain: Minta Klarifikasi (Peraturan BPJS 7/2018
+              Pasal 31 ayat 3). Bukti 100% dan semua uji lolos: Setuju (Pasal 31
+              ayat 2).
             </p>
           </>
         ) : (
           <p className="text-small text-ink-secondary">
-            Skor dan rekomendasi muncul setelah klaim dianalisis AI.
+            Kelengkapan bukti dan rekomendasi muncul setelah klaim dianalisis
+            AI.
           </p>
         )}
       </div>

@@ -1,8 +1,10 @@
 import type { ClaimStatus } from './claim-detail';
 
-export const CODING_OUTLIER_PERCENTILE = 0.8;
-export const MIN_FACILITY_CASE_COUNT = 5;
-export const MIN_COMPARED_FACILITY_COUNT = 5;
+// Permenkes 26/2021 Lampiran Bab II: severity INA-CBG naik karena diagnosis sekunder (komorbiditas/komplikasi).
+// Permenkes 16/2019 Lampiran Bab II dan IV: memanipulasi diagnosis untuk menaikkan klaim adalah kecurangan di FKRTL,
+// dideteksi dini lewat analisis data klaim, dan hasilnya berupa dugaan yang diteruskan untuk diselesaikan.
+// Prakosa dan Rokhman (2021), IJCCS 15(4) hlm. 397-399: data klaim BPJS dianggap anomali bila residual > 2 x RMSE.
+export const ANOMALY_RMSE_MULTIPLIER = 2;
 
 export interface FacilityCodingRate {
   facilityId: string;
@@ -15,10 +17,9 @@ export interface CodingOutlier {
   primaryIcd10Code: string;
   facilityCaseCount: number;
   facilityRate: number;
-  percentileThreshold: number;
-  peerMedianRate: number;
+  meanRate: number;
+  anomalyThreshold: number;
   comparedFacilityCount: number;
-  minFacilityCaseCount: number;
 }
 
 export interface SimilarPatternClaim {
@@ -39,19 +40,12 @@ export function codingOutlierKey(
   return `${facilityId}|${primaryIcd10Code}`;
 }
 
-function percentile(sortedValues: number[], ratio: number): number {
-  const position = (sortedValues.length - 1) * ratio;
-  const lowerIndex = Math.floor(position);
-  const upperIndex = Math.ceil(position);
-  return (
-    sortedValues[lowerIndex] +
-    (sortedValues[upperIndex] - sortedValues[lowerIndex]) *
-      (position - lowerIndex)
-  );
-}
-
 function secondaryRate(codingRate: FacilityCodingRate): number {
   return codingRate.secondaryCaseCount / codingRate.caseCount;
+}
+
+function average(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 export function findCodingOutliers(
@@ -59,7 +53,6 @@ export function findCodingOutliers(
 ): Map<string, CodingOutlier> {
   const ratesByDiagnosis = new Map<string, FacilityCodingRate[]>();
   for (const codingRate of codingRates) {
-    if (codingRate.caseCount < MIN_FACILITY_CASE_COUNT) continue;
     ratesByDiagnosis.set(codingRate.primaryIcd10Code, [
       ...(ratesByDiagnosis.get(codingRate.primaryIcd10Code) ?? []),
       codingRate,
@@ -68,30 +61,22 @@ export function findCodingOutliers(
 
   const outliers = new Map<string, CodingOutlier>();
   for (const [primaryIcd10Code, diagnosisRates] of ratesByDiagnosis) {
-    if (diagnosisRates.length < MIN_COMPARED_FACILITY_COUNT) continue;
-    const sortedRates = diagnosisRates
-      .map(secondaryRate)
-      .sort((first, second) => first - second);
-    const percentileThreshold = percentile(
-      sortedRates,
-      CODING_OUTLIER_PERCENTILE,
+    const rates = diagnosisRates.map(secondaryRate);
+    const meanRate = average(rates);
+    const rootMeanSquareError = Math.sqrt(
+      average(rates.map((rate) => (rate - meanRate) ** 2)),
     );
+    const allowedResidual = ANOMALY_RMSE_MULTIPLIER * rootMeanSquareError;
     for (const codingRate of diagnosisRates) {
       const facilityRate = secondaryRate(codingRate);
-      if (codingRate.secondaryCaseCount === 0) continue;
-      if (facilityRate < percentileThreshold) continue;
-      const peerRates = diagnosisRates
-        .filter((peer) => peer.facilityId !== codingRate.facilityId)
-        .map(secondaryRate)
-        .sort((first, second) => first - second);
+      if (facilityRate - meanRate <= allowedResidual) continue;
       outliers.set(codingOutlierKey(codingRate.facilityId, primaryIcd10Code), {
         primaryIcd10Code,
         facilityCaseCount: codingRate.caseCount,
         facilityRate,
-        percentileThreshold,
-        peerMedianRate: percentile(peerRates, 0.5),
+        meanRate,
+        anomalyThreshold: meanRate + allowedResidual,
         comparedFacilityCount: diagnosisRates.length,
-        minFacilityCaseCount: MIN_FACILITY_CASE_COUNT,
       });
     }
   }

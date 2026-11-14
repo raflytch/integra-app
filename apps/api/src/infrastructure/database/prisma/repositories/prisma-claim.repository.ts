@@ -329,7 +329,7 @@ export class PrismaClaimRepository extends ClaimRepository {
         createdAt: finding.createdAt,
       })),
       decisions: claim.decisions.map(toDecision),
-      verification: assessClaim(claim.findings, claim.analyzedAt),
+      verification: assessClaim(claim.findings, claim),
       similarPattern: await this.findSimilarPattern(
         claim.id,
         claim.facilityId,

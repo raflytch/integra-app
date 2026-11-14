@@ -1,12 +1,13 @@
 import type { DecisionAction } from '../decisions/decision';
 import type { TestType } from './claim-detail';
 
-export const APPROVE_MIN_SCORE = 0.8;
-export const CLARIFICATION_MIN_SCORE = 0.5;
-const SCORE_DECIMALS = 2;
+// Kepmenkes 129/2008 SPM RS, indikator Rekam Medik 1: kelengkapan = jumlah yang lengkap / jumlah yang dicek, standar 100%.
+export const COMPLETE_EVIDENCE_RATE = 1;
 
 export interface ClaimVerification {
-  score: number;
+  evidenceRate: number;
+  requiredEvidenceCount: number;
+  foundEvidenceCount: number;
   recommendation: DecisionAction;
   reason: string;
 }
@@ -17,34 +18,70 @@ interface VerifiedFinding {
   summary: string;
 }
 
-export function assessClaim(
-  findings: VerifiedFinding[],
-  analyzedAt: Date | null,
-): ClaimVerification | null {
-  if (!analyzedAt) return null;
-  const strongestFinding = findings.reduce<VerifiedFinding | null>(
+interface AnalyzedClaim {
+  analyzedAt: Date | null;
+  requiredEvidenceCount: number | null;
+  foundEvidenceCount: number | null;
+}
+
+function strongestOf(findings: VerifiedFinding[]): VerifiedFinding | null {
+  return findings.reduce<VerifiedFinding | null>(
     (strongest, finding) =>
       !strongest || finding.strength > strongest.strength ? finding : strongest,
     null,
   );
-  const score = Number(
-    (1 - (strongestFinding?.strength ?? 0)).toFixed(SCORE_DECIMALS),
+}
+
+export function assessClaim(
+  findings: VerifiedFinding[],
+  claim: AnalyzedClaim,
+): ClaimVerification | null {
+  const { analyzedAt, requiredEvidenceCount, foundEvidenceCount } = claim;
+  if (
+    !analyzedAt ||
+    requiredEvidenceCount === null ||
+    foundEvidenceCount === null
+  ) {
+    return null;
+  }
+  const evidenceRate =
+    requiredEvidenceCount === 0
+      ? 1
+      : foundEvidenceCount / requiredEvidenceCount;
+  const evidence = { evidenceRate, requiredEvidenceCount, foundEvidenceCount };
+
+  // Permenkes 16/2019 Lampiran Bab II: menyalin rekam medis pasien lain (cloning) adalah kecurangan, diteruskan untuk ditindaklanjuti.
+  const copiedDocument = strongestOf(
+    findings.filter((finding) => finding.testType === 'SIMILARITY'),
   );
-  const hasCopiedDocument = findings.some(
-    (finding) => finding.testType === 'SIMILARITY',
-  );
-  const recommendation: DecisionAction = hasCopiedDocument
-    ? 'ESCALATE'
-    : score >= APPROVE_MIN_SCORE
-      ? 'APPROVE'
-      : score >= CLARIFICATION_MIN_SCORE
-        ? 'REQUEST_CLARIFICATION'
-        : 'ESCALATE';
+  if (copiedDocument) {
+    return {
+      ...evidence,
+      recommendation: 'ESCALATE',
+      reason: copiedDocument.summary,
+    };
+  }
+
+  // Peraturan BPJS Kesehatan 7/2018 Pasal 31 ayat (3) dan (4): berkas yang diverifikasi belum sesuai dikembalikan untuk konfirmasi, disertai penjelasan.
+  // Permenkes 26/2021 Lampiran Bab I huruf C: ketidaksesuaian koding diklarifikasi dengan dokter.
+  const strongestFinding = strongestOf(findings);
+  if (strongestFinding || evidenceRate < COMPLETE_EVIDENCE_RATE) {
+    return {
+      ...evidence,
+      recommendation: 'REQUEST_CLARIFICATION',
+      reason:
+        strongestFinding?.summary ??
+        `Baru ${foundEvidenceCount} dari ${requiredEvidenceCount} bukti wajib diagnosis sekunder ditemukan di berkas.`,
+    };
+  }
+
+  // Peraturan BPJS Kesehatan 7/2018 Pasal 31 ayat (2): klaim dibayar setelah hasil verifikasi dinyatakan sesuai.
   return {
-    score,
-    recommendation,
+    ...evidence,
+    recommendation: 'APPROVE',
     reason:
-      strongestFinding?.summary ??
-      'Semua uji lolos: tidak ada bukti yang kurang, tidak konsisten, atau tersalin.',
+      requiredEvidenceCount === 0
+        ? 'Semua uji lolos dan tidak ada diagnosis sekunder yang perlu bukti.'
+        : 'Semua bukti wajib diagnosis sekunder ditemukan dan semua uji lolos.',
   };
 }

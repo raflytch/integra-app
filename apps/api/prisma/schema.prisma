@@ -182,30 +182,32 @@ model Patient {
 /// - CHECK (severity_level BETWEEN 0 AND 3)
 /// - CHECK (priority_score >= 0)
 model Claim {
-  id            String         @id @default(uuid(7)) @db.Uuid
-  claimNo       String         @unique @map("claim_no")
-  facilityId    String         @map("facility_id") @db.Uuid
-  patientId     String         @map("patient_id") @db.Uuid
-  careType      CareType       @map("care_type")
-  admittedAt    DateTime       @map("admitted_at") @db.Date
-  dischargedAt  DateTime       @map("discharged_at") @db.Date
+  id                    String         @id @default(uuid(7)) @db.Uuid
+  claimNo               String         @unique @map("claim_no")
+  facilityId            String         @map("facility_id") @db.Uuid
+  patientId             String         @map("patient_id") @db.Uuid
+  careType              CareType       @map("care_type")
+  admittedAt            DateTime       @map("admitted_at") @db.Date
+  dischargedAt          DateTime       @map("discharged_at") @db.Date
   /// INA-CBG group code, e.g. "I-4-10-II".
-  inacbgCode    String         @map("inacbg_code")
+  inacbgCode            String         @map("inacbg_code")
   /// INA-CBG severity level (1 = mild, 3 = severe; 0 for outpatient, which has no severity).
-  severityLevel Int            @map("severity_level") @db.SmallInt
+  severityLevel         Int            @map("severity_level") @db.SmallInt
   /// Billed amount in rupiah.
-  tariffAmount  Decimal        @map("tariff_amount") @db.Decimal(14, 2)
+  tariffAmount          Decimal        @map("tariff_amount") @db.Decimal(14, 2)
   /// Estimated overbilling in rupiah. Zero until analysis runs.
-  potentialGap  Decimal        @default(0) @map("potential_gap") @db.Decimal(14, 2)
+  potentialGap          Decimal        @default(0) @map("potential_gap") @db.Decimal(14, 2)
   /// Queue ordering score; higher is reviewed first. Zero until analysis runs.
-  priorityScore Float          @default(0) @map("priority_score")
+  priorityScore         Float          @default(0) @map("priority_score")
   /// When the detectors last evaluated the claim, after the AI read every document. Null until then.
-  analyzedAt    DateTime?      @map("analyzed_at") @db.Timestamptz(3)
-  status        ClaimStatus    @default(PENDING)
+  analyzedAt            DateTime?      @map("analyzed_at") @db.Timestamptz(3)
+  requiredEvidenceCount Int?           @map("required_evidence_count") @db.SmallInt
+  foundEvidenceCount    Int?           @map("found_evidence_count") @db.SmallInt
+  status                ClaimStatus    @default(PENDING)
   /// Evaluation ground truth for synthetic data. Keep out of API responses.
-  injectedCase  InjectedCase[] @default([]) @map("injected_case")
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  injectedCase          InjectedCase[] @default([]) @map("injected_case")
+  createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   facility        Facility           @relation(fields: [facilityId], references: [id])
   patient         Patient            @relation(fields: [patientId], references: [id])

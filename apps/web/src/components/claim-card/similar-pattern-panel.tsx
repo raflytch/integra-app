@@ -42,12 +42,12 @@ export function SimilarPatternPanel({
           {primaryDiagnosis?.name ?? similarPattern.primaryIcd10Code}.
         </p>
         <p className="text-caption text-ink-secondary">
-          Di atas persentil ke-80 dari {similarPattern.comparedFacilityCount}{' '}
-          faskes yang punya minimal {similarPattern.minFacilityCaseCount} klaim{' '}
-          {primaryDiagnosis?.name ?? similarPattern.primaryIcd10Code} (ambang{' '}
-          {formatPercent(similarPattern.percentileThreshold)}, median faskes
-          lain {formatPercent(similarPattern.peerMedianRate)}). Penanda ini
-          untuk penelusuran, bukan bukti kecurangan.
+          Di atas rata-rata {similarPattern.comparedFacilityCount} faskes dengan
+          klaim {primaryDiagnosis?.name ?? similarPattern.primaryIcd10Code}{' '}
+          ditambah 2 kali RMSE (rata-rata{' '}
+          {formatPercent(similarPattern.meanRate)}, ambang{' '}
+          {formatPercent(similarPattern.anomalyThreshold)}). Penanda ini untuk
+          penelusuran, bukan bukti kecurangan.
         </p>
       </div>
       {similarPattern.claims.length > 0 && (

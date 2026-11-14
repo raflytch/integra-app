@@ -72,6 +72,9 @@ export interface DemoClaim {
  *   are copied word for word from one source claim in the cluster, numbers
  *   included. Only `recordedAt` follows each claim's stay and the exam note's
  *   vital-sign sentence gets new numbers (Uji Bukan Salinan flags them).
+ * - Consistent upcoding: after cloning, every normal DBD claim of RS-SIM-005
+ *   becomes `SHOCK_UPCODING`, so one facility codes shock on all its DBD
+ *   claims (the similar pattern marker flags it).
  */
 export type ClaimProfile =
   | 'NORMAL_DBD'
@@ -718,6 +721,7 @@ const CLONING_CLUSTERS = [
   { facilityCode: 'RS-SIM-006', size: 5 },
 ] as const;
 const CLONING_CLUSTER_DAY_SPAN = 60;
+const CONSISTENT_UPCODING_FACILITY_CODE = 'RS-SIM-005';
 const MIN_CLONING_CLUSTER_SIZE = 3;
 const EXAM_VITAL_SIGN_PATTERN =
   /TD \d+\/\d+ mmHg, nadi \d+ x\/menit, suhu \d+,\d °C\./;
@@ -867,6 +871,32 @@ function toSepNumber(
   return `${ppkCode}${month}${year}V${String(claimIndex + 1).padStart(6, '0')}`;
 }
 
+function injectConsistentUpcoding(
+  claims: DemoClaim[],
+  random: Random,
+  tariffSchedule: SyntheticTariffSchedule,
+): void {
+  for (const claim of claims) {
+    if (
+      claim.facilityCode !== CONSISTENT_UPCODING_FACILITY_CODE ||
+      claim.profile !== 'NORMAL_DBD'
+    ) {
+      continue;
+    }
+    Object.assign(claim, {
+      profile: 'SHOCK_UPCODING',
+      injectedCase: PROFILE_DETAILS.SHOCK_UPCODING.injectedCase,
+      ...buildClaimContent(
+        'SHOCK_UPCODING',
+        random,
+        tariffSchedule,
+        claim.admittedAt,
+        random.int(3, 7),
+      ),
+    });
+  }
+}
+
 export function generateDemoClaims(
   claimCount: number,
   seed: number,
@@ -932,6 +962,7 @@ export function generateDemoClaims(
   });
 
   const warnings = injectCloningClusters(claims, random, tariffSchedule);
+  injectConsistentUpcoding(claims, createRandom(seed + 1), tariffSchedule);
   claims.forEach((claim, claimIndex) => {
     claim.claimNo = toSepNumber(
       claim.facilityCode,
