@@ -1,5 +1,6 @@
 import type { CareType } from './claim-detail';
 
+// Permenkes 26/2021 Lampiran Bab II, Tabel 2 Case Group: digit ke-2 kode INA-CBG menunjukkan jenis rawat.
 const CASE_GROUP_PATTERN = /^[A-Z]{1,2}-(\d)-/;
 const CARE_TYPE_BY_CASE_GROUP: Readonly<Record<string, CareType>> = {
   '1': 'INPATIENT',
