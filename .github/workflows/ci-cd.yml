@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      seed_demo:
+        description: Replace the demo claims (seed:demo) after deploy; removes their decisions and AI analysis
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -137,3 +142,7 @@ jobs:
           docker compose ps
           docker image prune -af --filter until=168h
           EOF
+
+      - name: Seed demo claims
+        if: github.event_name == 'workflow_dispatch' && inputs.seed_demo
+        run: ssh vps "cd '$DEPLOY_PATH' && docker compose run --rm migrate npm run seed:demo"
