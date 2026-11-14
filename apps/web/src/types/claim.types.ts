@@ -91,10 +91,9 @@ export interface SimilarPattern {
   primaryIcd10Code: string;
   facilityCaseCount: number;
   facilityRate: number;
-  percentileThreshold: number;
-  peerMedianRate: number;
+  meanRate: number;
+  anomalyThreshold: number;
   comparedFacilityCount: number;
-  minFacilityCaseCount: number;
   claims: SimilarPatternClaim[];
 }
 
