@@ -7,10 +7,11 @@ export const metadata: Metadata = { title: 'Antrean Klaim · INTEGRA' };
 
 export default function ClaimQueuePage() {
   return (
-    <div className="flex flex-col gap-6">
+    <div data-full-width className="flex flex-col gap-3">
       <PageHeader
         title="Antrean Klaim"
-        description="Klaim diurutkan dari sinyal terkuat dan potensi selisih tarif terbesar. Centang klaim (atau satu halaman sekaligus) lalu klik Analisis AI; hanya klaim terpilih yang memakai token."
+        fullWidthDescription
+        description="Daftar klaim untuk diverifikasi, diurutkan dari prioritas tertinggi. Pilih klaim, lalu jalankan Analisis AI untuk memeriksa bukti medisnya."
       />
       <ClaimQueue filterOptions={REVIEW_QUEUE_FILTERS} />
     </div>
