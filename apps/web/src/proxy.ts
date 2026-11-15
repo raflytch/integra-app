@@ -21,7 +21,7 @@ export const config = {
     '/overview/:path*',
     '/escalations/:path*',
     '/facilities/:path*',
-    '/imports/:path*',
+    '/claim-details/:path*',
     '/ai-usage/:path*',
   ],
 };

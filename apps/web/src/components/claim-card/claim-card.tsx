@@ -97,6 +97,7 @@ export function ClaimCard({ claimId }: { claimId: string }) {
         <aside className="flex flex-col gap-4">
           <DecisionPanel
             claimId={claim.id}
+            claimNo={claim.claimNo}
             decisions={claim.decisions}
             draft={decisionDraft}
             onDraftChange={setDecisionDraft}

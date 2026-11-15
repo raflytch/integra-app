@@ -139,7 +139,8 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  decisions Decision[]
+  decisions         Decision[]
+  vedikaAttachments VedikaAttachment[]
 
   @@map("users")
 }
@@ -201,6 +202,7 @@ model Claim {
   priorityScore         Float          @default(0) @map("priority_score")
   /// When the detectors last evaluated the claim, after the AI read every document. Null until then.
   analyzedAt            DateTime?      @map("analyzed_at") @db.Timestamptz(3)
+  vedikaSyncedAt        DateTime?      @map("vedika_synced_at") @db.Timestamptz(3)
   requiredEvidenceCount Int?           @map("required_evidence_count") @db.SmallInt
   foundEvidenceCount    Int?           @map("found_evidence_count") @db.SmallInt
   status                ClaimStatus    @default(PENDING)
@@ -209,15 +211,16 @@ model Claim {
   createdAt             DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  facility        Facility           @relation(fields: [facilityId], references: [id])
-  patient         Patient            @relation(fields: [patientId], references: [id])
-  diagnoses       ClaimDiagnosis[]
-  procedures      ClaimProcedure[]
-  documents       ClinicalDocument[]
-  findings        Finding[]          @relation("FindingClaim")
+  facility          Facility           @relation(fields: [facilityId], references: [id])
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  diagnoses         ClaimDiagnosis[]
+  procedures        ClaimProcedure[]
+  documents         ClinicalDocument[]
+  findings          Finding[]          @relation("FindingClaim")
   /// Findings on other claims that point at this one (cloning source).
-  relatedFindings Finding[]          @relation("FindingRelatedClaim")
-  decisions       Decision[]
+  relatedFindings   Finding[]          @relation("FindingRelatedClaim")
+  decisions         Decision[]
+  vedikaAttachments VedikaAttachment[]
 
   /// Verification queue: WHERE status = ? ORDER BY priority_score DESC.
   @@index([status, priorityScore(sort: Desc)])
@@ -391,4 +394,26 @@ model DecisionDocumentRequest {
 
   @@unique([decisionId, documentType])
   @@map("decision_document_requests")
+}
+
+/// A file a verifier sends to VEDIKA with a clarification request. VEDIKA is
+/// simulated: the file stays in INTEGRA and a refresh marks it as answered.
+/// `size_bytes` is checked to 1 B–5 MB in the migration SQL.
+model VedikaAttachment {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  claimId      String    @map("claim_id") @db.Uuid
+  uploadedById String    @map("uploaded_by_id") @db.Uuid
+  fileName     String    @map("file_name")
+  mimeType     String    @map("mime_type")
+  sizeBytes    Int       @map("size_bytes")
+  content      Bytes
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  syncedAt     DateTime? @map("synced_at") @db.Timestamptz(3)
+
+  claim      Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@index([claimId, createdAt(sort: Desc)])
+  @@index([uploadedById])
+  @@map("vedika_attachments")
 }

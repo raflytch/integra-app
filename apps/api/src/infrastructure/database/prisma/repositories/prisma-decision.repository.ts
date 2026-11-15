@@ -52,7 +52,7 @@ export class PrismaDecisionRepository extends DecisionRepository {
       }),
       this.prisma.claim.update({
         where: { id: newDecision.claimId },
-        data: { status: resultingClaimStatus },
+        data: { status: resultingClaimStatus, vedikaSyncedAt: null },
       }),
     ]);
     return toDecision(decision);

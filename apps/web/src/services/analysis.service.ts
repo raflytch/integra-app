@@ -1,7 +1,6 @@
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 
-/** A claim taking longer than this is reported to the verifier as timed out. */
 export const ANALYSIS_TIMEOUT_MS = 60 * 1000;
 
 export function isAnalysisTimeoutError(error: unknown): boolean {

@@ -72,8 +72,8 @@ const CARE_TYPE_APPEARANCE: Record<
   CareType,
   { tone: PillTone; icon: IconType }
 > = {
-  OUTPATIENT: { tone: 'outpatient', icon: LuStethoscope },
-  INPATIENT: { tone: 'inpatient', icon: LuBedDouble },
+  OUTPATIENT: { tone: 'neutral', icon: LuStethoscope },
+  INPATIENT: { tone: 'neutral', icon: LuBedDouble },
 };
 
 const TEST_TYPE_ICONS: Record<TestType, IconType> = {

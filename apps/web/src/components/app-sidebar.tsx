@@ -5,7 +5,7 @@ import type { IconType } from 'react-icons';
 import {
   LuCircleHelp,
   LuCpu,
-  LuFileUp,
+  LuFileCheck,
   LuHospital,
   LuLayoutDashboard,
   LuListOrdered,
@@ -61,7 +61,7 @@ const MENU_GROUPS: MenuGroup[] = [
     allowedRoles: ['VERIFIER'],
     items: [
       { href: '/claims', label: 'Antrean Klaim', icon: LuListOrdered },
-      { href: '/imports', label: 'Impor Klaim', icon: LuFileUp },
+      { href: '/claim-details', label: 'Rincian Klaim', icon: LuFileCheck },
     ],
   },
   {
@@ -71,6 +71,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { href: '/overview', label: 'Dashboard', icon: LuLayoutDashboard },
       { href: '/escalations', label: 'Eskalasi', icon: LuShieldAlert },
       { href: '/facilities', label: 'Ringkasan Faskes', icon: LuHospital },
+      { href: '/claim-details', label: 'Rincian Klaim', icon: LuFileCheck },
       { href: '/ai-usage', label: 'Penggunaan AI', icon: LuCpu },
     ],
   },

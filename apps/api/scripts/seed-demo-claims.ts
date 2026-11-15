@@ -34,6 +34,7 @@ const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 300;
 const MAX_CLAIM_COUNT = 5000;
 const DATASET_SEED = 20260401;
+const LEGACY_DEMO_CLAIM_NO_PREFIX = 'KLM-DEMO-';
 const DECISIONS_PER_KIND = 3;
 
 const SAMPLE_DECISIONS: {
@@ -118,7 +119,13 @@ async function main(): Promise<void> {
     }
     await upsertEvidenceRules(prisma, EVIDENCE_RULES);
 
-    const demoClaimFilter = { claimNo: { startsWith: DEMO_CLAIM_NO_PREFIX } };
+    // Older seeds numbered demo claims KLM-DEMO-*; they still hold RM-DEMO-*
+    // patients, so they are removed too or the patient insert collides.
+    const demoClaimFilter = {
+      OR: [DEMO_CLAIM_NO_PREFIX, LEGACY_DEMO_CLAIM_NO_PREFIX].map((prefix) => ({
+        claimNo: { startsWith: prefix },
+      })),
+    };
     await prisma.$transaction(
       async (transaction) => {
         // Decisions are an append-only audit trail with a Restrict FK, so the

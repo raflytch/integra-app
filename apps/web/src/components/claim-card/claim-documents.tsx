@@ -9,7 +9,6 @@ import { DOCUMENT_TYPE_LABELS } from '@/lib/claim-labels';
 import { formatDateTime } from '@/lib/format';
 import type { ClaimDocument } from '@/types/claim.types';
 
-/** Sentence ends at . ! ? followed by whitespace, or at a line break; decimals stay intact. */
 const SENTENCE_BOUNDARY_PATTERN = /(?<=[.!?])\s+|\n+/;
 
 export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {

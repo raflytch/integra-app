@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { StatusFilterTabs } from '@/components/status-filter-tabs';
 import { fetchClaimStatistics } from '@/services/claim.service';
 import type { ClaimStatistics } from '@/types/claim.types';
 import type { QueueFilter, QueueFilterOption } from './claim-queue-filters';
@@ -37,39 +37,19 @@ export function ClaimQueue({
   return (
     <div className="flex flex-col gap-4">
       {filterOptions.length > 1 && (
-        <div className="flex flex-col gap-2">
-          <ToggleGroup
-            type="single"
-            value={queueFilter}
-            onValueChange={(selectedFilter) =>
-              selectedFilter && setQueueFilter(selectedFilter as QueueFilter)
-            }
-            aria-label="Filter status klaim"
-            spacing={2}
-            className="flex-wrap"
-          >
-            {filterOptions.map((option) => (
-              <ToggleGroupItem
-                key={option.value}
-                value={option.value}
-                className="group h-8 gap-1.5 rounded-full border border-hairline bg-surface px-3 text-small font-medium text-ink-secondary hover:bg-subtle hover:text-ink data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-              >
-                {option.label}
-                {statisticsQuery.data && (
-                  <span className="rounded-full bg-subtle px-1.5 text-caption text-ink-secondary tabular-nums group-data-[state=on]:bg-primary-foreground/20 group-data-[state=on]:text-primary-foreground">
-                    {countClaims(
-                      statisticsQuery.data,
-                      option.value,
-                    ).toLocaleString('id-ID')}
-                  </span>
-                )}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-          <p className="text-small text-ink-secondary">
-            {activeFilterOption.description}
-          </p>
-        </div>
+        <StatusFilterTabs
+          tabs={filterOptions.map((option) => ({
+            value: option.value,
+            label: option.label,
+            count:
+              statisticsQuery.data &&
+              countClaims(statisticsQuery.data, option.value),
+          }))}
+          value={queueFilter}
+          onChange={setQueueFilter}
+          ariaLabel="Filter status klaim"
+          description={activeFilterOption.description}
+        />
       )}
       <ClaimQueueTable
         key={queueFilter}

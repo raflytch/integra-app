@@ -13,6 +13,7 @@ import type { Env } from './infrastructure/config/env.schema';
  * runs, so the ceiling stays finite and applies to the import routes only.
  */
 const IMPORT_BODY_LIMIT = '200mb';
+const VEDIKA_ATTACHMENT_BODY_LIMIT = '8mb';
 
 async function bootstrap(): Promise<void> {
   // Body parsers are registered below so imports can take larger bodies.
@@ -27,6 +28,10 @@ async function bootstrap(): Promise<void> {
   // Claim import files travel as JSON text; every other route keeps the
   // Express default of 100 KB. The first parser that matches handles a body.
   app.use('/imports/claims', json({ limit: IMPORT_BODY_LIMIT }));
+  app.use(
+    '/claims/:claimId/vedika/attachments',
+    json({ limit: VEDIKA_ATTACHMENT_BODY_LIMIT }),
+  );
   app.use(json());
 
   app.useGlobalPipes(

@@ -30,7 +30,7 @@ export default async function WorkspaceLayout({
               INTEGRA
             </span>
           </header>
-          <main className="mx-auto w-full max-w-7xl px-4 py-8 md:px-8 md:py-10">
+          <main className="mx-auto w-full max-w-7xl px-4 py-8 has-[[data-full-width]]:max-w-none md:px-8 md:py-10">
             {children}
           </main>
         </SidebarInset>

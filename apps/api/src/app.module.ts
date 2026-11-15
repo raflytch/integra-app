@@ -12,6 +12,7 @@ import { validateEnv } from './infrastructure/config/env.schema';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { LlmModule } from './infrastructure/llm/llm.module';
 import { SecurityModule } from './infrastructure/security/security.module';
+import { VedikaModule } from './vedika.module';
 import { HealthController } from './presentation/controllers/health.controller';
 import { DomainExceptionFilter } from './presentation/filters/domain-exception.filter';
 
@@ -28,6 +29,7 @@ import { DomainExceptionFilter } from './presentation/filters/domain-exception.f
     ClaimsModule,
     FacilitiesModule,
     ImportsModule,
+    VedikaModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_FILTER, useClass: DomainExceptionFilter }],

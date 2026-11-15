@@ -30,7 +30,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'main-nav',
     title: 'Menu utama',
     description:
-      'Antrean Klaim dan Impor Klaim untuk verifikator. Dashboard, Eskalasi, Ringkasan Faskes, dan Penggunaan AI untuk supervisor. Buka panduan ini lagi kapan saja lewat menu Panduan.',
+      'Antrean Klaim dan Rincian Klaim untuk verifikator. Dashboard, Eskalasi, Ringkasan Faskes, Rincian Klaim, dan Penggunaan AI untuk supervisor. Buka panduan ini lagi kapan saja lewat menu Panduan.',
     missingTargetDescription:
       'Buka menu di kiri atas untuk berpindah halaman. Panduan ini bisa dibuka lagi lewat menu Panduan.',
   },
@@ -91,7 +91,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'claim-decision-panel',
     title: 'Anda yang memutuskan',
     description:
-      'Pilih setujui, minta klarifikasi, atau eskalasi, lalu tulis alasan singkat. Keputusan tercatat atas nama Anda dan status klaim di antrean ikut berubah.',
+      'Pilih setujui, minta klarifikasi, atau eskalasi, lalu tambahkan catatan bila perlu. Keputusan tercatat atas nama Anda dan status klaim di antrean ikut berubah.',
     nextLabel: 'Mulai meninjau',
   },
 ];
