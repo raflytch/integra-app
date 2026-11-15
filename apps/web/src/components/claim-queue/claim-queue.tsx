@@ -48,7 +48,6 @@ export function ClaimQueue({
           value={queueFilter}
           onChange={setQueueFilter}
           ariaLabel="Filter status klaim"
-          description={activeFilterOption.description}
         />
       )}
       <ClaimQueueTable
