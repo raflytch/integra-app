@@ -161,7 +161,7 @@ export function ClaimAiUsageTable() {
 
   return (
     <ClaimAiUsageSection>
-      <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-xs">
+      <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
         <TableToolbar>
           <TableSearch
             value={table.searchQuery}

@@ -66,7 +66,7 @@ import type {
 import { ClaimQueueEmpty, ClaimQueueSkeleton } from './claim-queue-states';
 
 const CLAIMS_PER_PAGE = 10;
-const COLUMN_COUNT = 9;
+const COLUMN_COUNT = 8;
 const ALL = 'ALL';
 
 type CareTypeFilter = typeof ALL | CareType;
@@ -190,6 +190,12 @@ function CareDates({ claim }: { claim: ClaimQueueItem }) {
         Pulang{' '}
         <span className="text-ink tabular-nums">
           {formatDate(claim.dischargedAt)}
+        </span>
+      </span>
+      <span className="mt-1 border-t border-hairline pt-1">
+        LOS{' '}
+        <span className="text-ink tabular-nums">
+          {formatLengthOfStay(claim.lengthOfStayDays)}
         </span>
       </span>
     </div>
@@ -366,7 +372,7 @@ export function ClaimQueueTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-hairline bg-surface shadow-xs">
+    <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
       <TableToolbar>
         <TableSearch
           value={table.searchQuery}
@@ -439,16 +445,10 @@ export function ClaimQueueTable({
                   sortKey="admittedAt"
                   sort={table.sort}
                   onSort={table.toggleSort}
-                  className={cn(
-                    'whitespace-normal',
-                    CENTERED_COLUMN_CLASS_NAME,
-                  )}
+                  className="whitespace-normal"
                 >
                   Keterangan rawat
                 </SortableTableHead>
-                <TableHead className={CENTERED_COLUMN_CLASS_NAME}>
-                  LOS
-                </TableHead>
                 <SortableTableHead
                   sortKey="findings"
                   sort={table.sort}
@@ -529,21 +529,11 @@ export function ClaimQueueTable({
                         <FacilityTypePill facilityType={claim.facility.type} />
                       </div>
                     </TableCell>
-                    <TableCell
-                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
-                    >
-                      <div className="flex flex-col items-center gap-1">
+                    <TableCell className="align-top">
+                      <div className="flex flex-col items-start gap-1">
                         <CareTypePill careType={claim.careType} />
                         <CareDates claim={claim} />
                       </div>
-                    </TableCell>
-                    <TableCell
-                      className={cn(
-                        'align-top text-ink tabular-nums',
-                        CENTERED_COLUMN_CLASS_NAME,
-                      )}
-                    >
-                      {formatLengthOfStay(claim.lengthOfStayDays)}
                     </TableCell>
                     <TableCell className="align-top">
                       <FindingSignals claim={claim} />

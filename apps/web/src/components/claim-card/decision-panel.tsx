@@ -1,19 +1,25 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { LuCircleCheck } from 'react-icons/lu';
+import {
+  LuCircleCheck,
+  LuFileUp,
+  LuInfo,
+  LuTriangleAlert,
+  LuX,
+} from 'react-icons/lu';
 import Link from 'next/link';
-import type { FormEvent } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { DecisionActionPill, Pill } from '@/components/claim-pills';
+import {
+  FRIENDLY_RETRY_MESSAGE,
+  formatFileSize,
+} from '@/components/vedika/vedika-details';
+import { VedikaStatusDialog } from '@/components/vedika/vedika-status-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -23,6 +29,10 @@ import {
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { recordDecision } from '@/services/claim.service';
+import {
+  MAX_VEDIKA_ATTACHMENT_BYTES,
+  sendVedikaAttachment,
+} from '@/services/vedika.service';
 import type {
   ClaimDecision,
   ClaimFinding,
@@ -66,7 +76,6 @@ export function suggestMissingDocumentTypes(
 }
 export const DECISION_REASON_INPUT_ID = 'decision-reason';
 
-const MIN_REASON_LENGTH = 10;
 const MAX_REASON_LENGTH = 1000;
 const DECISION_TONE_CLASS_NAMES: Record<
   DecisionAction,
@@ -102,9 +111,11 @@ function DecisionHistory({ decisions }: { decisions: ClaimDecision[] }) {
         {decisions.map((decision) => (
           <li key={decision.id} className="flex flex-col items-start gap-1">
             <DecisionActionPill action={decision.action} />
-            <span className="text-small text-ink-secondary">
-              {decision.reason}
-            </span>
+            {decision.reason && (
+              <span className="text-small text-ink-secondary">
+                {decision.reason}
+              </span>
+            )}
             {decision.missingDocuments.length > 0 && (
               <span className="text-caption text-ink-secondary">
                 Dokumen kurang:{' '}
@@ -126,8 +137,16 @@ function DecisionHistory({ decisions }: { decisions: ClaimDecision[] }) {
   );
 }
 
+async function sendAttachments(claimId: string, files: File[]) {
+  const results = await Promise.allSettled(
+    files.map((file) => sendVedikaAttachment(claimId, file)),
+  );
+  return results.filter((result) => result.status === 'rejected').length;
+}
+
 export function DecisionPanel({
   claimId,
+  claimNo,
   decisions,
   draft,
   onDraftChange,
@@ -135,6 +154,7 @@ export function DecisionPanel({
   suggestedDocumentTypes,
 }: {
   claimId: string;
+  claimNo: string;
   decisions: ClaimDecision[];
   draft: DecisionDraft;
   onDraftChange: (draft: DecisionDraft) => void;
@@ -142,24 +162,35 @@ export function DecisionPanel({
   suggestedDocumentTypes: DocumentType[];
 }) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
   const isClarification = draft.action === 'REQUEST_CLARIFICATION';
   const decisionMutation = useMutation({
-    mutationFn: (action: DecisionAction) =>
-      recordDecision(claimId, {
+    mutationFn: async (action: DecisionAction) => {
+      const isClarificationAction = action === 'REQUEST_CLARIFICATION';
+      const decision = await recordDecision(claimId, {
         action,
         reason: draft.reason,
-        missingDocumentTypes:
-          action === 'REQUEST_CLARIFICATION' ? draft.missingDocumentTypes : [],
-      }),
+        missingDocumentTypes: isClarificationAction
+          ? draft.missingDocumentTypes
+          : [],
+      });
+      const failedUploadCount = isClarificationAction
+        ? await sendAttachments(claimId, attachmentFiles)
+        : 0;
+      return { decision, failedUploadCount };
+    },
     onSuccess: () => {
       onDraftChange(EMPTY_DECISION_DRAFT);
+      setAttachmentFiles([]);
       return queryClient.invalidateQueries({ queryKey: ['claims'] });
     },
   });
-  const savedDecision = decisionMutation.data;
+  const savedDecision = decisionMutation.data?.decision;
+  const failedUploadCount = decisionMutation.data?.failedUploadCount ?? 0;
   const canSubmit =
     draft.action !== '' &&
-    draft.reason.trim().length >= MIN_REASON_LENGTH &&
     (!isClarification || draft.missingDocumentTypes.length > 0) &&
     !decisionMutation.isPending;
 
@@ -192,10 +223,49 @@ export function DecisionPanel({
     });
   }
 
+  function addAttachmentFiles(files: File[]) {
+    const oversizedFile = files.find(
+      (file) => file.size > MAX_VEDIKA_ATTACHMENT_BYTES,
+    );
+    setFileError(
+      oversizedFile
+        ? `${oversizedFile.name} lebih dari 5 MB. Kecilkan atau pilih file lain.`
+        : null,
+    );
+    const acceptedFiles = files.filter(
+      (file) => file.size <= MAX_VEDIKA_ATTACHMENT_BYTES,
+    );
+    setAttachmentFiles((currentFiles) => [...currentFiles, ...acceptedFiles]);
+  }
+
+  function removeAttachmentFile(fileIndex: number) {
+    setAttachmentFiles((currentFiles) =>
+      currentFiles.filter((_, index) => index !== fileIndex),
+    );
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (draft.action) decisionMutation.mutate(draft.action);
   }
+
+  const reasonField = (
+    <Field>
+      <FieldLabel htmlFor={DECISION_REASON_INPUT_ID} className="text-ink">
+        Catatan
+      </FieldLabel>
+      <Textarea
+        id={DECISION_REASON_INPUT_ID}
+        maxLength={MAX_REASON_LENGTH}
+        value={draft.reason}
+        onChange={(event) =>
+          onDraftChange({ ...draft, reason: event.target.value })
+        }
+        placeholder="Tambahkan catatan…"
+        className="min-h-24 border-hairline bg-surface"
+      />
+    </Field>
+  );
 
   return (
     <section
@@ -203,16 +273,28 @@ export function DecisionPanel({
       data-tour="claim-decision-panel"
       className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
-      <div className="flex flex-col gap-0.5">
-        <h2
-          id="decision-panel-heading"
-          className="text-body font-semibold tracking-display text-ink"
-        >
-          Keputusan verifikator
-        </h2>
-        <p className="text-caption text-ink-secondary">
-          INTEGRA menandai, Anda yang memutuskan.
-        </p>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <h2
+            id="decision-panel-heading"
+            className="text-body font-semibold tracking-display text-ink"
+          >
+            Keputusan verifikator
+          </h2>
+          <p className="text-caption text-ink-secondary">
+            INTEGRA menandai, Anda yang memutuskan.
+          </p>
+        </div>
+        <VedikaStatusDialog
+          claimId={claimId}
+          claimNo={claimNo}
+          trigger={
+            <Button variant="outline" size="sm" className="shrink-0">
+              <LuInfo aria-hidden="true" />
+              Data VEDIKA
+            </Button>
+          }
+        />
       </div>
       {savedDecision && (
         <Alert role="status" className="border-success/30 bg-success/10">
@@ -223,6 +305,16 @@ export function DecisionPanel({
           </AlertTitle>
           <AlertDescription className="flex flex-col items-start gap-2 text-ink-secondary">
             Status klaim di antrean sudah diperbarui.
+            {failedUploadCount > 0 && (
+              <span className="flex items-start gap-1.5 text-warning-ink">
+                <LuTriangleAlert
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0"
+                />
+                {failedUploadCount} lampiran gagal dikirim ke VEDIKA.{' '}
+                {FRIENDLY_RETRY_MESSAGE}
+              </span>
+            )}
             <Button asChild size="sm" variant="outline">
               <Link href="/claims">Kembali ke antrean</Link>
             </Button>
@@ -270,9 +362,6 @@ export function DecisionPanel({
             <span className="text-small font-medium text-ink">
               Dokumen yang kurang
             </span>
-            <span className="text-caption text-ink-secondary">
-              Faskes melengkapinya di VEDIKA. Centang minimal satu.
-            </span>
             {DOCUMENT_TYPES.map((documentType) => (
               <label
                 key={documentType}
@@ -294,28 +383,67 @@ export function DecisionPanel({
                 )}
               </label>
             ))}
+            <div className="border-t border-warning/30 pt-2">{reasonField}</div>
+            <div className="flex flex-col gap-2 border-t border-warning/30 pt-2">
+              <span className="text-small font-medium text-ink">
+                Lampiran ke VEDIKA
+              </span>
+              {attachmentFiles.length > 0 && (
+                <ul className="flex flex-col divide-y divide-hairline rounded-md border border-hairline bg-surface">
+                  {attachmentFiles.map((file, fileIndex) => (
+                    <li
+                      key={`${file.name}-${fileIndex}`}
+                      className="flex items-center gap-2 px-3 py-1.5 text-small text-ink"
+                    >
+                      <span className="min-w-0 flex-1 break-all">
+                        {file.name}
+                      </span>
+                      <span className="shrink-0 text-caption text-ink-secondary">
+                        {formatFileSize(file.size)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-7 shrink-0 text-ink-secondary"
+                        aria-label={`Hapus ${file.name}`}
+                        onClick={() => removeAttachmentFile(fileIndex)}
+                      >
+                        <LuX aria-hidden="true" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                hidden
+                onChange={(event) => {
+                  addAttachmentFiles(Array.from(event.target.files ?? []));
+                  event.target.value = '';
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit bg-surface"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <LuFileUp aria-hidden="true" />
+                Lampirkan file
+              </Button>
+              {fileError && (
+                <p role="alert" className="text-small text-error-ink">
+                  {fileError}
+                </p>
+              )}
+            </div>
           </fieldset>
         )}
-        <Field>
-          <FieldLabel htmlFor={DECISION_REASON_INPUT_ID} className="text-ink">
-            Alasan
-          </FieldLabel>
-          <Textarea
-            id={DECISION_REASON_INPUT_ID}
-            required
-            minLength={MIN_REASON_LENGTH}
-            maxLength={MAX_REASON_LENGTH}
-            value={draft.reason}
-            onChange={(event) =>
-              onDraftChange({ ...draft, reason: event.target.value })
-            }
-            placeholder="Sebutkan bukti yang dicek atau yang perlu dilengkapi faskes."
-            className="min-h-24 border-hairline bg-surface"
-          />
-          <FieldDescription className="text-ink-secondary">
-            Minimal {MIN_REASON_LENGTH} karakter. Tercatat sebagai jejak audit.
-          </FieldDescription>
-        </Field>
+        {!isClarification && reasonField}
         {decisionMutation.isError && (
           <FieldError role="alert">
             Keputusan gagal disimpan. Periksa koneksi, lalu coba lagi.

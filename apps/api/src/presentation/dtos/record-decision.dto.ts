@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  MinLength,
 } from 'class-validator';
 import type { DocumentType } from '../../domain/claims/claim-detail';
 import type { DecisionAction } from '../../domain/decisions/decision';
@@ -32,7 +31,6 @@ export class RecordDecisionDto {
     typeof value === 'string' ? value.trim() : value,
   )
   @IsString()
-  @MinLength(10)
   @MaxLength(1000)
   reason!: string;
 
