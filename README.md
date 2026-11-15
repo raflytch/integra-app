@@ -57,15 +57,15 @@ These values are set by the team for the demo and are not yet validated by BPJS 
 
 ## Features
 
-| Page                                    | Roles                | Contents                                                                                                                                          |
-| --------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Antrean Klaim** (claim queue)         | Verifier             | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and an Analisis button that analyzes one claim  |
-| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel                   |
-| **Impor Klaim** (claim import)          | Verifier             | Upload a file of any size, preview validation, then import. Files not in `integra-claims/v1` format are reshaped by the AI after the user agrees  |
-| **Dashboard** (overview)                | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, plus the Hapus semua klaim reset            |
-| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                              |
-| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                               |
-| **Penggunaan AI** (AI usage)            | Supervisor           | LLM tokens and estimated rupiah cost of document extraction: totals, the last 30 days, and a server-paginated table per claim with the model used |
+| Page                                    | Roles                | Contents                                                                                                                                                                                             |
+| --------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Antrean Klaim** (claim queue)         | Verifier             | Server-paginated claim list (10 per page) with status chips and counts, search, filters, sorting, and an Analisis button that analyzes one claim                                                     |
+| **Kartu Klaim** (claim card)            | Verifier, supervisor | Claim summary, INTEGRA AI result, the three test panels with document quotes, diagnoses, medical record, and the decision panel with VEDIKA attachments on Minta klarifikasi and a Data VEDIKA modal |
+| **Rincian Klaim** (claim details)       | Verifier, supervisor | Server-paginated details of every claim with its simulated SEP sync status and clarification attachments, a per-claim Refresh and a Refresh semua data button                                        |
+| **Dashboard** (overview)                | Supervisor           | Statistics and charts for the queue, AI analysis results, decision status, and per-facility patterns, plus the Hapus semua klaim reset                                                               |
+| **Eskalasi** (escalations)              | Supervisor           | Claims verifiers escalated for joint review with the anti-fraud team                                                                                                                                 |
+| **Ringkasan Faskes** (facility summary) | Supervisor           | Server-paginated claim count, flags per test, and potential tariff gap per facility to prioritize facility coaching                                                                                  |
+| **Penggunaan AI** (AI usage)            | Supervisor           | LLM tokens and estimated rupiah cost of document extraction: totals, the last 30 days, and a server-paginated table per claim with the model used                                                    |
 
 Also included:
 
@@ -125,7 +125,7 @@ Key variables in `apps/api/.env`:
 ## Demo data and accounts
 
 - `npm run seed:users` creates the demo accounts `verifikator@integra.local` and `supervisor@integra.local` and prints each TOTP setup key with a QR code. The QR code is also saved as a PNG in the gitignored `apps/api/.totp-qr/`. Add `-- --rotate` for a new key. Both demo accounts sign in with the email alone, without an authenticator code; every other account always needs its code.
-- `npm run seed:demo` creates 12 fictional facilities and 300 raw claims (April to September 2026, about 1,950 clinical documents) without calling the LLM. Every claim is unanalyzed and awaits a decision. For another size, use `npm run seed:demo -- --count=800` (up to 5,000). Rerunning it resets the `KLM-DEMO-*` claims with their findings and decisions, and the `RM-DEMO-*` patients.
+- `npm run seed:demo` creates 12 fictional facilities and 300 raw claims (April to September 2026, about 1,950 clinical documents) without calling the LLM. Every claim is unanalyzed and awaits a decision. For another size, use `npm run seed:demo -- --count=800` (up to 5,000). Rerunning it resets the demo claims (SEP numbers starting `9900R`, plus legacy `KLM-DEMO-*`) with their findings and decisions, and the `RM-DEMO-*` patients.
 - `npm run seed:rules` loads only the Uji Ada evidence rules (no claims). It is idempotent, and production runs it on every deploy, so imported claims are judged without `seed:demo`.
 - `npm run seed:fixture` loads the UC-1 contract claim with its AI extraction and evidence rules from `docs/contracts`.
 - Anyone can create a verifier account from the login page: enter an email that has no account, confirm the prompt, scan the QR code with an authenticator app, and enter its 6-digit code within 5 minutes. The account is created only once the code matches.
@@ -151,7 +151,7 @@ AI analysis costs money. Nothing is analyzed until a verifier chooses it: click 
 | `npm run prisma:studio`   | Open Prisma Studio                                                       |
 | `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)                          |
 | `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR codes                 |
-| `npm run seed:demo`       | Reset `KLM-DEMO-*` claims to raw, unanalyzed data                        |
+| `npm run seed:demo`       | Reset demo claims (`9900R*` SEP numbers) to raw, unanalyzed data         |
 | `npm run seed:rules`      | Load the Uji Ada evidence rules only (no claims, no LLM)                 |
 | `npm run seed:fixture`    | Load the UC-1 contract claim                                             |
 | `npm run llm:smoke`       | Two small LLM calls to check the configuration (paid)                    |
