@@ -18,7 +18,29 @@ import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import type { DocumentType } from '../src/domain/claims/claim-detail';
+import { AnalyzeClaimUseCase } from '../src/application/analysis/analyze-claim.use-case';
+import {
+  collectSecondaryDiagnosisCodes,
+  EvaluateClaimUseCase,
+} from '../src/application/analysis/evaluate-claim.use-case';
+import { ExtractClaimDocumentsUseCase } from '../src/application/analysis/extract-claim-documents.use-case';
+import { RunConsistencyTestUseCase } from '../src/application/analysis/run-consistency-test.use-case';
+import { RunExistenceTestUseCase } from '../src/application/analysis/run-existence-test.use-case';
+import { RunSimilarityTestUseCase } from '../src/application/analysis/run-similarity-test.use-case';
+import type {
+  ClaimDetail,
+  DocumentType,
+} from '../src/domain/claims/claim-detail';
+import { Prisma } from '../src/generated/prisma/client';
+import { PrismaAnalysisRepository } from '../src/infrastructure/database/prisma/repositories/prisma-analysis.repository';
+import { PrismaClaimRepository } from '../src/infrastructure/database/prisma/repositories/prisma-claim.repository';
+import { OpenAiLlmClient } from '../src/infrastructure/llm/openai-llm.client';
+import { InacbgTariffSchedule } from '../src/infrastructure/tariffs/inacbg-tariff-schedule';
+import {
+  buildTemplateExtractions,
+  resetDemoAnalysis,
+  withTemplateExtractions,
+} from './synthetic/demo-analysis';
 import type { DecisionAction } from '../src/domain/decisions/decision';
 import { CLAIM_STATUS_BY_DECISION_ACTION } from '../src/domain/decisions/decision';
 import { DEMO_ACCOUNTS } from '../src/domain/users/demo-accounts';
@@ -49,8 +71,9 @@ const LEGACY_DEMO_CLAIM_NO_PREFIXES = ['KLM-DEMO-', '9900R'];
 const IMPORTED_CLAIM_NO_PREFIX = 'KLM-BPJS-';
 const INSERT_BATCH_SIZE = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const ATTACHED_CLARIFICATION_COUNT = 14;
-const SYNCED_CLARIFICATION_COUNT = 8;
+const ATTACHED_CLARIFICATION_COUNT = 8;
+const SYNCED_CLARIFICATION_COUNT = 5;
+const MAX_AI_ATTEMPTS_PER_SAMPLE_CLAIM = 3;
 const DOCUMENT_LABELS: Record<DocumentType, string> = {
   MEDICAL_RESUME: 'Resume medis',
   EXAM_NOTE: 'Catatan pemeriksaan',
@@ -74,7 +97,7 @@ const SAMPLE_DECISIONS: {
     missingDocumentTypes: [],
   },
   {
-    count: 20,
+    count: 10,
     profiles: ['UPCODING'],
     action: 'REQUEST_CLARIFICATION',
     reason:
@@ -124,6 +147,152 @@ function chunks<Item>(items: Item[]): Item[][] {
     (_, index) =>
       items.slice(index * INSERT_BATCH_SIZE, (index + 1) * INSERT_BATCH_SIZE),
   );
+}
+
+type SampleClaim = ReturnType<
+  typeof generateBpjsSampleClaims
+>['claims'][number];
+
+function matchesSampleDecision(
+  action: DecisionAction,
+  detail: ClaimDetail,
+): boolean {
+  const recommendation = detail.verification?.recommendation;
+  if (action === 'APPROVE') {
+    return recommendation === 'APPROVE' && detail.findings.length === 0;
+  }
+  if (action === 'REQUEST_CLARIFICATION') {
+    return (
+      recommendation === 'REQUEST_CLARIFICATION' &&
+      detail.findings.some((finding) => finding.testType === 'EXISTENCE')
+    );
+  }
+  return recommendation === action;
+}
+
+async function analyzeSampleDecisionClaims(
+  prisma: PrismaService,
+  config: ConfigService<Env, true>,
+  claims: SampleClaim[],
+  claimIdByNo: Map<string, string>,
+  logger: Logger,
+): Promise<Map<DecisionAction, SampleClaim[]>> {
+  const analysisRepository = new PrismaAnalysisRepository(prisma);
+  const claimRepository = new PrismaClaimRepository(prisma);
+  const evaluateClaim = new EvaluateClaimUseCase(
+    analysisRepository,
+    new RunExistenceTestUseCase(
+      analysisRepository,
+      new InacbgTariffSchedule(prisma),
+    ),
+    new RunConsistencyTestUseCase(analysisRepository),
+    new RunSimilarityTestUseCase(analysisRepository),
+  );
+  const analyzeClaim = new AnalyzeClaimUseCase(
+    analysisRepository,
+    new ExtractClaimDocumentsUseCase(
+      analysisRepository,
+      new OpenAiLlmClient(config),
+    ),
+    evaluateClaim,
+  );
+  const templates = buildTemplateExtractions(claims.length);
+  const templateClaimIds: string[] = [];
+  const rejectedAiClaimIds: string[] = [];
+
+  const matchesWithTemplate = async (
+    claimId: string,
+    action: DecisionAction,
+  ): Promise<boolean> => {
+    const evidence = await analysisRepository.findClaimEvidence(claimId);
+    if (!evidence) return false;
+    const readEvidence = withTemplateExtractions(evidence, templates);
+    await evaluateClaim.execute(
+      readEvidence,
+      await analysisRepository.findEvidenceRules(
+        collectSecondaryDiagnosisCodes([readEvidence]),
+      ),
+    );
+    const detail = await claimRepository.findDetailById(claimId);
+    return detail !== null && matchesSampleDecision(action, detail);
+  };
+
+  const matchesWithAi = async (
+    claim: SampleClaim,
+    action: DecisionAction,
+  ): Promise<boolean> => {
+    const claimId = claimIdByNo.get(claim.claimNo)!;
+    try {
+      const { isAnalyzed } = await analyzeClaim.execute(claimId);
+      const detail = await claimRepository.findDetailById(claimId);
+      return (
+        isAnalyzed && detail !== null && matchesSampleDecision(action, detail)
+      );
+    } catch (error) {
+      logger.warn(
+        `AI gagal menganalisis ${claim.claimNo}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return false;
+    }
+  };
+
+  const sampleClaimsByAction = new Map<DecisionAction, SampleClaim[]>();
+  for (const sample of SAMPLE_DECISIONS) {
+    const candidates = claims.filter((claim) =>
+      sample.profiles.includes(claim.profile),
+    );
+    const sampleClaims: SampleClaim[] = [];
+    const maxAiAttempts = sample.count * MAX_AI_ATTEMPTS_PER_SAMPLE_CLAIM;
+    let aiAttempts = 0;
+    let candidateIndex = 0;
+    while (
+      sampleClaims.length < sample.count &&
+      aiAttempts < maxAiAttempts &&
+      candidateIndex < candidates.length
+    ) {
+      const wave: SampleClaim[] = [];
+      while (
+        wave.length < sample.count - sampleClaims.length &&
+        candidateIndex < candidates.length
+      ) {
+        const claim = candidates[candidateIndex++];
+        const claimId = claimIdByNo.get(claim.claimNo)!;
+        if (await matchesWithTemplate(claimId, sample.action)) {
+          wave.push(claim);
+        } else {
+          templateClaimIds.push(claimId);
+        }
+      }
+      aiAttempts += wave.length;
+      const results = await Promise.all(
+        wave.map((claim) => matchesWithAi(claim, sample.action)),
+      );
+      wave.forEach((claim, index) => {
+        if (results[index]) sampleClaims.push(claim);
+        else rejectedAiClaimIds.push(claimIdByNo.get(claim.claimNo)!);
+      });
+    }
+    if (sampleClaims.length < sample.count) {
+      logger.warn(
+        `Hanya ${sampleClaims.length} dari ${sample.count} klaim cocok untuk keputusan ${sample.action} setelah dibaca AI.`,
+      );
+    }
+    sampleClaimsByAction.set(sample.action, sampleClaims);
+  }
+
+  await resetDemoAnalysis(prisma, [...templateClaimIds, ...rejectedAiClaimIds]);
+  await prisma.clinicalDocument.updateMany({
+    where: { claimId: { in: rejectedAiClaimIds } },
+    data: {
+      extracted: Prisma.DbNull,
+      extractedModel: null,
+      extractionPromptVersion: null,
+      extractionInputTokens: null,
+      extractionOutputTokens: null,
+      extractedAt: null,
+    },
+  });
+  return sampleClaimsByAction;
 }
 
 async function removeImportedClaims(
@@ -179,7 +348,8 @@ async function main(): Promise<void> {
     logger: ['log', 'error', 'warn'],
   });
   // tsx emits no decorator metadata, so dependencies are wired by hand.
-  const prisma = new PrismaService(app.get(ConfigService<Env, true>));
+  const config = app.get(ConfigService<Env, true>);
+  const prisma = new PrismaService(config);
 
   try {
     await removeImportedClaims(prisma, logger);
@@ -215,7 +385,7 @@ async function main(): Promise<void> {
     }
     await upsertEvidenceRules(prisma, EVIDENCE_RULES);
 
-    await prisma.$transaction(
+    const claimIdByNo = await prisma.$transaction(
       async (transaction) => {
         // Decisions are an append-only audit trail with a Restrict FK, so the
         // demo rows are removed explicitly before their claims.
@@ -297,7 +467,27 @@ async function main(): Promise<void> {
             ),
           });
         }
+        return claimIdByNo;
+      },
+      { timeout: 600_000 },
+    );
 
+    const hasDemoVerifier =
+      (await prisma.user.count({
+        where: { email: DEMO_ACCOUNTS[0].email },
+      })) > 0;
+    const sampleClaimsByAction = hasDemoVerifier
+      ? await analyzeSampleDecisionClaims(
+          prisma,
+          config,
+          claims,
+          claimIdByNo,
+          logger,
+        )
+      : new Map<DecisionAction, SampleClaim[]>();
+
+    await prisma.$transaction(
+      async (transaction) => {
         const demoVerifier = await transaction.user.findUnique({
           where: { email: DEMO_ACCOUNTS[0].email },
           select: { id: true },
@@ -309,10 +499,7 @@ async function main(): Promise<void> {
           return;
         }
         for (const sample of SAMPLE_DECISIONS) {
-          const sampleClaims = claims
-            .filter((claim) => sample.profiles.includes(claim.profile))
-            .slice(0, sample.count);
-          for (const claim of sampleClaims) {
+          for (const claim of sampleClaimsByAction.get(sample.action) ?? []) {
             const claimId = claimIdByNo.get(claim.claimNo)!;
             await transaction.decision.create({
               data: {
@@ -338,11 +525,9 @@ async function main(): Promise<void> {
         const clarificationSample = SAMPLE_DECISIONS.find(
           (sample) => sample.action === 'REQUEST_CLARIFICATION',
         )!;
-        const clarifiedClaims = claims
-          .filter((claim) =>
-            clarificationSample.profiles.includes(claim.profile),
-          )
-          .slice(0, ATTACHED_CLARIFICATION_COUNT);
+        const clarifiedClaims = (
+          sampleClaimsByAction.get('REQUEST_CLARIFICATION') ?? []
+        ).slice(0, ATTACHED_CLARIFICATION_COUNT);
         const syncedAttachmentClaimNos = new Set<string>();
         for (const [index, claim] of clarifiedClaims.entries()) {
           const claimId = claimIdByNo.get(claim.claimNo)!;
@@ -382,12 +567,9 @@ async function main(): Promise<void> {
         }
 
         const approvedClaimNos = new Set(
-          claims
-            .filter((claim) =>
-              SAMPLE_DECISIONS[0].profiles.includes(claim.profile),
-            )
-            .slice(0, SAMPLE_DECISIONS[0].count)
-            .map((claim) => claim.claimNo),
+          (sampleClaimsByAction.get('APPROVE') ?? []).map(
+            (claim) => claim.claimNo,
+          ),
         );
         const facilityNameByCode = new Map(
           facilities.map((facility) => [facility.code, facility.name]),
