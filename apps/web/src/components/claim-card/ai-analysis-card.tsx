@@ -30,6 +30,8 @@ import {
 } from './linked-claim-text';
 import { findSimilarityCoverage } from './test-overviews';
 
+const COPIED_DOCUMENT_SIMILARITY = 0.9;
+
 interface TestSummary {
   testType: TestType;
   icon: IconType;
@@ -69,7 +71,6 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
   const findingsOf = (testType: TestType) =>
     claim.findings.filter((finding) => finding.testType === testType);
   const similarityFindings = findingsOf('SIMILARITY');
-  const isEscalated = similarityFindings.length > 0;
   const diagnosisStatuses = claim.diagnoses.flatMap((diagnosis) =>
     diagnosis.evidenceStatus
       ? [{ name: diagnosis.name, status: diagnosis.evidenceStatus }]
@@ -86,30 +87,34 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
     0,
     ...similarityFindings.map((finding) => finding.similarity ?? 0),
   );
+  const isEscalated = highestSimilarity >= COPIED_DOCUMENT_SIMILARITY;
 
   return [
     {
       testType: 'SIMILARITY',
       icon: LuCopy,
-      isFlagged: isEscalated,
+      isFlagged: similarityFindings.length > 0,
       isUnassessed: false,
       isSupporting: false,
-      sentence: isEscalated ? (
-        <>
-          Mirip sampai {formatPercent(highestSimilarity)} dengan{' '}
-          {relatedClaimsOf(similarityFindings).map((relatedClaim, index) => (
-            <span key={relatedClaim.id}>
-              {index > 0 && ', '}
-              <ClaimLink claim={relatedClaim} />
-            </span>
-          ))}
-          , di atas ambang kemiripan.
-        </>
-      ) : coverage ? (
-        `Paling mirip ${formatPercent(coverage.max)}, di bawah ambang ${formatPercent(coverage.threshold)} untuk penyakit ini.`
-      ) : (
-        'Ambang kemiripan belum dihitung untuk klaim ini. Klik Analisis ulang di kartu ini (tanpa biaya token).'
-      ),
+      sentence:
+        similarityFindings.length > 0 ? (
+          <>
+            Mirip sampai {formatPercent(highestSimilarity)} dengan{' '}
+            {relatedClaimsOf(similarityFindings).map((relatedClaim, index) => (
+              <span key={relatedClaim.id}>
+                {index > 0 && ', '}
+                <ClaimLink claim={relatedClaim} />
+              </span>
+            ))}
+            {isEscalated
+              ? `, nyaris salinan utuh (≥${formatPercent(COPIED_DOCUMENT_SIMILARITY)}).`
+              : ', di atas ambang kemiripan. Perlu dicek, belum tentu salinan.'}
+          </>
+        ) : coverage ? (
+          `Paling mirip ${formatPercent(coverage.max)}, di bawah ambang ${formatPercent(coverage.threshold)} untuk penyakit ini.`
+        ) : (
+          'Ambang kemiripan belum dihitung untuk klaim ini. Klik Analisis ulang di kartu ini (tanpa biaya token).'
+        ),
     },
     {
       testType: 'EXISTENCE',
@@ -232,10 +237,10 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
               />
             </p>
             <p className="text-caption text-ink-secondary">
-              Salinan: Eskalasi. Bukti kurang atau ada temuan: Minta
-              Klarifikasi. Semua lengkap: Setuju. Ada diagnosis sekunder tanpa
-              aturan PNPK: belum bisa dinilai. (Peraturan BPJS 7/2018, Kepmenkes
-              129/2008, Permenkes 16/2019)
+              Salinan (mirip ≥90%): Eskalasi. Bukti kurang atau ada temuan:
+              Minta Klarifikasi. Semua lengkap: Setuju. Ada diagnosis sekunder
+              tanpa aturan PNPK: belum bisa dinilai. (Peraturan BPJS 7/2018,
+              Kepmenkes 129/2008, Permenkes 16/2019)
             </p>
           </div>
           <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">

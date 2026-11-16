@@ -3,6 +3,7 @@ import type { TestType } from './claim-detail';
 
 // Kepmenkes 129/2008 SPM RS, indikator Rekam Medik 1: kelengkapan = jumlah yang lengkap / jumlah yang dicek, standar 100%.
 export const COMPLETE_EVIDENCE_RATE = 1;
+export const COPIED_DOCUMENT_SIMILARITY = 0.9;
 
 export interface ClaimVerification {
   evidenceRate: number;
@@ -59,7 +60,11 @@ export function assessClaim(
 
   // Permenkes 16/2019 Lampiran Bab II: menyalin rekam medis pasien lain (cloning) adalah kecurangan, diteruskan untuk ditindaklanjuti.
   const copiedDocument = strongestOf(
-    findings.filter((finding) => finding.testType === 'SIMILARITY'),
+    findings.filter(
+      (finding) =>
+        finding.testType === 'SIMILARITY' &&
+        finding.strength >= COPIED_DOCUMENT_SIMILARITY,
+    ),
   );
   if (copiedDocument) {
     return {
