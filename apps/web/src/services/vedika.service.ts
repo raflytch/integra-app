@@ -62,6 +62,17 @@ export async function sendVedikaAttachment(
   return response.data;
 }
 
+export async function fetchVedikaAttachmentFile(
+  claimId: string,
+  attachmentId: string,
+): Promise<ArrayBuffer> {
+  const response = await apiClient.get<ArrayBuffer>(
+    `/claims/${claimId}/vedika/attachments/${attachmentId}/file`,
+    { responseType: 'arraybuffer', timeout: 30000 },
+  );
+  return response.data;
+}
+
 export async function refreshAllVedika(): Promise<VedikaBulkRefreshResult> {
   const response =
     await apiClient.post<VedikaBulkRefreshResult>('/vedika/refresh');
