@@ -109,10 +109,11 @@ jobs:
       - name: Pull images and restart stack
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
         run: |
-          ssh vps bash -s -- "$DEPLOY_PATH" "$GITHUB_SHA" "$GITHUB_ACTOR" "$REGISTRY_TOKEN" <<'EOF'
+          ssh vps bash -s -- "$DEPLOY_PATH" "$GITHUB_SHA" "$GITHUB_ACTOR" "$REGISTRY_TOKEN" "$LLM_MODEL" <<'EOF'
           set -euo pipefail
-          deploy_path="$1" image_tag="$2" registry_user="$3" registry_token="$4"
+          deploy_path="$1" image_tag="$2" registry_user="$3" registry_token="$4" llm_model="${5:-}"
           cd "$deploy_path"
           printf '%s' "$registry_token" | docker login ghcr.io -u "$registry_user" --password-stdin
           on_exit() {
@@ -129,6 +130,13 @@ jobs:
             sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$image_tag/" .env
           else
             printf '\nIMAGE_TAG=%s\n' "$image_tag" >> .env
+          fi
+          if [ -n "$llm_model" ]; then
+            if grep -q '^LLM_MODEL=' .env; then
+              sed -i "s|^LLM_MODEL=.*|LLM_MODEL=$llm_model|" .env
+            else
+              printf '\nLLM_MODEL=%s\n' "$llm_model" >> .env
+            fi
           fi
           docker compose up -d --remove-orphans
           echo "Waiting for the API health check..."
