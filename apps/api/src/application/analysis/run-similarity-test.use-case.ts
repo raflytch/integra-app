@@ -10,6 +10,9 @@ import {
 
 const SIMILARITY_DECIMALS = 2;
 const MAX_SIMILAR_CLAIMS = 5;
+const THRESHOLD_CACHE_MS = 5 * 60 * 1000;
+
+type AnomalyThreshold = ReturnType<typeof findSimilarityAnomalyThreshold>;
 
 export interface SimilarityCoverage {
   comparedClaimCount: number;
@@ -28,15 +31,36 @@ function roundSimilarity(similarity: number): number {
  * `analyzedAt` stay consistent.
  */
 export class RunSimilarityTestUseCase {
+  private cachedThreshold: {
+    value: Promise<AnomalyThreshold>;
+    computedAt: number;
+  } | null = null;
+
   constructor(private readonly analysisRepository: AnalysisRepository) {}
 
+  private findAnomalyThreshold(): Promise<AnomalyThreshold> {
+    const now = Date.now();
+    if (
+      !this.cachedThreshold ||
+      now - this.cachedThreshold.computedAt > THRESHOLD_CACHE_MS
+    ) {
+      const value = this.analysisRepository
+        .findSimilarityGroups()
+        .then(findSimilarityAnomalyThreshold);
+      value.catch(() => {
+        this.cachedThreshold = null;
+      });
+      this.cachedThreshold = { value, computedAt: now };
+    }
+    return this.cachedThreshold.value;
+  }
+
   async execute(claim: ClaimEvidence): Promise<SimilarityCoverage> {
-    const [candidates, groups] = await Promise.all([
+    const [candidates, threshold] = await Promise.all([
       this.analysisRepository.findSimilarityCandidates(claim),
-      this.analysisRepository.findSimilarityGroups(),
+      this.findAnomalyThreshold(),
     ]);
     const matches = scoreSimilarClaims(claim, candidates);
-    const threshold = findSimilarityAnomalyThreshold(groups);
     const similarityFindings: NewFinding[] = matches
       .filter(
         (match) => threshold && match.similarity > threshold.anomalyThreshold,
