@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/api-client';
 
-export const ANALYSIS_TIMEOUT_MS = 60 * 1000;
+export const ANALYSIS_TIMEOUT_MS = 30 * 1000;
 
 export function isAnalysisTimeoutError(error: unknown): boolean {
   return isAxiosError(error) && error.code === 'ECONNABORTED';
