@@ -11,7 +11,7 @@ import { AnalysisRepository } from './domain/analysis/analysis.repository';
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module';
 import { PrismaAnalysisRepository } from './infrastructure/database/prisma/repositories/prisma-analysis.repository';
 import { LlmModule } from './infrastructure/llm/llm.module';
-import { SyntheticTariffSchedule } from './infrastructure/tariffs/synthetic-tariff-schedule';
+import { InacbgTariffSchedule } from './infrastructure/tariffs/inacbg-tariff-schedule';
 import { AnalysisController } from './presentation/controllers/analysis.controller';
 
 @Module({
@@ -19,7 +19,7 @@ import { AnalysisController } from './presentation/controllers/analysis.controll
   controllers: [AnalysisController],
   providers: [
     { provide: AnalysisRepository, useClass: PrismaAnalysisRepository },
-    { provide: TariffSchedule, useClass: SyntheticTariffSchedule },
+    { provide: TariffSchedule, useClass: InacbgTariffSchedule },
     {
       provide: RunExistenceTestUseCase,
       useFactory: (

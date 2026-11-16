@@ -337,6 +337,22 @@ model EvidenceRule {
   @@map("evidence_rules")
 }
 
+/// Inpatient INA-CBG tariff, one row per table cell of Permenkes 3/2023 Lampiran III.
+model InacbgTariff {
+  id         String  @id @default(uuid(7)) @db.Uuid
+  /// Regional 1 to 5; 0 for a national referral hospital with its own table.
+  regional   Int     @db.SmallInt
+  hospital   String
+  inacbgCode String  @map("inacbg_code")
+  /// Inpatient care class 1 to 3.
+  careClass  Int     @map("care_class") @db.SmallInt
+  amount     Decimal @db.Decimal(14, 2)
+
+  @@unique([regional, hospital, inacbgCode, careClass])
+  @@index([inacbgCode, amount])
+  @@map("inacbg_tariffs")
+}
+
 // ---------------------------------------------------------------------------
 // Analysis output
 // ---------------------------------------------------------------------------

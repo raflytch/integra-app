@@ -18,6 +18,7 @@
     "seed:fixture": "tsx scripts/load-contract-fixture.ts",
     "seed:demo": "tsx scripts/seed-demo-claims.ts",
     "seed:rules": "tsx scripts/seed-evidence-rules.ts",
+    "seed:tariffs": "tsx scripts/seed-inacbg-tariffs.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate": "prisma migrate dev",
