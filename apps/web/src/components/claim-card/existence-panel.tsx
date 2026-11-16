@@ -10,7 +10,7 @@ import type {
   ClaimFinding,
   FindingCitation,
 } from '@/types/claim.types';
-import { FindingCitationItem } from './finding-citation';
+import { FindingCitationItem, FindingNumber } from './finding-citation';
 import { TestPanelShell } from './test-panel';
 
 type MissingEvidence = Extract<FindingCitation, { kind: 'MISSING_EVIDENCE' }>;
@@ -84,9 +84,9 @@ function UnsupportedDiagnosis({
             Diagnosis sekunder
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-body font-medium text-ink">
+            <mark className="rounded-sm bg-warning/20 px-0.5 text-body font-medium text-ink">
               {diagnosis?.name ?? 'Diagnosis tidak dikenal'}
-            </span>
+            </mark>
             {diagnosis && (
               <span className="font-mono text-caption text-ink-secondary">
                 {diagnosis.icd10Code}
@@ -282,23 +282,26 @@ export function ExistencePanel({
       isUnassessed={isUnassessed}
       overview={overview}
     >
-      <ul className="divide-y divide-hairline">
+      <ol className="divide-y divide-hairline">
         {findings.map((finding, findingIndex) => (
-          <li key={finding.id} className="px-6 py-5">
-            <UnsupportedDiagnosis
-              finding={finding}
-              diagnosis={
-                finding.diagnosisId
-                  ? diagnosesById.get(finding.diagnosisId)
-                  : undefined
-              }
-              tariffBeforeCorrection={tariffsBeforeCorrection[findingIndex]}
-              documentsById={documentsById}
-              onRequestClarification={onRequestClarification}
-            />
+          <li key={finding.id} className="flex gap-3 px-6 py-5">
+            <FindingNumber number={findingIndex + 1} />
+            <div className="min-w-0 flex-1">
+              <UnsupportedDiagnosis
+                finding={finding}
+                diagnosis={
+                  finding.diagnosisId
+                    ? diagnosesById.get(finding.diagnosisId)
+                    : undefined
+                }
+                tariffBeforeCorrection={tariffsBeforeCorrection[findingIndex]}
+                documentsById={documentsById}
+                onRequestClarification={onRequestClarification}
+              />
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
     </TestPanelShell>
   );
 }

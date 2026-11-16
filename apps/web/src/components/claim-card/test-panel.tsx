@@ -30,7 +30,7 @@ import type {
   ClaimFinding,
   TestType,
 } from '@/types/claim.types';
-import { FindingCitationItem } from './finding-citation';
+import { FindingCitationItem, FindingNumber } from './finding-citation';
 import { ClaimLink, LinkedClaimText } from './linked-claim-text';
 
 const TEST_TYPE_ICONS: Record<TestType, IconType> = {
@@ -74,13 +74,23 @@ function FindingItem({
     ({ citations }) => citations.length > 0,
   );
 
+  const summary = (
+    <LinkedClaimText
+      text={finding.summary}
+      relatedClaims={finding.relatedClaim ? [finding.relatedClaim] : []}
+    />
+  );
+
   return (
     <article className="flex flex-col gap-3">
       <p className="text-body text-ink">
-        <LinkedClaimText
-          text={finding.summary}
-          relatedClaims={finding.relatedClaim ? [finding.relatedClaim] : []}
-        />
+        {finding.testType === 'SIMILARITY' ? (
+          summary
+        ) : (
+          <mark className="rounded-sm bg-warning/20 px-0.5 text-ink">
+            {summary}
+          </mark>
+        )}
       </p>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-secondary">
         <span>Kekuatan sinyal {formatPercent(finding.strength)}</span>
@@ -258,15 +268,20 @@ export function TestPanelShell({
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          {overview && (
-            <div className="border-b border-hairline px-6 py-4">{overview}</div>
-          )}
           {hasFindings ? (
             children
           ) : (
             <p className="px-6 py-4 text-small text-ink-secondary">
               {testDetails.emptyMessage}
             </p>
+          )}
+          {overview && (
+            <div className="flex flex-col gap-3 border-t border-hairline px-6 py-4">
+              <h3 className="text-caption font-medium text-ink-secondary">
+                Penjelasan uji
+              </h3>
+              {overview}
+            </div>
           )}
         </CollapsibleContent>
       </section>
@@ -291,13 +306,16 @@ export function TestPanel({
       findingCount={findings.length}
       overview={overview}
     >
-      <ul className="divide-y divide-hairline">
-        {findings.map((finding) => (
-          <li key={finding.id} className="px-6 py-4">
-            <FindingItem finding={finding} documentsById={documentsById} />
+      <ol className="divide-y divide-hairline">
+        {findings.map((finding, findingIndex) => (
+          <li key={finding.id} className="flex gap-3 px-6 py-4">
+            <FindingNumber number={findingIndex + 1} />
+            <div className="min-w-0 flex-1">
+              <FindingItem finding={finding} documentsById={documentsById} />
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
     </TestPanelShell>
   );
 }
