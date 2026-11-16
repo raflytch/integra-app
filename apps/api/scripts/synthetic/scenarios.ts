@@ -409,6 +409,12 @@ const antihypertensiveRule = (icd10Code: string): EvidenceRule => ({
   expected: 'obat antihipertensi',
   guidelineRef: `${HYPERTENSION_GUIDELINE_REF} hlm. 35-36 Tabel 19: obat antihipertensi oral, termasuk diuretik loop`,
 });
+const TYPHOID_GUIDELINE_REF =
+  'PNPK Tata Laksana Demam Tifoid pada Dewasa (KMK HK.01.07/MENKES/875/2026)';
+const TYPHOID_RULE_SCOPE = {
+  disease: 'Demam tifoid',
+  primaryIcd10Prefixes: [],
+};
 const INTENSIVE_CARE_GUIDELINE_REF =
   'PNPK Tata Laksana Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)';
 // R57.0 (cardiogenic) is left out: fluid resuscitation is not its expected care.
@@ -507,4 +513,32 @@ export const EVIDENCE_RULES: readonly EvidenceRule[] = [
   antihypertensiveRule('I11.0'),
   hypertensionRule('I11.9'),
   antihypertensiveRule('I11.9'),
+  {
+    icd10Code: 'A01',
+    ...TYPHOID_RULE_SCOPE,
+    evidenceType: 'FINDING',
+    expected: 'demam',
+    guidelineRef: `${TYPHOID_GUIDELINE_REF} hlm. 10: demam 5 hari atau lebih`,
+  },
+  {
+    icd10Code: 'A01',
+    ...TYPHOID_RULE_SCOPE,
+    evidenceType: 'FINDING',
+    expected: 'gangguan saluran cerna',
+    guidelineRef: `${TYPHOID_GUIDELINE_REF} hlm. 10-11: mual, sakit perut, atau gangguan buang air besar`,
+  },
+  {
+    icd10Code: 'A01',
+    ...TYPHOID_RULE_SCOPE,
+    evidenceType: 'PROCEDURE',
+    expected: 'pemeriksaan tifoid',
+    guidelineRef: `${TYPHOID_GUIDELINE_REF} hlm. 11: kultur S. Typhi, atau serologi Widal serial, EIA, IgM, atau rapid antigen`,
+  },
+  {
+    icd10Code: 'A01',
+    ...TYPHOID_RULE_SCOPE,
+    evidenceType: 'MEDICATION',
+    expected: 'antibiotik tifoid',
+    guidelineRef: `${TYPHOID_GUIDELINE_REF} hlm. 26-27, 36-38: antibiotik tifoid`,
+  },
 ];

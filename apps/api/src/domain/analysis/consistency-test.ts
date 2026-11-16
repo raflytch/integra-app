@@ -12,7 +12,7 @@ import {
   parseItemTime,
   toStayPeriod,
 } from './clinical-time';
-import { toCanonicalFinding } from './clinical-vocabulary';
+import { toCanonicalFinding, toCanonicalTerm } from './clinical-vocabulary';
 
 /** Present findings that require at least one of these medications or procedures. */
 export const FINDING_REQUIRED_ACTIONS: Readonly<
@@ -195,6 +195,7 @@ function findFeversWithNormalTemperature(
     const normalTemperature = (document.extracted?.vitalSigns ?? []).find(
       (vital) => {
         const isTemperature =
+          toCanonicalTerm(vital.name).includes('suhu') ||
           vital.name.toLowerCase().includes('suhu') ||
           /°\s*c/i.test(vital.value);
         if (!isTemperature) return false;

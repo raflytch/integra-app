@@ -1,5 +1,6 @@
 import type { EvidenceType } from '../claims/claim-detail';
 import type { ClaimEvidenceDocument } from './claim-evidence';
+import { toCanonicalTerm } from './clinical-vocabulary';
 
 export interface ClinicalLimit {
   vitalSignNames: readonly string[];
@@ -144,16 +145,22 @@ export const EVIDENCE_SIGN_GROUPS: Readonly<Record<string, EvidenceSignGroup>> =
         'parecoxib',
         'celecoxib',
         'kodein',
+        'codeine',
         'codein',
         'tramadol',
         'morfin',
+        'morphine',
         'fentanyl',
         'petidin',
         'pethidin',
         'hidromorfon',
+        'hydromorphone',
         'oksikodon',
+        'oxycodone',
         'manipulasi',
         'latihan',
+        'manipulation',
+        'exercise',
       ],
       limits: [],
     },
@@ -225,6 +232,7 @@ export const EVIDENCE_SIGN_GROUPS: Readonly<Record<string, EvidenceSignGroup>> =
         'triamteren',
         'eplerenon',
         'spironolakton',
+        'spironolactone',
         'atenolol',
         'bisoprolol',
         'metoprolol',
@@ -245,6 +253,61 @@ export const EVIDENCE_SIGN_GROUPS: Readonly<Record<string, EvidenceSignGroup>> =
       ],
       limits: [],
     },
+    // KMK HK.01.07/MENKES/875/2026 PNPK Demam Tifoid Dewasa hlm. 10-11: demam disertai gangguan saluran cerna.
+    'gangguan saluran cerna': {
+      evidenceTypes: ['FINDING'],
+      terms: [
+        'mual',
+        'muntah',
+        'nyeri perut',
+        'sakit perut',
+        'diare',
+        'konstipasi',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/875/2026 PNPK Demam Tifoid Dewasa hlm. 11: kasus terkonfirmasi dengan kultur atau serologi.
+    'pemeriksaan tifoid': {
+      evidenceTypes: ['FINDING', 'PROCEDURE'],
+      terms: [
+        'kultur',
+        'culture',
+        'widal',
+        'tubex',
+        'eia',
+        'igm',
+        'rapid antigen',
+        'salmonella',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/875/2026 PNPK Demam Tifoid Dewasa hlm. 26-27, 36-38: antibiotik tifoid.
+    'antibiotik tifoid': {
+      evidenceTypes: ['MEDICATION'],
+      terms: [
+        'kloramfenikol',
+        'chloramphenicol',
+        'tiamfenikol',
+        'thiamphenicol',
+        'ampisilin',
+        'ampicillin',
+        'amoksisilin',
+        'amoxicillin',
+        'kotrimoksazol',
+        'cotrimoxazole',
+        'sefiksim',
+        'cefixime',
+        'seftriakson',
+        'ceftriaxone',
+        'siprofloksasin',
+        'ciprofloxacin',
+        'levofloksasin',
+        'levofloxacin',
+        'azitromisin',
+        'azithromycin',
+      ],
+      limits: [],
+    },
   };
 
 export function measureVitalSign(
@@ -253,8 +316,15 @@ export function measureVitalSign(
 ): VitalMeasurement[] {
   return documents.flatMap(({ id, extracted }) =>
     (extracted?.vitalSigns ?? []).flatMap((vital) => {
-      const vitalName = vital.name.toLowerCase().trim();
-      if (!limit.vitalSignNames.some((name) => vitalName.includes(name))) {
+      const vitalNames = [
+        vital.name.toLowerCase().trim(),
+        toCanonicalTerm(vital.name),
+      ];
+      if (
+        !limit.vitalSignNames.some((name) =>
+          vitalNames.some((vitalName) => vitalName.includes(name)),
+        )
+      ) {
         return [];
       }
       const value = limit.measure(vital.value);

@@ -1,4 +1,4 @@
-import { TERM_SYNONYMS } from './clinical-vocabulary';
+import { toCanonicalTerm } from './clinical-vocabulary';
 
 export interface ExtractedDiagnosis {
   name: string;
@@ -47,11 +47,6 @@ export interface ExtractionSource {
   promptVersion: string;
   inputTokens: number;
   outputTokens: number;
-}
-
-function canonicalizeTerm(name: string): string {
-  const normalizedName = name.toLowerCase().replace(/\s+/g, ' ').trim();
-  return TERM_SYNONYMS[normalizedName] ?? normalizedName;
 }
 
 /**
@@ -108,7 +103,7 @@ export function groundExtraction(
   ): Item[] =>
     grounded(items).map((item) => ({
       ...item,
-      name: canonicalizeTerm(item.name),
+      name: toCanonicalTerm(item.name),
     }));
 
   return {
