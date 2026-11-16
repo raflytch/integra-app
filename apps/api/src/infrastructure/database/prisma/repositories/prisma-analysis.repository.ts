@@ -18,7 +18,6 @@ import type {
   TestType,
 } from '../../../../domain/claims/claim-detail';
 import { Prisma } from '../../../../generated/prisma/client';
-import { RULE_READER_SOURCE } from '../../../../domain/analysis/rule-reader';
 import { PrismaService } from '../prisma.service';
 import { parseClinicalExtraction } from './clinical-extraction.parser';
 
@@ -81,13 +80,7 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
 
   findDocumentsToExtract(claimId: string): Promise<DocumentToExtract[]> {
     return this.prisma.clinicalDocument.findMany({
-      where: {
-        claimId,
-        OR: [
-          { extracted: { equals: Prisma.DbNull } },
-          { extractedModel: RULE_READER_SOURCE.model },
-        ],
-      },
+      where: { claimId, extracted: { equals: Prisma.DbNull } },
       orderBy: { recordedAt: 'asc' },
       select: { id: true, type: true, content: true },
     });

@@ -83,7 +83,6 @@ export interface ClaimDocument {
   recordedAt: Date;
   content: string;
   isExtracted: boolean;
-  isReadByRules: boolean;
 }
 
 export interface RelatedClaimSummary {

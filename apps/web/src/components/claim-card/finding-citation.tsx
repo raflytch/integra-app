@@ -15,6 +15,17 @@ function DocumentSource({ document }: { document: ClaimDocument | undefined }) {
   );
 }
 
+export function FindingNumber({ number }: { number: number }) {
+  return (
+    <span
+      aria-label={`Tanda ${number}`}
+      className="inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-warning/30 bg-warning/10 text-caption font-semibold text-warning-ink tabular-nums"
+    >
+      {number}
+    </span>
+  );
+}
+
 export function FindingCitationItem({
   citation,
   documentsById,

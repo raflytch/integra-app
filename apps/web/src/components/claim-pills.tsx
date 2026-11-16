@@ -9,7 +9,6 @@ import {
   LuFlag,
   LuGauge,
   LuGitCompareArrows,
-  LuListChecks,
   LuMessageSquareText,
   LuRepeat,
   LuShieldAlert,
@@ -248,14 +247,6 @@ export function AiAdjustedPill() {
   return (
     <Pill tone="inverse" icon={LuSparkles}>
       Disesuaikan AI
-    </Pill>
-  );
-}
-
-export function ReadByRulesPill() {
-  return (
-    <Pill tone="warning" icon={LuListChecks}>
-      Dibaca aturan
     </Pill>
   );
 }

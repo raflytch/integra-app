@@ -68,7 +68,6 @@ export interface ClaimDocument {
   recordedAt: string;
   content: string;
   isExtracted: boolean;
-  isReadByRules: boolean;
 }
 
 export interface ClaimProcedure {
@@ -179,7 +178,6 @@ export interface ClaimQueueItem {
   findingCounts: Record<TestType, number>;
   documentCount: number;
   extractedDocumentCount: number;
-  ruleReadDocumentCount: number;
   hasSimilarPattern: boolean;
 }
 

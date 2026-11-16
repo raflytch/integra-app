@@ -12,7 +12,6 @@ import { DomainError } from '../../domain/shared/domain-error';
  * here; unlisted codes are treated as a generic business rule violation.
  */
 const STATUS_BY_CODE: Readonly<Record<string, HttpStatus>> = {
-  BULK_ANALYSIS_RUNNING: HttpStatus.CONFLICT,
   CLAIM_NOT_FOUND: HttpStatus.NOT_FOUND,
   EMAIL_ALREADY_REGISTERED: HttpStatus.CONFLICT,
   ENROLLMENT_EXPIRED: HttpStatus.GONE,
