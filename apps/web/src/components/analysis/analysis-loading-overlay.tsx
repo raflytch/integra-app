@@ -141,7 +141,7 @@ function progressPercent(claimRuns: ClaimRun[], now: number): number {
 }
 
 const FAILURE_DETAILS: Record<FailureReason, string> = {
-  TIMED_OUT: 'Lebih dari 1 menit, dihentikan',
+  TIMED_OUT: 'Lebih dari 30 detik, dihentikan',
   AI_UNAVAILABLE: 'AI tidak dapat dihubungi',
   NOT_FOUND: 'Klaim sudah dihapus, dilewati',
 };
@@ -598,7 +598,7 @@ function AnalysisRunStatus({
         isWindingDown={isWindingDown}
       />
       <p className="w-full max-w-lg text-center text-caption text-ink-secondary">
-        Biarkan halaman ini tetap terbuka. Jika satu klaim lebih dari 1 menit,
+        Biarkan halaman ini tetap terbuka. Jika satu klaim lebih dari 30 detik,
         analisis dihentikan otomatis dan Anda bisa mencobanya lagi.
       </p>
       <Button

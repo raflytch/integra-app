@@ -67,7 +67,7 @@ function describeConfirmation(targets: AnalysisTarget[]): string {
 function describeRun(summary: AnalysisRunSummary): string {
   const analyzedSentence = `AI menganalisis ${formatCount(summary.analyzedClaimCount)} dari ${formatCount(summary.requestedClaimCount)} klaim yang dipilih.`;
   if (summary.stopReason === 'TIMED_OUT') {
-    return `${analyzedSentence} Analisis memakan waktu lebih dari 1 menit, jadi kami hentikan dan ${formatCount(summary.unfinishedClaimCount)} klaim belum selesai. Data Anda aman. Silakan coba lagi beberapa saat lagi. Jika masih gagal, hubungi tim IT.`;
+    return `${analyzedSentence} Analisis memakan waktu lebih dari 30 detik, jadi kami hentikan dan ${formatCount(summary.unfinishedClaimCount)} klaim belum selesai. Data Anda aman. Silakan coba lagi beberapa saat lagi. Jika masih gagal, hubungi tim IT.`;
   }
   if (summary.stopReason === 'AI_UNAVAILABLE') {
     return `${analyzedSentence} Maaf, AI sedang tidak dapat dihubungi, jadi ${formatCount(summary.unfinishedClaimCount)} klaim belum dianalisis. Data Anda aman. Silakan coba lagi beberapa saat lagi. Jika masih gagal, hubungi tim IT.`;
