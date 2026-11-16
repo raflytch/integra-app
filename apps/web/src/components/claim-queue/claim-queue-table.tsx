@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LuSparkles } from 'react-icons/lu';
 import {
+  BulkAnalysisDialog,
+  BulkAnalysisProgressCard,
+  BulkSelectionBar,
+  useBulkAnalysis,
+} from '@/components/analysis/bulk-analysis';
+import {
   type AnalysisTarget,
   useClaimAnalysisRunner,
 } from '@/components/analysis/use-claim-analysis-runner';
@@ -17,6 +23,7 @@ import {
   NeedsClarificationPill,
   NotAnalyzedPill,
   PriorityPill,
+  ReadByRulesPill,
   SeverityPill,
   SimilarPatternPill,
   TestSignalPill,
@@ -36,6 +43,7 @@ import {
 } from '@/components/data-table/table-toolbar';
 import { LoadError } from '@/components/load-error';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -55,7 +63,10 @@ import {
   formatRupiah,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { fetchClaimQueuePage } from '@/services/claim.service';
+import {
+  fetchClaimQueuePage,
+  fetchQueueClaimIds,
+} from '@/services/claim.service';
 import { fetchFacilityOptions } from '@/services/facility.service';
 import type {
   CareType,
@@ -67,7 +78,7 @@ import type {
 import { ClaimQueueEmpty, ClaimQueueSkeleton } from './claim-queue-states';
 
 const CLAIMS_PER_PAGE = 10;
-const COLUMN_COUNT = 8;
+const COLUMN_COUNT = 9;
 const ALL = 'ALL';
 
 type CareTypeFilter = typeof ALL | CareType;
@@ -229,32 +240,36 @@ function AnalysisAction({
   isAnalysisRunning: boolean;
   onAnalyze: () => void;
 }) {
-  if (claim.analyzedAt && toAnalysisTarget(claim).unreadDocumentCount === 0) {
+  if (!claim.analyzedAt) {
     return (
-      <div className="flex flex-col items-end gap-0.5">
-        <span className="text-caption text-ink-secondary">Dianalisis AI</span>
-        <time
-          dateTime={claim.analyzedAt}
-          className="text-small text-ink tabular-nums"
-        >
-          {formatDateTime(claim.analyzedAt)}
-        </time>
-      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={isAnalysisRunning}
+        onClick={(event) => {
+          event.stopPropagation();
+          onAnalyze();
+        }}
+      >
+        <LuSparkles aria-hidden="true" />
+        Analisis
+      </Button>
     );
   }
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={isAnalysisRunning}
-      onClick={(event) => {
-        event.stopPropagation();
-        onAnalyze();
-      }}
-    >
-      <LuSparkles aria-hidden="true" />
-      Analisis
-    </Button>
+    <div className="flex flex-col items-end gap-1">
+      {claim.ruleReadDocumentCount > 0 ? (
+        <ReadByRulesPill />
+      ) : (
+        <span className="text-caption text-ink-secondary">Dianalisis AI</span>
+      )}
+      <time
+        dateTime={claim.analyzedAt}
+        className="text-small text-ink tabular-nums"
+      >
+        {formatDateTime(claim.analyzedAt)}
+      </time>
+    </div>
   );
 }
 
@@ -274,8 +289,17 @@ export function ClaimQueueTable({
   const [signalFilter, setSignalFilter] = useState<SignalFilter>(ALL);
   const table = useServerTableControls({ initialSort: INITIAL_CLAIM_SORT });
   const analysisRunner = useClaimAnalysisRunner();
+  const bulkAnalysis = useBulkAnalysis();
+  const [selectedClaimIds, setSelectedClaimIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isSelectingAll, setIsSelectingAll] = useState(false);
+  const [dismissedRunStartedAt, setDismissedRunStartedAt] = useState<
+    string | null
+  >(null);
 
-  const queueParams: ClaimQueueParams = {
+  const queueFilterParams: Omit<ClaimQueueParams, 'page' | 'pageSize'> = {
     status,
     careType: toFilterParam(careTypeFilter),
     facilityId: toFilterParam(facilityFilter),
@@ -284,6 +308,9 @@ export function ClaimQueueTable({
     signal: toFilterParam(signalFilter),
     sortBy: table.sort.key,
     sortDirection: table.sort.direction,
+  };
+  const queueParams: ClaimQueueParams = {
+    ...queueFilterParams,
     page: table.pageIndex + 1,
     pageSize: CLAIMS_PER_PAGE,
   };
@@ -376,6 +403,73 @@ export function ClaimQueueTable({
     analysisRunner.requestAnalysis([toAnalysisTarget(claim)]);
   }
 
+  const selectedOnPageCount = claims.filter((claim) =>
+    selectedClaimIds.has(claim.id),
+  ).length;
+  const pageSelectionState =
+    selectedOnPageCount === 0
+      ? false
+      : selectedOnPageCount === claims.length
+        ? true
+        : 'indeterminate';
+
+  function toggleClaimSelection(claimId: string, isSelected: boolean) {
+    setSelectedClaimIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (isSelected) nextIds.add(claimId);
+      else nextIds.delete(claimId);
+      return nextIds;
+    });
+  }
+
+  function selectPage(isSelected: boolean) {
+    setSelectedClaimIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      for (const claim of claims) {
+        if (isSelected) nextIds.add(claim.id);
+        else nextIds.delete(claim.id);
+      }
+      return nextIds;
+    });
+  }
+
+  async function selectAllResults() {
+    setIsSelectingAll(true);
+    try {
+      setSelectedClaimIds(new Set(await fetchQueueClaimIds(queueFilterParams)));
+    } finally {
+      setIsSelectingAll(false);
+    }
+  }
+
+  async function startBulkAnalysis(confirmWithAi: boolean) {
+    await bulkAnalysis.start({
+      claimIds: [...selectedClaimIds],
+      confirmWithAi,
+    });
+    setIsBulkDialogOpen(false);
+    setSelectedClaimIds(new Set());
+  }
+
+  function renderSelectionCheckbox(claim: ClaimQueueItem) {
+    return (
+      <Checkbox
+        checked={selectedClaimIds.has(claim.id)}
+        onCheckedChange={(checked) =>
+          toggleClaimSelection(claim.id, checked === true)
+        }
+        onClick={(event) => event.stopPropagation()}
+        aria-label={`Pilih ${claim.claimNo}`}
+      />
+    );
+  }
+
+  const visibleBulkProgress =
+    bulkAnalysis.progress &&
+    bulkAnalysis.progress.startedAt !== dismissedRunStartedAt
+      ? bulkAnalysis.progress
+      : null;
+
   return (
     <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
       <TableToolbar>
@@ -420,6 +514,27 @@ export function ClaimQueueTable({
           onChange={table.setSort}
         />
       </TableToolbar>
+      {visibleBulkProgress && (
+        <BulkAnalysisProgressCard
+          progress={visibleBulkProgress}
+          isStopping={bulkAnalysis.isStopping}
+          onStop={bulkAnalysis.stop}
+          onDismiss={() =>
+            setDismissedRunStartedAt(visibleBulkProgress.startedAt)
+          }
+        />
+      )}
+      <BulkSelectionBar
+        selectedCount={selectedClaimIds.size}
+        resultCount={claimPage.total}
+        pageSelectionState={pageSelectionState}
+        isSelectingAll={isSelectingAll}
+        isBusy={bulkAnalysis.isRunning || analysisRunner.isRunning}
+        onSelectPage={selectPage}
+        onSelectAllResults={() => void selectAllResults()}
+        onClear={() => setSelectedClaimIds(new Set())}
+        onAnalyze={() => setIsBulkDialogOpen(true)}
+      />
       <div
         aria-busy={claimQueueQuery.isPlaceholderData}
         className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
@@ -429,6 +544,14 @@ export function ClaimQueueTable({
           <Table className="[&_td]:px-2 [&_th]:px-2">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-8 pr-0">
+                  <Checkbox
+                    checked={pageSelectionState}
+                    onCheckedChange={(checked) => selectPage(checked === true)}
+                    disabled={claims.length === 0}
+                    aria-label="Pilih semua klaim di halaman ini"
+                  />
+                </TableHead>
                 <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
                   No
                 </TableHead>
@@ -499,8 +622,14 @@ export function ClaimQueueTable({
                     data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
                     data-tour-href={rowIndex === 0 ? claimHref : undefined}
                     onClick={() => router.push(claimHref)}
+                    data-state={
+                      selectedClaimIds.has(claim.id) ? 'selected' : undefined
+                    }
                     className="cursor-pointer"
                   >
+                    <TableCell className="w-8 pr-0 align-top">
+                      {renderSelectionCheckbox(claim)}
+                    </TableCell>
                     <TableCell
                       className={cn(
                         'align-top font-mono text-caption text-ink-secondary tabular-nums',
@@ -583,6 +712,7 @@ export function ClaimQueueTable({
               >
                 <div className="flex flex-col items-start gap-1">
                   <div className="flex w-full items-start gap-2">
+                    {renderSelectionCheckbox(claim)}
                     <Link
                       href={claimHref}
                       onClick={(event) => event.stopPropagation()}
@@ -632,6 +762,13 @@ export function ClaimQueueTable({
         </ul>
       </div>
       {analysisRunner.dialogs}
+      <BulkAnalysisDialog
+        claimCount={selectedClaimIds.size}
+        isOpen={isBulkDialogOpen}
+        isStarting={bulkAnalysis.isStarting}
+        onOpenChange={setIsBulkDialogOpen}
+        onConfirm={(confirmWithAi) => void startBulkAnalysis(confirmWithAi)}
+      />
       {claims.length > 0 && (
         <TablePagination
           firstRowIndex={firstRowIndex}

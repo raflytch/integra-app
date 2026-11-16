@@ -18,6 +18,15 @@ export async function fetchClaimQueuePage(
   return response.data;
 }
 
+export async function fetchQueueClaimIds(
+  params: Omit<ClaimQueueParams, 'page' | 'pageSize'>,
+): Promise<string[]> {
+  const response = await apiClient.get<{ claimIds: string[] }>('/claims/ids', {
+    params,
+  });
+  return response.data.claimIds;
+}
+
 export async function fetchClaimStatistics(): Promise<ClaimStatistics> {
   const response = await apiClient.get<ClaimStatistics>('/claims/statistics');
   return response.data;
