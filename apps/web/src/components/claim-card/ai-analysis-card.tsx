@@ -10,7 +10,6 @@ import {
   LuFlag,
   LuGitCompareArrows,
   LuLightbulb,
-  LuRefreshCw,
   LuSparkles,
 } from 'react-icons/lu';
 import { useClaimAnalysisRunner } from '@/components/analysis/use-claim-analysis-runner';
@@ -113,7 +112,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
         ) : coverage ? (
           `Paling mirip ${formatPercent(coverage.max)}, di bawah ambang ${formatPercent(coverage.threshold)} untuk penyakit ini.`
         ) : (
-          'Ambang kemiripan belum dihitung untuk klaim ini. Klik Analisis ulang di kartu ini (tanpa biaya token).'
+          'Ambang kemiripan belum dihitung untuk klaim ini.'
         ),
     },
     {
@@ -131,7 +130,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
               )
               .join(' · ')
           : existenceCount > 0
-            ? `${existenceCount} diagnosis sekunder belum didukung bukti. Klik Analisis ulang untuk melihat statusnya per diagnosis.`
+            ? `${existenceCount} diagnosis sekunder belum didukung bukti.`
             : unassessedCount > 0
               ? `Belum ada aturan PNPK untuk ${claim.verification?.unassessedDiagnoses.join(', ')}.`
               : diagnosisStatuses.length > 0
@@ -178,24 +177,22 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         ) : (
           <Pill tone="outline">Belum dianalisis AI</Pill>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          disabled={analysisRunner.isRunning}
-          onClick={() =>
-            analysisRunner.requestAnalysis([
-              { id: claim.id, claimNo: claim.claimNo, unreadDocumentCount },
-            ])
-          }
-        >
-          {claim.analyzedAt ? (
-            <LuRefreshCw aria-hidden="true" />
-          ) : (
+        {(!claim.analyzedAt || unreadDocumentCount > 0) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={analysisRunner.isRunning}
+            onClick={() =>
+              analysisRunner.requestAnalysis([
+                { id: claim.id, claimNo: claim.claimNo, unreadDocumentCount },
+              ])
+            }
+          >
             <LuSparkles aria-hidden="true" />
-          )}
-          {claim.analyzedAt ? 'Analisis ulang' : 'Analisis'}
-        </Button>
+            Analisis
+          </Button>
+        )}
       </div>
       <h2
         id="ai-analysis-heading"

@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { LuRefreshCw, LuSparkles } from 'react-icons/lu';
+import { LuSparkles } from 'react-icons/lu';
 import {
   type AnalysisTarget,
   useClaimAnalysisRunner,
@@ -229,7 +229,7 @@ function AnalysisAction({
   isAnalysisRunning: boolean;
   onAnalyze: () => void;
 }) {
-  if (claim.analyzedAt) {
+  if (claim.analyzedAt && toAnalysisTarget(claim).unreadDocumentCount === 0) {
     return (
       <div className="flex flex-col items-end gap-0.5">
         <span className="text-caption text-ink-secondary">Dianalisis AI</span>
@@ -239,19 +239,6 @@ function AnalysisAction({
         >
           {formatDateTime(claim.analyzedAt)}
         </time>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-mr-2 text-primary-hover"
-          disabled={isAnalysisRunning}
-          onClick={(event) => {
-            event.stopPropagation();
-            onAnalyze();
-          }}
-        >
-          <LuRefreshCw aria-hidden="true" />
-          Analisis ulang
-        </Button>
       </div>
     );
   }

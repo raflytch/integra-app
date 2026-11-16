@@ -295,7 +295,7 @@ export function SimilarityOverview({ claim }: { claim: ClaimDetail }) {
       data={
         coverage
           ? `${coverage.comparedClaimCount} klaim ${diagnosisLabel} lain dari pasien berbeda.`
-          : 'Belum dihitung. Klik Analisis ulang di Hasil INTEGRA (tanpa biaya token).'
+          : 'Belum dihitung.'
       }
       rows={[
         {
