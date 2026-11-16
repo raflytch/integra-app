@@ -7,7 +7,7 @@ Internet ──80/443──► caddy (automatic HTTPS for integraa.site)
                        ├── /api/*  ──► api  (NestJS :3001, /api prefix stripped)
                        └── /*      ──► web  (Next.js standalone :3000)
                      api ──► postgres (named volume, not published)
-                     migrate: `prisma migrate deploy` + `seed:rules`, runs before api on every `up`
+                     migrate: `prisma migrate deploy` + `seed:rules` + `seed:tariffs` + `seed:demo`, runs before api on every `up`
 ```
 
 | File                          | Purpose                                                        |
@@ -187,8 +187,9 @@ All commands run in `/opt/integra`.
 | Logs                      | `docker compose logs -f --tail=200 api` (or `web`, `caddy`, `migrate`, `postgres`)                                           |
 | Restart after `.env` edit | `docker compose up -d`                                                                                                       |
 | Roll back to a commit     | `sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=<commit-sha>/' .env && docker compose up -d` (migrations are forward-only)                |
-| Free demo seed            | `docker compose run --rm migrate npm run seed:demo`                                                                          |
+| Free demo seed            | `docker compose run --rm migrate npm run seed:demo -- --force` (also runs on every deploy, skipped when present)             |
 | Evidence rules only       | `docker compose run --rm migrate npm run seed:rules` (also runs on every deploy)                                             |
+| INA-CBG tariffs only      | `docker compose run --rm migrate npm run seed:tariffs` (also runs on every deploy)                                           |
 | Backup database           | `docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -Fc "$POSTGRES_DB"' > integra-$(date +%F).dump`          |
 | Restore database          | `docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean' < integra-YYYY-MM-DD.dump` |
 

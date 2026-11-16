@@ -9,7 +9,7 @@ import {
   EVIDENCE_SIGN_GROUPS,
   measureVitalSign,
 } from './clinical-limit';
-import { toCanonicalFinding } from './clinical-vocabulary';
+import { toCanonicalFinding, toCanonicalTerm } from './clinical-vocabulary';
 import { findContradictedFindingQuotes } from './consistency-test';
 
 export interface RefutedEvidence {
@@ -71,19 +71,22 @@ function collectEvidenceTexts(
   };
   for (const { extracted } of documents) {
     if (!extracted) continue;
+    const withCanonical = (name: string) => [name, toCanonicalTerm(name)];
     const presentFindingNames = extracted.findings
       .filter((finding) => finding.isPresent)
-      .map((finding) => finding.name);
+      .flatMap((finding) => withCanonical(finding.name));
     evidenceTexts.MEDICATION.push(
-      ...extracted.medications.map((item) => item.name),
+      ...extracted.medications.flatMap((item) => withCanonical(item.name)),
     );
     evidenceTexts.PROCEDURE.push(
-      ...extracted.procedures.map((item) => item.name),
+      ...extracted.procedures.flatMap((item) => withCanonical(item.name)),
     );
     evidenceTexts.FINDING.push(...presentFindingNames);
     evidenceTexts.VITAL_SIGN.push(
       ...presentFindingNames,
-      ...extracted.vitalSigns.map((vital) => `${vital.name} ${vital.value}`),
+      ...extracted.vitalSigns.flatMap((vital) =>
+        withCanonical(vital.name).map((name) => `${name} ${vital.value}`),
+      ),
     );
   }
   for (const evidenceType of Object.keys(evidenceTexts) as EvidenceType[]) {

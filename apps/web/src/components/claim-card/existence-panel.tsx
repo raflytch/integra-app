@@ -251,6 +251,7 @@ export function ExistencePanel({
   findings,
   diagnoses,
   tariffAmount,
+  isUnassessed,
   overview,
   documentsById,
   onRequestClarification,
@@ -258,6 +259,7 @@ export function ExistencePanel({
   findings: ClaimFinding[];
   diagnoses: ClaimDiagnosis[];
   tariffAmount: number;
+  isUnassessed: boolean;
   overview?: ReactNode;
   documentsById: Map<string, ClaimDocument>;
   onRequestClarification: (reason: string) => void;
@@ -277,6 +279,7 @@ export function ExistencePanel({
     <TestPanelShell
       testType="EXISTENCE"
       findingCount={findings.length}
+      isUnassessed={isUnassessed}
       overview={overview}
     >
       <ul className="divide-y divide-hairline">

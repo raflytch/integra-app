@@ -1,6 +1,3 @@
-import { Injectable } from '@nestjs/common';
-import { TariffSchedule } from '../../application/ports/tariff-schedule.port';
-
 /** Synthetic rupiah amounts per severity level for the demo dataset, not official INA-CBG tariffs. */
 const SYNTHETIC_TARIFFS_BY_INACBG_GROUP: Readonly<
   Record<string, Readonly<Record<number, number>>>
@@ -11,8 +8,7 @@ const SYNTHETIC_TARIFFS_BY_INACBG_GROUP: Readonly<
   'K-5-17': { 0: 380_000 },
 };
 
-@Injectable()
-export class SyntheticTariffSchedule extends TariffSchedule {
+export class SyntheticTariffSchedule {
   findTariff(inacbgGroupCode: string, severityLevel: number): number | null {
     return (
       SYNTHETIC_TARIFFS_BY_INACBG_GROUP[inacbgGroupCode]?.[severityLevel] ??

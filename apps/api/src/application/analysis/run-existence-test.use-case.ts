@@ -10,10 +10,7 @@ import {
   type DiagnosisEvidenceAssessment,
   findLookalikeEvidence,
 } from '../../domain/analysis/existence-test';
-import {
-  calculateTariffGaps,
-  toInacbgGroupCode,
-} from '../../domain/analysis/tariff-gap';
+import { calculateTariffGaps } from '../../domain/analysis/tariff-gap';
 import type { TariffSchedule } from '../ports/tariff-schedule.port';
 
 const STRENGTH_DECIMALS = 2;
@@ -70,13 +67,15 @@ export class RunExistenceTestUseCase {
           .map(({ diagnosis }) => toIcd10Category(diagnosis.icd10Code)),
       ),
     ];
-    const inacbgGroupCode = toInacbgGroupCode(claim.inacbgCode);
+    const findTariffForSeverity = await this.tariffSchedule.findClaimTariffs(
+      claim.inacbgCode,
+      claim.tariffAmount,
+    );
     const tariffGaps = calculateTariffGaps(
       claim.severityLevel,
       claim.tariffAmount,
       unsupportedCategories.length,
-      (severityLevel) =>
-        this.tariffSchedule.findTariff(inacbgGroupCode, severityLevel),
+      (severityLevel) => findTariffForSeverity?.(severityLevel) ?? null,
     );
     const pricedCategories = new Set<string>();
     // Codes of one ICD-10 category describe one condition, so they lower severity once.

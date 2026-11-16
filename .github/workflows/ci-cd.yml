@@ -145,4 +145,4 @@ jobs:
 
       - name: Seed demo claims
         if: github.event_name == 'workflow_dispatch' && inputs.seed_demo
-        run: ssh vps "cd '$DEPLOY_PATH' && docker compose run --rm migrate npm run seed:demo"
+        run: ssh vps "cd '$DEPLOY_PATH' && docker compose run --rm migrate npm run seed:demo -- --force"

@@ -130,75 +130,118 @@ function primaryDiagnosisLabel(claim: ClaimDetail): string {
     : claim.inacbgCode;
 }
 
+const PNPK_SOURCES: {
+  icd10Prefix: string;
+  limit: string;
+  basis: string[];
+}[] = [
+  {
+    icd10Prefix: 'R57',
+    limit: 'Tanda syok: TD sistolik ≤ 90 atau tekanan nadi ≤ 20 mmHg.',
+    basis: ['PNPK Infeksi Dengue Dewasa (KMK HK.01.07/MENKES/9845/2020)'],
+  },
+  {
+    icd10Prefix: 'J96',
+    limit: 'Desaturasi: SpO2 < 90%.',
+    basis: [
+      'PNPK Pneumonia Dewasa (KMK HK.01.07/MENKES/1168/2025)',
+      'PNPK Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)',
+    ],
+  },
+  {
+    icd10Prefix: 'M54',
+    limit: 'Skala nyeri NRS, VAS, atau VRS tercatat.',
+    basis: ['PNPK Tata Laksana Nyeri (KMK HK.01.07/MENKES/481/2019)'],
+  },
+  {
+    icd10Prefix: 'A01',
+    limit:
+      'Demam dengan gangguan saluran cerna, dikonfirmasi kultur atau serologi.',
+    basis: ['PNPK Demam Tifoid Dewasa (KMK HK.01.07/MENKES/875/2026)'],
+  },
+  {
+    icd10Prefix: 'I11',
+    limit: 'Hipertensi: TD ≥ 140/90 mmHg.',
+    basis: [
+      'PNPK Hipertensi Dewasa (KMK HK.01.07/MENKES/303/2026)',
+      'PNPK Gagal Jantung (KMK HK.01.07/MENKES/4801/2021)',
+    ],
+  },
+];
+
 export function ExistenceOverview({ claim }: { claim: ClaimDetail }) {
   const { verification } = claim;
   if (!verification) return null;
   const secondaryDiagnoses = claim.diagnoses.filter(
     (diagnosis) => !diagnosis.isPrimary,
   );
+  const sources = PNPK_SOURCES.filter((source) =>
+    secondaryDiagnoses.some(
+      (diagnosis) =>
+        diagnosis.evidenceStatus &&
+        diagnosis.icd10Code.startsWith(source.icd10Prefix),
+    ),
+  );
+  const rows: ParameterRow[] = [
+    {
+      name: 'Status diagnosis',
+      result:
+        secondaryDiagnoses.length === 0 ? (
+          'Tidak ada diagnosis sekunder.'
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {secondaryDiagnoses.map((diagnosis) => (
+              <li
+                key={diagnosis.id}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <span>
+                  {diagnosis.name}{' '}
+                  <span className="font-mono text-caption text-ink-secondary">
+                    {diagnosis.icd10Code}
+                  </span>
+                </span>
+                {diagnosis.evidenceStatus ? (
+                  <EvidenceStatusPill status={diagnosis.evidenceStatus} />
+                ) : (
+                  <Pill tone="outline">Belum ada aturan PNPK</Pill>
+                )}
+              </li>
+            ))}
+          </ul>
+        ),
+      basis: [
+        'Permenkes 26/2021 (Pedoman INA-CBG)',
+        ...sources.flatMap((source) => source.basis),
+      ],
+    },
+  ];
+  if (sources.length > 0) {
+    rows.push(
+      {
+        name: 'Batas klinis',
+        result: sources.map((source) => source.limit).join(' '),
+        basis: sources.flatMap((source) => source.basis),
+      },
+      {
+        name: 'Selisih tarif',
+        result:
+          'Hanya untuk diagnosis yang buktinya tidak ditemukan. Nilainya di ringkasan klaim.',
+        basis: ['Permenkes 3/2023, sesuai tipe RS dan regional'],
+      },
+    );
+  }
 
   return (
     <Overview
       checks="Bukti klinis tiap diagnosis sekunder: Didukung, Sebagian, Tidak ditemukan, atau Dibantah data."
-      data={`${verification.foundEvidenceCount} dari ${verification.requiredEvidenceCount} bukti wajib ditemukan di ${claim.documents.length} dokumen.`}
-      rows={[
-        {
-          name: 'Status diagnosis',
-          result:
-            secondaryDiagnoses.length === 0 ? (
-              'Tidak ada diagnosis sekunder.'
-            ) : (
-              <ul className="flex flex-col gap-1.5">
-                {secondaryDiagnoses.map((diagnosis) => (
-                  <li
-                    key={diagnosis.id}
-                    className="flex flex-wrap items-center gap-2"
-                  >
-                    <span>
-                      {diagnosis.name}{' '}
-                      <span className="font-mono text-caption text-ink-secondary">
-                        {diagnosis.icd10Code}
-                      </span>
-                    </span>
-                    {diagnosis.evidenceStatus ? (
-                      <EvidenceStatusPill status={diagnosis.evidenceStatus} />
-                    ) : (
-                      <Pill tone="outline">
-                        Belum ada aturan PNPK untuk{' '}
-                        {primaryDiagnosisLabel(claim)}
-                      </Pill>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ),
-          basis: [
-            'Permenkes 26/2021 (Pedoman INA-CBG)',
-            'PNPK sesuai penyakit: Dengue untuk syok, Pneumonia untuk gagal napas, Nyeri untuk dorsalgia, Hipertensi dan Gagal Jantung untuk I11',
-          ],
-        },
-        {
-          name: 'Batas klinis',
-          result:
-            verification.requiredEvidenceCount === 0
-              ? 'Tidak ada bukti wajib untuk diagnosis klaim ini.'
-              : `Tanda syok: TD sistolik ≤ 90 atau tekanan nadi ≤ 20 mmHg. Desaturasi: SpO2 < 90%. Hipertensi: TD ≥ 140/90 mmHg.`,
-          basis: [
-            'PNPK Infeksi Dengue Dewasa (KMK HK.01.07/MENKES/9845/2020)',
-            'PNPK Pneumonia Dewasa (KMK HK.01.07/MENKES/1168/2025)',
-            'PNPK Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)',
-            'PNPK Tata Laksana Nyeri (KMK HK.01.07/MENKES/481/2019)',
-            'PNPK Hipertensi Dewasa (KMK HK.01.07/MENKES/303/2026)',
-            'PNPK Gagal Jantung (KMK HK.01.07/MENKES/4801/2021)',
-          ],
-        },
-        {
-          name: 'Selisih tarif',
-          result:
-            'Hanya untuk diagnosis yang buktinya tidak ditemukan. Nilainya di ringkasan klaim.',
-          basis: ['Permenkes 3/2023, sesuai tipe RS dan regional'],
-        },
-      ]}
+      data={
+        verification.unassessedDiagnoses.length > 0 &&
+        verification.requiredEvidenceCount === 0
+          ? 'Belum bisa dinilai: diagnosis sekunder klaim ini belum punya aturan PNPK.'
+          : `${verification.foundEvidenceCount} dari ${verification.requiredEvidenceCount} bukti wajib ditemukan di ${claim.documents.length} dokumen.`
+      }
+      rows={rows}
     />
   );
 }

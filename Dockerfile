@@ -34,8 +34,8 @@ RUN npm run prisma:generate && npm run build --workspace=@app/api
 
 FROM api-build AS migrate
 WORKDIR /app/apps/api
-# Evidence rules are idempotent reference data, refreshed on every deploy.
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed:rules"]
+# Evidence rules, INA-CBG tariffs, and the demo claims are idempotent, refreshed on every deploy.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed:rules && npm run seed:tariffs && npm run seed:demo"]
 
 FROM base AS api
 ENV NODE_ENV=production

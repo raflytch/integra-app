@@ -83,6 +83,9 @@ export function ClaimCard({ claimId }: { claimId: string }) {
               findings={findingsOfType('EXISTENCE')}
               diagnoses={claim.diagnoses}
               tariffAmount={claim.tariffAmount}
+              isUnassessed={
+                (claim.verification?.unassessedDiagnoses.length ?? 0) > 0
+              }
               overview={<ExistenceOverview claim={claim} />}
               documentsById={documentsById}
               onRequestClarification={requestClarification}
