@@ -180,49 +180,62 @@ export function TestPanelShell({
         aria-labelledby={headingId}
         className="group rounded-xl border border-hairline bg-surface shadow-xs"
       >
-        <div className="flex items-center gap-2 px-6 py-4 group-data-[state=open]:border-b group-data-[state=open]:border-hairline">
-          <h2 id={headingId} className="min-w-0">
-            <CollapsibleTrigger className="flex items-center gap-4 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-primary">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-wash text-primary-hover">
-                <TestIcon className="size-4" aria-hidden="true" />
-              </span>
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-body font-semibold tracking-display text-ink">
+        <div className="flex items-center gap-4 px-6 py-4 group-data-[state=open]:border-b group-data-[state=open]:border-hairline">
+          <CollapsibleTrigger
+            tabIndex={-1}
+            aria-hidden="true"
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary-wash text-primary-hover"
+          >
+            <TestIcon className="size-4" aria-hidden="true" />
+          </CollapsibleTrigger>
+          {/* The info button sits right after the title, so it lines up the same on every panel. */}
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex items-center gap-1">
+              <h2 id={headingId} className="min-w-0">
+                <CollapsibleTrigger
+                  aria-describedby={`${headingId}-description`}
+                  className="rounded-md text-left text-body font-semibold tracking-display text-ink outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
                   {testDetails.title}
-                </span>
-                <span className="text-small font-normal text-ink-secondary">
-                  {testDetails.description}
-                </span>
-              </span>
-            </CollapsibleTrigger>
-          </h2>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 shrink-0 self-start text-ink-secondary"
-                aria-label={`Apa itu ${testDetails.title}?`}
-              >
-                <LuInfo aria-hidden="true" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="flex w-80 flex-col gap-1.5 border-hairline bg-surface p-4"
+                </CollapsibleTrigger>
+              </h2>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 shrink-0 text-ink-secondary"
+                    aria-label={`Apa itu ${testDetails.title}?`}
+                  >
+                    <LuInfo aria-hidden="true" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="flex w-80 flex-col gap-1.5 border-hairline bg-surface p-4"
+                >
+                  <p className="text-small font-semibold text-ink">
+                    Apa itu {testDetails.title}?
+                  </p>
+                  <p className="text-small leading-normal text-ink-secondary">
+                    {testDetails.explanation}
+                  </p>
+                  <p className="text-caption leading-normal text-ink-secondary">
+                    Tanda berarti klaim perlu diklarifikasi, bukan tuduhan
+                    fraud. Keputusan tetap di tangan verifikator.
+                  </p>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <CollapsibleTrigger
+              tabIndex={-1}
+              aria-hidden="true"
+              id={`${headingId}-description`}
+              className="text-left text-small font-normal text-ink-secondary"
             >
-              <p className="text-small font-semibold text-ink">
-                Apa itu {testDetails.title}?
-              </p>
-              <p className="text-small leading-normal text-ink-secondary">
-                {testDetails.explanation}
-              </p>
-              <p className="text-caption leading-normal text-ink-secondary">
-                Tanda berarti klaim perlu diklarifikasi, bukan tuduhan fraud.
-                Keputusan tetap di tangan verifikator.
-              </p>
-            </PopoverContent>
-          </Popover>
+              {testDetails.description}
+            </CollapsibleTrigger>
+          </div>
           <CollapsibleTrigger
             tabIndex={-1}
             aria-hidden="true"

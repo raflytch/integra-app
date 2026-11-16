@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
-import { LuCalendarDays, LuHospital, LuUser } from 'react-icons/lu';
+import { LuBanknote, LuCalendarDays, LuHospital, LuUser } from 'react-icons/lu';
 import {
   CareTypePill,
   ClaimStatusPill,
@@ -105,22 +105,23 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
   return (
     <section
       aria-label="Ringkasan klaim"
-      className="flex flex-col gap-6 rounded-xl border border-hairline bg-surface p-5 shadow-xs lg:flex-row lg:items-stretch lg:justify-between"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-5 shadow-xs"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-caption text-ink-secondary">
-            No. SEP <span className="font-mono text-ink">{claim.claimNo}</span>
-          </span>
-          <CareTypePill careType={claim.careType} />
-          <ClaimStatusPill status={claim.status} />
-          <PriorityPill priorityScore={claim.priorityScore} />
-          <FacilityTypePill facilityType={claim.facility.type} />
-        </div>
-        <h1 className="font-display text-section font-semibold tracking-display text-ink">
-          {primaryDiagnosis?.name ?? claim.inacbgCode}
-        </h1>
-        <dl className="grid divide-y divide-hairline rounded-xl border border-hairline bg-surface text-small sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:flex-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-caption text-ink-secondary">
+          No. SEP <span className="font-mono text-ink">{claim.claimNo}</span>
+        </span>
+        <CareTypePill careType={claim.careType} />
+        <ClaimStatusPill status={claim.status} />
+        <PriorityPill priorityScore={claim.priorityScore} />
+        <FacilityTypePill facilityType={claim.facility.type} />
+      </div>
+      <h1 className="font-display text-section font-semibold tracking-display text-ink">
+        {primaryDiagnosis?.name ?? claim.inacbgCode}
+      </h1>
+      {/* The info grid and the tariff card share one row, so they share one height. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+        <dl className="grid min-w-0 flex-1 divide-y divide-hairline rounded-xl border border-hairline bg-surface text-small sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <SummaryItem
             icon={LuHospital}
             label="Faskes"
@@ -144,42 +145,46 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           />
           <CareSummaryItem claim={claim} />
         </dl>
-      </div>
-      <div className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72">
-        <div className="flex flex-col gap-1">
-          <p className="text-caption text-ink-secondary">
-            Potensi selisih tarif
-          </p>
-          <p className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
-            {isGapUnknown && claim.potentialGap === 0
-              ? 'Tidak dapat dihitung'
-              : formatRupiah(claim.potentialGap)}
-          </p>
-          <p className="text-caption text-ink-secondary">
-            {unsupportedDiagnosisCount === 0
-              ? 'Belum ada diagnosis tanpa bukti.'
-              : isGapUnknown
-                ? `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif klaim ini tidak ada di tabel tarif, jadi selisihnya belum bisa dihitung.`
-                : `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif setelah koreksi ${formatRupiah(claim.tariffAmount - claim.potentialGap)}.`}
-          </p>
+        <div className="flex shrink-0 flex-col justify-center gap-4 rounded-xl border border-primary/30 bg-surface p-4 lg:w-72">
+          <div className="flex flex-col gap-1">
+            <p className="flex items-center gap-1.5 text-caption text-ink-secondary">
+              <LuBanknote
+                className="size-3.5 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              Potensi selisih tarif
+            </p>
+            <p className="font-display text-subhead font-semibold tracking-display text-ink tabular-nums">
+              {isGapUnknown && claim.potentialGap === 0
+                ? 'Tidak dapat dihitung'
+                : formatRupiah(claim.potentialGap)}
+            </p>
+            <p className="text-caption text-ink-secondary">
+              {unsupportedDiagnosisCount === 0
+                ? 'Belum ada diagnosis tanpa bukti.'
+                : isGapUnknown
+                  ? `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif klaim ini tidak ada di tabel tarif, jadi selisihnya belum bisa dihitung.`
+                  : `Dari ${unsupportedDiagnosisCount} diagnosis tanpa bukti. Tarif setelah koreksi ${formatRupiah(claim.tariffAmount - claim.potentialGap)}.`}
+            </p>
+          </div>
+          <dl className="grid grid-cols-2 gap-2 text-small">
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-caption text-ink-secondary">Tarif klaim</dt>
+              <dd className="font-medium text-ink">
+                {formatRupiah(claim.tariffAmount)}
+              </dd>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-caption text-ink-secondary">INA-CBG</dt>
+              <dd className="font-mono text-caption font-medium text-ink">
+                {claim.inacbgCode}
+              </dd>
+              <dd>
+                <SeverityPill severityLevel={claim.severityLevel} />
+              </dd>
+            </div>
+          </dl>
         </div>
-        <dl className="grid grid-cols-2 gap-2 text-small">
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-caption text-ink-secondary">Tarif klaim</dt>
-            <dd className="font-medium text-ink">
-              {formatRupiah(claim.tariffAmount)}
-            </dd>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <dt className="text-caption text-ink-secondary">INA-CBG</dt>
-            <dd className="font-mono text-caption font-medium text-ink">
-              {claim.inacbgCode}
-            </dd>
-            <dd>
-              <SeverityPill severityLevel={claim.severityLevel} />
-            </dd>
-          </div>
-        </dl>
       </div>
     </section>
   );

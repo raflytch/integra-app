@@ -4,13 +4,14 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { LuRefreshCw, LuSparkles } from 'react-icons/lu';
+import { LuClock, LuFilter, LuRefreshCw, LuSparkles } from 'react-icons/lu';
 import {
   type AnalysisTarget,
   useClaimAnalysisRunner,
 } from '@/components/analysis/use-claim-analysis-runner';
 import {
   CareTypePill,
+  Pill,
   ClaimStatusPill,
   DecisionActionPill,
   FacilityTypePill,
@@ -22,6 +23,7 @@ import {
   TestSignalPill,
 } from '@/components/claim-pills';
 import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
+import { GRADIENT_HEADER_ROW_CLASS_NAME } from '@/components/data-table/gradient-header-row';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -185,6 +187,10 @@ function CareDates({ claim }: { claim: ClaimQueueItem }) {
   }
   return (
     <div className="flex flex-col gap-0.5 text-caption text-ink-secondary">
+      {/* LOS reads as a chip under the care type, before the dates. */}
+      <Pill tone="neutral" icon={LuClock} className="mb-1 self-start">
+        LOS {formatLengthOfStay(claim.lengthOfStayDays)}
+      </Pill>
       <span>
         Masuk{' '}
         <span className="text-ink tabular-nums">
@@ -195,12 +201,6 @@ function CareDates({ claim }: { claim: ClaimQueueItem }) {
         Pulang{' '}
         <span className="text-ink tabular-nums">
           {formatDate(claim.dischargedAt)}
-        </span>
-      </span>
-      <span className="mt-1 border-t border-hairline pt-1">
-        LOS{' '}
-        <span className="text-ink tabular-nums">
-          {formatLengthOfStay(claim.lengthOfStayDays)}
         </span>
       </span>
     </div>
@@ -390,272 +390,293 @@ export function ClaimQueueTable({
   }
 
   return (
-    <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
-      <TableToolbar>
-        <TableSearch
-          value={table.searchQuery}
-          onChange={table.setSearchQuery}
-          placeholder="Cari no. SEP, diagnosis, faskes"
-        />
-        <TableFilterSelect
-          label="Keterangan rawat"
-          value={careTypeFilter}
-          options={CARE_TYPE_FILTER_OPTIONS}
-          onChange={changeFilter(setCareTypeFilter)}
-        />
-        <TableFilterSelect
-          label="Faskes"
-          value={facilityFilter}
-          options={facilityOptions}
-          onChange={changeFilter(setFacilityFilter)}
-        />
-        <TableFilterSelect
-          label="Analisis AI"
-          value={analysisFilter}
-          options={ANALYSIS_FILTER_OPTIONS}
-          onChange={changeFilter(setAnalysisFilter)}
-        />
-        <TableFilterSelect
-          label="Waktu analisis"
-          value={analysisTimeOrder}
-          options={ANALYSIS_TIME_ORDER_OPTIONS}
-          onChange={changeAnalysisTimeOrder}
-        />
-        <TableFilterSelect
-          label="Tanda"
-          value={signalFilter}
-          options={SIGNAL_FILTER_OPTIONS}
-          onChange={changeFilter(setSignalFilter)}
-        />
-        <TableSortSelect
-          sort={table.sort}
-          options={CLAIM_SORT_OPTIONS}
-          onChange={table.setSort}
-        />
-      </TableToolbar>
-      <div
-        aria-busy={claimQueueQuery.isPlaceholderData}
-        className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
+    <div className="flex flex-col gap-4">
+      {/* Filters sit in their own card above the table. */}
+      <section
+        aria-labelledby="claim-queue-filter-title"
+        className="rounded-lg border border-hairline bg-surface shadow-xs"
       >
-        <div className="hidden lg:block">
-          {/* Nine columns: 8px side padding lets them fit from 1440px wide. */}
-          <Table className="[&_td]:px-2 [&_th]:px-2">
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
-                  No
-                </TableHead>
-                <SortableTableHead
-                  sortKey="claimNo"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                >
-                  Klaim
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="facility"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                >
-                  Faskes
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="admittedAt"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                  className="whitespace-normal"
-                >
-                  Keterangan rawat
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="findings"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                >
-                  Tanda uji
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="potentialGap"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                >
-                  Potensi selisih
-                </SortableTableHead>
-                <SortableTableHead
-                  sortKey="status"
-                  sort={table.sort}
-                  onSort={table.toggleSort}
-                >
-                  Status
-                </SortableTableHead>
-                <TableHead
-                  data-tour="run-analysis"
-                  className={CENTERED_COLUMN_CLASS_NAME}
-                >
-                  Aksi
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {claims.length === 0 && (
-                <NoMatchingRows
-                  columnCount={COLUMN_COUNT}
-                  onReset={resetSearchAndFilters}
-                />
-              )}
-              {claims.map((claim, pageRowIndex) => {
-                const rowIndex = firstRowIndex + pageRowIndex;
-                const claimHref = `/claims/${claim.id}`;
-                return (
-                  <TableRow
-                    key={claim.id}
-                    data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
-                    data-tour-href={rowIndex === 0 ? claimHref : undefined}
-                    onClick={() => router.push(claimHref)}
-                    className="cursor-pointer"
+        <h2
+          id="claim-queue-filter-title"
+          className="flex items-center gap-2 px-3 pt-3 text-small font-medium text-ink"
+        >
+          <LuFilter aria-hidden="true" className="size-4 shrink-0" />
+          Filter Klaim
+        </h2>
+        <TableToolbar className="border-b-0">
+          <TableSearch
+            value={table.searchQuery}
+            onChange={table.setSearchQuery}
+            placeholder="Cari no. SEP, diagnosis, faskes"
+          />
+          <TableFilterSelect
+            label="Keterangan rawat"
+            value={careTypeFilter}
+            options={CARE_TYPE_FILTER_OPTIONS}
+            onChange={changeFilter(setCareTypeFilter)}
+          />
+          <TableFilterSelect
+            label="Faskes"
+            value={facilityFilter}
+            options={facilityOptions}
+            onChange={changeFilter(setFacilityFilter)}
+          />
+          <TableFilterSelect
+            label="Analisis AI"
+            value={analysisFilter}
+            options={ANALYSIS_FILTER_OPTIONS}
+            onChange={changeFilter(setAnalysisFilter)}
+          />
+          <TableFilterSelect
+            label="Waktu analisis"
+            value={analysisTimeOrder}
+            options={ANALYSIS_TIME_ORDER_OPTIONS}
+            onChange={changeAnalysisTimeOrder}
+          />
+          <TableFilterSelect
+            label="Tanda"
+            value={signalFilter}
+            options={SIGNAL_FILTER_OPTIONS}
+            onChange={changeFilter(setSignalFilter)}
+          />
+          <TableSortSelect
+            sort={table.sort}
+            options={CLAIM_SORT_OPTIONS}
+            onChange={table.setSort}
+          />
+        </TableToolbar>
+      </section>
+      <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
+        <div
+          aria-busy={claimQueueQuery.isPlaceholderData}
+          className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
+        >
+          <div className="hidden lg:block">
+            {/* Nine columns: 8px side padding lets them fit from 1440px wide. */}
+            <Table className="[&_td]:px-2 [&_th]:px-2">
+              <TableHeader>
+                <TableRow className={GRADIENT_HEADER_ROW_CLASS_NAME}>
+                  <TableHead className={cn('w-12', CENTERED_COLUMN_CLASS_NAME)}>
+                    No
+                  </TableHead>
+                  <SortableTableHead
+                    sortKey="claimNo"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
                   >
-                    <TableCell
-                      className={cn(
-                        'align-top font-mono text-caption text-ink-secondary tabular-nums',
-                        CENTERED_COLUMN_CLASS_NAME,
-                      )}
+                    Klaim
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="facility"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
+                  >
+                    Faskes
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="admittedAt"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
+                    className="whitespace-normal"
+                  >
+                    Keterangan rawat
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="findings"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
+                  >
+                    Tanda uji
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="potentialGap"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
+                  >
+                    Potensi selisih
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="status"
+                    sort={table.sort}
+                    onSort={table.toggleSort}
+                  >
+                    Status
+                  </SortableTableHead>
+                  <TableHead
+                    data-tour="run-analysis"
+                    className={CENTERED_COLUMN_CLASS_NAME}
+                  >
+                    Aksi
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {claims.length === 0 && (
+                  <NoMatchingRows
+                    columnCount={COLUMN_COUNT}
+                    onReset={resetSearchAndFilters}
+                  />
+                )}
+                {claims.map((claim, pageRowIndex) => {
+                  const rowIndex = firstRowIndex + pageRowIndex;
+                  const claimHref = `/claims/${claim.id}`;
+                  return (
+                    <TableRow
+                      key={claim.id}
+                      data-tour={
+                        rowIndex === 0 ? 'queue-first-claim' : undefined
+                      }
+                      data-tour-href={rowIndex === 0 ? claimHref : undefined}
+                      onClick={() => router.push(claimHref)}
+                      className="cursor-pointer"
                     >
-                      {rowIndex + 1}
-                    </TableCell>
-                    <TableCell className="min-w-36 align-top whitespace-normal">
-                      <div className="flex flex-col items-start gap-1">
-                        <Link
-                          href={claimHref}
-                          onClick={(event) => event.stopPropagation()}
-                          className="font-mono text-caption whitespace-nowrap text-primary-hover hover:underline"
-                        >
-                          {claim.claimNo}
-                        </Link>
-                        <span className="font-medium text-ink">
-                          {claim.primaryDiagnosis?.name ?? claim.inacbgCode}
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          <PriorityPill priorityScore={claim.priorityScore} />
-                          <SeverityPill severityLevel={claim.severityLevel} />
-                          {claim.hasSimilarPattern && <SimilarPatternPill />}
+                      <TableCell
+                        className={cn(
+                          'align-top font-mono text-caption text-ink-secondary tabular-nums',
+                          CENTERED_COLUMN_CLASS_NAME,
+                        )}
+                      >
+                        {rowIndex + 1}
+                      </TableCell>
+                      <TableCell className="min-w-36 align-top whitespace-normal">
+                        <div className="flex flex-col items-start gap-1">
+                          <Link
+                            href={claimHref}
+                            onClick={(event) => event.stopPropagation()}
+                            className="font-mono text-caption whitespace-nowrap text-primary-hover hover:underline"
+                          >
+                            {claim.claimNo}
+                          </Link>
+                          <span className="font-medium text-ink">
+                            {claim.primaryDiagnosis?.name ?? claim.inacbgCode}
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            <PriorityPill priorityScore={claim.priorityScore} />
+                            <SeverityPill severityLevel={claim.severityLevel} />
+                            {claim.hasSimilarPattern && <SimilarPatternPill />}
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="min-w-28 align-top whitespace-normal">
-                      <div className="flex flex-col items-start gap-1">
-                        <span className="text-ink">{claim.facility.name}</span>
-                        <FacilityTypePill facilityType={claim.facility.type} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <div className="flex flex-col items-start gap-1">
-                        <CareTypePill careType={claim.careType} />
-                        <CareDates claim={claim} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <FindingSignals claim={claim} />
-                    </TableCell>
-                    <TableCell className="align-top">
-                      <PotentialGap claim={claim} />
-                    </TableCell>
-                    <TableCell className="align-top">
+                      </TableCell>
+                      <TableCell className="min-w-28 align-top whitespace-normal">
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="text-ink">
+                            {claim.facility.name}
+                          </span>
+                          <FacilityTypePill
+                            facilityType={claim.facility.type}
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <div className="flex flex-col items-start gap-1">
+                          <CareTypePill careType={claim.careType} />
+                          <CareDates claim={claim} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <FindingSignals claim={claim} />
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <PotentialGap claim={claim} />
+                      </TableCell>
+                      <TableCell className="align-top">
+                        <ClaimStatusPill status={claim.status} />
+                      </TableCell>
+                      <TableCell
+                        className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
+                      >
+                        <AnalysisAction
+                          claim={claim}
+                          isAnalysisRunning={analysisRunner.isRunning}
+                          onAnalyze={() => analyzeClaim(claim)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+          <ul className="divide-y divide-hairline lg:hidden">
+            {claims.length === 0 && (
+              <li>
+                <NoMatchingRowsNotice onReset={resetSearchAndFilters} />
+              </li>
+            )}
+            {claims.map((claim, pageRowIndex) => {
+              const rowIndex = firstRowIndex + pageRowIndex;
+              const claimHref = `/claims/${claim.id}`;
+              return (
+                <li
+                  key={claim.id}
+                  data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
+                  data-tour-href={rowIndex === 0 ? claimHref : undefined}
+                  onClick={() => router.push(claimHref)}
+                  className="flex cursor-pointer flex-col gap-3 p-4 hover:bg-subtle"
+                >
+                  <div className="flex flex-col items-start gap-1">
+                    <div className="flex w-full items-start gap-2">
+                      <Link
+                        href={claimHref}
+                        onClick={(event) => event.stopPropagation()}
+                        className="font-mono text-caption break-all text-primary-hover hover:underline"
+                      >
+                        {claim.claimNo}
+                      </Link>
+                      <span className="ml-auto shrink-0 font-mono text-caption text-ink-secondary tabular-nums">
+                        #{rowIndex + 1}
+                      </span>
+                    </div>
+                    <span className="font-medium text-ink">
+                      {claim.primaryDiagnosis?.name ?? claim.inacbgCode}
+                    </span>
+                    <div className="flex flex-wrap gap-1">
                       <ClaimStatusPill status={claim.status} />
-                    </TableCell>
-                    <TableCell
-                      className={cn('align-top', CENTERED_COLUMN_CLASS_NAME)}
-                    >
-                      <AnalysisAction
-                        claim={claim}
-                        isAnalysisRunning={analysisRunner.isRunning}
-                        onAnalyze={() => analyzeClaim(claim)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <ul className="divide-y divide-hairline lg:hidden">
-          {claims.length === 0 && (
-            <li>
-              <NoMatchingRowsNotice onReset={resetSearchAndFilters} />
-            </li>
-          )}
-          {claims.map((claim, pageRowIndex) => {
-            const rowIndex = firstRowIndex + pageRowIndex;
-            const claimHref = `/claims/${claim.id}`;
-            return (
-              <li
-                key={claim.id}
-                data-tour={rowIndex === 0 ? 'queue-first-claim' : undefined}
-                data-tour-href={rowIndex === 0 ? claimHref : undefined}
-                onClick={() => router.push(claimHref)}
-                className="flex cursor-pointer flex-col gap-3 p-4 hover:bg-subtle"
-              >
-                <div className="flex flex-col items-start gap-1">
-                  <div className="flex w-full items-start gap-2">
-                    <Link
-                      href={claimHref}
-                      onClick={(event) => event.stopPropagation()}
-                      className="font-mono text-caption break-all text-primary-hover hover:underline"
-                    >
-                      {claim.claimNo}
-                    </Link>
-                    <span className="ml-auto shrink-0 font-mono text-caption text-ink-secondary tabular-nums">
-                      #{rowIndex + 1}
+                      <CareTypePill careType={claim.careType} />
+                      <PriorityPill priorityScore={claim.priorityScore} />
+                      <SeverityPill severityLevel={claim.severityLevel} />
+                      {claim.hasSimilarPattern && <SimilarPatternPill />}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-small">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink">
+                      {claim.facility.name}
+                      <FacilityTypePill facilityType={claim.facility.type} />
+                    </span>
+                    <span className="text-caption text-ink-secondary tabular-nums">
+                      {claim.careType === 'OUTPATIENT'
+                        ? `Kunjungan ${formatDate(claim.admittedAt)}`
+                        : `Masuk ${formatDate(claim.admittedAt)} · Pulang ${formatDate(claim.dischargedAt)}`}{' '}
+                      · LOS {formatLengthOfStay(claim.lengthOfStayDays)}
                     </span>
                   </div>
-                  <span className="font-medium text-ink">
-                    {claim.primaryDiagnosis?.name ?? claim.inacbgCode}
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    <ClaimStatusPill status={claim.status} />
-                    <CareTypePill careType={claim.careType} />
-                    <PriorityPill priorityScore={claim.priorityScore} />
-                    <SeverityPill severityLevel={claim.severityLevel} />
-                    {claim.hasSimilarPattern && <SimilarPatternPill />}
+                  <FindingSignals claim={claim} />
+                  <div className="flex flex-wrap items-end justify-between gap-3">
+                    <PotentialGap claim={claim} />
+                    <AnalysisAction
+                      claim={claim}
+                      isAnalysisRunning={analysisRunner.isRunning}
+                      onAnalyze={() => analyzeClaim(claim)}
+                    />
                   </div>
-                </div>
-                <div className="flex flex-col gap-0.5 text-small">
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-ink">
-                    {claim.facility.name}
-                    <FacilityTypePill facilityType={claim.facility.type} />
-                  </span>
-                  <span className="text-caption text-ink-secondary tabular-nums">
-                    {claim.careType === 'OUTPATIENT'
-                      ? `Kunjungan ${formatDate(claim.admittedAt)}`
-                      : `Masuk ${formatDate(claim.admittedAt)} · Pulang ${formatDate(claim.dischargedAt)}`}{' '}
-                    · LOS {formatLengthOfStay(claim.lengthOfStayDays)}
-                  </span>
-                </div>
-                <FindingSignals claim={claim} />
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <PotentialGap claim={claim} />
-                  <AnalysisAction
-                    claim={claim}
-                    isAnalysisRunning={analysisRunner.isRunning}
-                    onAnalyze={() => analyzeClaim(claim)}
-                  />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        {analysisRunner.dialogs}
+        {claims.length > 0 && (
+          <TablePagination
+            firstRowIndex={firstRowIndex}
+            pageRowCount={claims.length}
+            matchingRowCount={claimPage.total}
+            pageIndex={claimPage.page - 1}
+            pageCount={pageCount}
+            rowNoun="klaim"
+            onPageChange={table.setPageIndex}
+          />
+        )}
       </div>
-      {analysisRunner.dialogs}
-      {claims.length > 0 && (
-        <TablePagination
-          firstRowIndex={firstRowIndex}
-          pageRowCount={claims.length}
-          matchingRowCount={claimPage.total}
-          pageIndex={claimPage.page - 1}
-          pageCount={pageCount}
-          rowNoun="klaim"
-          onPageChange={table.setPageIndex}
-        />
-      )}
     </div>
   );
 }
