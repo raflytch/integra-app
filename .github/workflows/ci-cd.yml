@@ -109,8 +109,10 @@ jobs:
       - name: Pull images and restart stack
         env:
           REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
+          LLM_CONCURRENCY: ${{ vars.LLM_CONCURRENCY }}
         run: |
-          ssh vps bash -s -- "$DEPLOY_PATH" "$GITHUB_SHA" "$GITHUB_ACTOR" "$REGISTRY_TOKEN" <<'EOF'
+          ssh vps bash -s -- "$DEPLOY_PATH" "$GITHUB_SHA" "$GITHUB_ACTOR" "$REGISTRY_TOKEN" "LLM_MODEL=$LLM_MODEL" "LLM_CONCURRENCY=$LLM_CONCURRENCY" <<'EOF'
           set -euo pipefail
           deploy_path="$1" image_tag="$2" registry_user="$3" registry_token="$4"
           cd "$deploy_path"
@@ -130,6 +132,15 @@ jobs:
           else
             printf '\nIMAGE_TAG=%s\n' "$image_tag" >> .env
           fi
+          for setting in "$5" "$6"; do
+            name="${setting%%=*}" value="${setting#*=}"
+            [ -n "$value" ] || continue
+            if grep -q "^$name=" .env; then
+              sed -i "s|^$name=.*|$name=$value|" .env
+            else
+              printf '\n%s=%s\n' "$name" "$value" >> .env
+            fi
+          done
           docker compose up -d --remove-orphans
           echo "Waiting for the API health check..."
           for attempt in $(seq 1 30); do

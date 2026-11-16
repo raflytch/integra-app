@@ -2,7 +2,7 @@
  * Seeds demo claims built from BPJS Kesehatan sample visits (data/bpjs-sample-visits.json):
  * real diagnoses, INA-CBG codes, tariffs, and length of stay, with synthetic
  * patients and SEP numbers. Documents come from templates and are stored
- * already read, so the analysis in the app needs no LLM call. Runs on every
+ * unread, so Analisis in the app reads them with the LLM. Runs on every
  * deploy: it skips when the same claims are already seeded, unless --force.
  * It replaces only claims whose SEP number starts with 9900R (with their
  * findings and decisions) and their patients.
@@ -25,6 +25,7 @@ import { buildSimulatedVedikaReply } from '../src/domain/vedika/vedika-reply';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { serializeResponse } from '../src/infrastructure/database/prisma/repositories/prisma-vedika.repository';
 import {
+  DEMO_DATASET_SEED,
   generateBpjsSampleClaims,
   SAMPLE_CLAIM_NO_PREFIX,
   SAMPLE_RECORD_NO_PREFIX,
@@ -42,7 +43,6 @@ import { upsertEvidenceRules } from './synthetic/upsert-evidence-rules';
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 5000;
 const MAX_CLAIM_COUNT = 5000;
-const DATASET_SEED = 20260401;
 const LEGACY_DEMO_CLAIM_NO_PREFIX = 'KLM-DEMO-';
 const INSERT_BATCH_SIZE = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -127,7 +127,7 @@ async function main(): Promise<void> {
   const logger = new Logger('SeedDemoClaims');
   const { claims, facilities } = generateBpjsSampleClaims(
     readClaimCount(),
-    DATASET_SEED,
+    DEMO_DATASET_SEED,
   );
   const app = await NestFactory.createApplicationContext(SeedDemoClaimsModule, {
     logger: ['log', 'error', 'warn'],
@@ -244,7 +244,6 @@ async function main(): Promise<void> {
                 type: document.type,
                 recordedAt: document.recordedAt,
                 content: document.content,
-                extracted: document.extracted as object,
                 claimId: claimIdByNo.get(claim.claimNo)!,
               })),
             ),
@@ -432,12 +431,12 @@ async function main(): Promise<void> {
     logger.log(
       [
         `Faskes    : ${facilities.length}`,
-        `Klaim demo: ${claims.length} (dokumen sudah dibaca, belum dianalisis)`,
+        `Klaim demo: ${claims.length} (dokumen belum dibaca AI, belum dianalisis)`,
         ...[...claimsPerProfile]
           .sort(([first], [second]) => first.localeCompare(second))
           .map(([profile, count]) => `  ${profile.padEnd(24)} ${count}`),
         `Dokumen   : ${claims.reduce((total, claim) => total + claim.documents.length, 0)}`,
-        'Pilih klaim di Antrean Klaim lalu klik Analisis; tanpa panggilan LLM karena dokumen sudah dibaca.',
+        'Pilih klaim di Antrean Klaim lalu klik Analisis; AI membaca dokumennya (berbayar) lalu aturan INTEGRA dijalankan.',
       ].join('\n'),
     );
   } finally {

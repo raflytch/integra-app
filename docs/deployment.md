@@ -138,7 +138,7 @@ openssl rand -base64 48   # JWT_SECRET
 openssl rand -base64 32   # TOTP_ENCRYPTION_KEY
 ```
 
-Set `LLM_API_KEY` to the real provider key. Keep `TOTP_ENCRYPTION_KEY` and `POSTGRES_PASSWORD` stable after the first deploy: the key decrypts stored authenticator secrets, and PostgreSQL keeps the password it was initialized with.
+Set `LLM_API_KEY` to the real provider key. To change the model without VPS access, set the repository variables `LLM_MODEL` and `LLM_CONCURRENCY` (Settings, Secrets and variables, Actions, Variables); every deploy writes the ones that are set to the VPS `.env`. `LLM_CONCURRENCY` also sets how many claims bulk analysis rereads with the LLM at once; the provider kept up to about 25. Keep `TOTP_ENCRYPTION_KEY` and `POSTGRES_PASSWORD` stable after the first deploy: the key decrypts stored authenticator secrets, and PostgreSQL keeps the password it was initialized with.
 
 ## 7. GitHub Actions access
 

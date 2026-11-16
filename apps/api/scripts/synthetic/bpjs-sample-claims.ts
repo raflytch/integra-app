@@ -12,6 +12,7 @@ import type { CareType } from '../../src/domain/claims/claim-detail';
 import type { InjectedCase } from './dataset.schema';
 
 export const SAMPLE_CLAIM_NO_PREFIX = '9900R';
+export const DEMO_DATASET_SEED = 20260401;
 export const SAMPLE_RECORD_NO_PREFIX = 'RM-DEMO-';
 const VISITS_FILE_PATH = join(__dirname, '../../data/bpjs-sample-visits.json');
 const HOUR_MS = 60 * 60 * 1000;

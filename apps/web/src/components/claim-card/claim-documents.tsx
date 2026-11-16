@@ -4,7 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ReadByAiPill } from '@/components/claim-pills';
+import { ReadByAiPill, ReadByRulesPill } from '@/components/claim-pills';
 import { DOCUMENT_TYPE_LABELS } from '@/lib/claim-labels';
 import { formatDateTime } from '@/lib/format';
 import type { ClaimDocument } from '@/types/claim.types';
@@ -41,6 +41,7 @@ export function ClaimDocuments({ documents }: { documents: ClaimDocument[] }) {
                   <span className="flex flex-wrap items-center gap-2">
                     {DOCUMENT_TYPE_LABELS[document.type]}
                     {document.isExtracted && <ReadByAiPill />}
+                    {document.isReadByRules && <ReadByRulesPill />}
                   </span>
                   <span className="text-caption font-normal text-ink-secondary">
                     {formatDateTime(document.recordedAt)}

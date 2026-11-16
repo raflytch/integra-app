@@ -10,7 +10,6 @@ import {
   LuFlag,
   LuGitCompareArrows,
   LuLightbulb,
-  LuRefreshCw,
   LuSparkles,
 } from 'react-icons/lu';
 import { useClaimAnalysisRunner } from '@/components/analysis/use-claim-analysis-runner';
@@ -19,6 +18,7 @@ import {
   DecisionActionPill,
   IntegraAiPill,
   Pill,
+  ReadByRulesPill,
 } from '@/components/claim-pills';
 import { EVIDENCE_STATUS_LABELS, TEST_TYPE_DETAILS } from '@/lib/claim-labels';
 import { formatDateTime, formatPercent } from '@/lib/format';
@@ -47,7 +47,7 @@ function describePendingAnalysis(claim: ClaimDetail): {
 } | null {
   const documentCount = claim.documents.length;
   const extractedDocumentCount = claim.documents.filter(
-    (document) => document.isExtracted,
+    (document) => document.isExtracted || document.isReadByRules,
   ).length;
 
   if (documentCount === 0 || extractedDocumentCount < documentCount) {
@@ -113,7 +113,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
         ) : coverage ? (
           `Paling mirip ${formatPercent(coverage.max)}, di bawah ambang ${formatPercent(coverage.threshold)} untuk penyakit ini.`
         ) : (
-          'Ambang kemiripan belum dihitung untuk klaim ini. Klik Analisis ulang di kartu ini (tanpa biaya token).'
+          'Ambang kemiripan belum dihitung untuk klaim ini.'
         ),
     },
     {
@@ -131,7 +131,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
               )
               .join(' · ')
           : existenceCount > 0
-            ? `${existenceCount} diagnosis sekunder belum didukung bukti. Klik Analisis ulang untuk melihat statusnya per diagnosis.`
+            ? `${existenceCount} diagnosis sekunder belum didukung bukti.`
             : unassessedCount > 0
               ? `Belum ada aturan PNPK untuk ${claim.verification?.unassessedDiagnoses.join(', ')}.`
               : diagnosisStatuses.length > 0
@@ -178,24 +178,25 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         ) : (
           <Pill tone="outline">Belum dianalisis AI</Pill>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          disabled={analysisRunner.isRunning}
-          onClick={() =>
-            analysisRunner.requestAnalysis([
-              { id: claim.id, claimNo: claim.claimNo, unreadDocumentCount },
-            ])
-          }
-        >
-          {claim.analyzedAt ? (
-            <LuRefreshCw aria-hidden="true" />
-          ) : (
+        {claim.documents.some((document) => document.isReadByRules) && (
+          <ReadByRulesPill />
+        )}
+        {!claim.analyzedAt && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={analysisRunner.isRunning}
+            onClick={() =>
+              analysisRunner.requestAnalysis([
+                { id: claim.id, claimNo: claim.claimNo, unreadDocumentCount },
+              ])
+            }
+          >
             <LuSparkles aria-hidden="true" />
-          )}
-          {claim.analyzedAt ? 'Analisis ulang' : 'Analisis'}
-        </Button>
+            Analisis
+          </Button>
+        )}
       </div>
       <h2
         id="ai-analysis-heading"

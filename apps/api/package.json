@@ -14,6 +14,8 @@
     "data:seed": "tsx scripts/seed-synthetic-dataset.ts",
     "eval:similarity": "tsx scripts/similarity-report.ts",
     "eval:detection": "tsx scripts/evaluate-detection.ts",
+    "eval:impact": "tsx scripts/measure-impact.ts",
+    "eval:ai": "tsx scripts/measure-ai-reading.ts",
     "seed:users": "tsx scripts/seed-users.ts",
     "seed:fixture": "tsx scripts/load-contract-fixture.ts",
     "seed:demo": "tsx scripts/seed-demo-claims.ts",

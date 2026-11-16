@@ -84,3 +84,42 @@ export async function analyzeClaim(
   }
   throw new AnalysisStreamError('INCOMPLETE_STREAM');
 }
+
+export interface BulkAnalysisProgress {
+  status: 'RUNNING' | 'DONE' | 'STOPPED';
+  claimCount: number;
+  triagedCount: number;
+  flaggedCount: number;
+  confirmWithAi: boolean;
+  aiTargetCount: number;
+  aiConfirmedCount: number;
+  failedCount: number;
+  startedAt: string;
+  triageFinishedAt: string | null;
+  finishedAt: string | null;
+}
+
+export async function startBulkAnalysis(
+  claimIds: string[],
+  confirmWithAi: boolean,
+): Promise<BulkAnalysisProgress> {
+  const response = await apiClient.post<BulkAnalysisProgress>(
+    '/analysis/bulk',
+    { claimIds, confirmWithAi },
+  );
+  return response.data;
+}
+
+export async function fetchBulkAnalysis(): Promise<BulkAnalysisProgress | null> {
+  const response = await apiClient.get<{
+    progress: BulkAnalysisProgress | null;
+  }>('/analysis/bulk');
+  return response.data.progress;
+}
+
+export async function stopBulkAnalysis(): Promise<BulkAnalysisProgress | null> {
+  const response = await apiClient.post<{
+    progress: BulkAnalysisProgress | null;
+  }>('/analysis/bulk/stop');
+  return response.data.progress;
+}
