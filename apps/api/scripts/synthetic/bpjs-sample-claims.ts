@@ -886,19 +886,17 @@ function injectAllTestsCluster(claims: SampleClaim[]): void {
       claim,
     ]);
   }
+  const isSource = (claim: SampleClaim) =>
+    claim.injectedCase.includes('EXAM_MANIPULATION') &&
+    !claim.documents.some((document) => /demam/i.test(document.content));
   const group = [...upcodedByPrimary.values()]
     .filter(
       (candidates) =>
-        candidates.length >= CLONING_CLUSTER_SIZE &&
-        candidates.some((claim) =>
-          claim.injectedCase.includes('EXAM_MANIPULATION'),
-        ),
+        candidates.length >= CLONING_CLUSTER_SIZE && candidates.some(isSource),
     )
     .sort((first, second) => second.length - first.length)[0];
   if (!group) return;
-  const source = group.find((claim) =>
-    claim.injectedCase.includes('EXAM_MANIPULATION'),
-  )!;
+  const source = group.find(isSource)!;
   const members = [source, ...group.filter((claim) => claim !== source)].slice(
     0,
     CLONING_CLUSTER_SIZE,
