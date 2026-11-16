@@ -12,6 +12,10 @@
   "potentialGap": 4120000,
   "priorityScore": 0.8255,
   "analyzedAt": "2026-10-03T08:20:41.512Z",
+  "comparedClaimCount": 42,
+  "maxSimilarity": 0.41,
+  "similarityMean": 0.38,
+  "similarityThreshold": 0.66,
   "facility": {
     "id": "01920000-0000-7000-8000-000000000001",
     "code": "RS-3171-021",
@@ -31,13 +35,15 @@
       "id": "01920000-0000-7000-8000-000000000201",
       "icd10Code": "A91",
       "name": "Demam berdarah dengue",
-      "isPrimary": true
+      "isPrimary": true,
+      "evidenceStatus": null
     },
     {
       "id": "01920000-0000-7000-8000-000000000202",
       "icd10Code": "R57.9",
       "name": "Syok",
-      "isPrimary": false
+      "isPrimary": false,
+      "evidenceStatus": "NOT_FOUND"
     }
   ],
   "procedures": [],
@@ -62,25 +68,19 @@
       "id": "01920000-0000-7000-8000-000000000401",
       "testType": "EXISTENCE",
       "strength": 1,
-      "summary": "Diagnosis sekunder Syok (R57.9) belum didukung bukti klinis: resusitasi cairan, akral dingin, hipotensi.",
+      "summary": "Diagnosis sekunder Syok (R57.9) tidak didukung bukti klinis: resusitasi cairan, tanda syok tidak ditemukan.",
       "citations": [
         {
           "kind": "MISSING_EVIDENCE",
           "evidenceType": "PROCEDURE",
           "expected": "resusitasi cairan",
-          "guidelineRef": "PNPK Dengue 2021, hlm. 34"
+          "guidelineRef": "PNPK Tata Laksana Infeksi Dengue pada Dewasa (KMK HK.01.07/MENKES/9845/2020) Bab III hlm. 43 dan 46: resusitasi cairan kristaloid 5-10 ml/kgBB/jam pada syok terkompensasi atau 10-20 ml/kgBB pada sindroma syok dengue"
         },
         {
           "kind": "MISSING_EVIDENCE",
           "evidenceType": "FINDING",
-          "expected": "akral dingin",
-          "guidelineRef": "PNPK Dengue 2021, hlm. 31"
-        },
-        {
-          "kind": "MISSING_EVIDENCE",
-          "evidenceType": "VITAL_SIGN",
-          "expected": "hipotensi",
-          "guidelineRef": "PNPK Dengue 2021, hlm. 31"
+          "expected": "tanda syok",
+          "guidelineRef": "PNPK Tata Laksana Infeksi Dengue pada Dewasa (KMK HK.01.07/MENKES/9845/2020) Bab III hlm. 23 dan 43: takikardi, akral dingin, pengisian kapiler melambat, nadi lemah, tekanan nadi ≤ 20 mmHg, atau hipotensi (sistolik 80-90 mmHg pada dewasa)"
         },
         {
           "kind": "QUOTE",

@@ -101,6 +101,20 @@ enum EvidenceType {
   @@map("evidence_type")
 }
 
+/// Uji Ada result for one secondary diagnosis with evidence rules.
+enum EvidenceStatus {
+  /// Every required evidence is present.
+  SUPPORTED
+  /// Some, not all, required evidence is present.
+  PARTIAL
+  /// No required evidence is present.
+  NOT_FOUND
+  /// Present evidence is contradicted by a daily note within 24 hours.
+  REFUTED
+
+  @@map("evidence_status")
+}
+
 /// Detector that produced a finding.
 enum TestType {
   /// "Uji Ada": required evidence for a diagnosis is present.
@@ -205,6 +219,14 @@ model Claim {
   vedikaSyncedAt        DateTime?      @map("vedika_synced_at") @db.Timestamptz(3)
   requiredEvidenceCount Int?           @map("required_evidence_count") @db.SmallInt
   foundEvidenceCount    Int?           @map("found_evidence_count") @db.SmallInt
+  /// Other claims Uji Bukan Salinan compared this claim with. Null until analysis runs.
+  comparedClaimCount    Int?           @map("compared_claim_count")
+  /// Highest Uji Bukan Salinan score against any compared claim, 0..1, even below the threshold.
+  maxSimilarity         Float?         @map("max_similarity")
+  /// Mean over all claims of each claim's highest Uji Bukan Salinan score, 0..1.
+  similarityMean        Float?         @map("similarity_mean")
+  /// Uji Bukan Salinan cutoff: similarityMean + 2 x RMSE (Prakosa dan Rokhman 2021).
+  similarityThreshold   Float?         @map("similarity_threshold")
   status                ClaimStatus    @default(PENDING)
   /// Evaluation ground truth for synthetic data. Keep out of API responses.
   injectedCase          InjectedCase[] @default([]) @map("injected_case")
@@ -235,11 +257,13 @@ model Claim {
 /// DB constraints:
 /// - UNIQUE (claim_id) WHERE is_primary: at most one primary diagnosis per claim.
 model ClaimDiagnosis {
-  id        String  @id @default(uuid(7)) @db.Uuid
-  claimId   String  @map("claim_id") @db.Uuid
-  icd10Code String  @map("icd10_code")
-  name      String
-  isPrimary Boolean @default(false) @map("is_primary")
+  id             String          @id @default(uuid(7)) @db.Uuid
+  claimId        String          @map("claim_id") @db.Uuid
+  icd10Code      String          @map("icd10_code")
+  name           String
+  isPrimary      Boolean         @default(false) @map("is_primary")
+  /// Uji Ada result; null for the primary diagnosis, a code without evidence rules, or before analysis.
+  evidenceStatus EvidenceStatus? @map("evidence_status")
 
   claim    Claim     @relation(fields: [claimId], references: [id], onDelete: Cascade)
   findings Finding[]
@@ -297,15 +321,19 @@ model ClinicalDocument {
 
 /// Evidence a diagnosis is expected to leave in documents, per clinical guideline.
 model EvidenceRule {
-  id           String       @id @default(uuid(7)) @db.Uuid
-  icd10Code    String       @map("icd10_code")
-  evidenceType EvidenceType @map("evidence_type")
+  id                   String       @id @default(uuid(7)) @db.Uuid
+  icd10Code            String       @map("icd10_code")
+  /// Disease whose PNPK defines the rule, e.g. "Infeksi dengue".
+  disease              String       @default("")
+  /// ICD-10 prefixes of the primary diagnosis the rule applies to; empty applies to any.
+  primaryIcd10Prefixes String[]     @default([]) @map("primary_icd10_prefixes")
+  evidenceType         EvidenceType @map("evidence_type")
   /// Expected evidence, e.g. "ceftriaxone" or "chest X-ray".
-  expected     String
+  expected             String
   /// Guideline citation, e.g. "PNPK Pneumonia 2023, p. 12".
-  guidelineRef String       @map("guideline_ref")
+  guidelineRef         String       @map("guideline_ref")
 
-  @@unique([icd10Code, evidenceType, expected])
+  @@unique([icd10Code, disease, evidenceType, expected])
   @@map("evidence_rules")
 }
 
@@ -421,10 +449,10 @@ model VedikaAttachment {
 
 /// Snapshot of the simulated VEDIKA response returned for an approved claim.
 model VedikaResponse {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  claimId   String   @unique @map("claim_id") @db.Uuid
-  syncedAt  DateTime @map("synced_at") @db.Timestamptz(3)
-  response  Json     @db.JsonB
+  id       String   @id @default(uuid(7)) @db.Uuid
+  claimId  String   @unique @map("claim_id") @db.Uuid
+  syncedAt DateTime @map("synced_at") @db.Timestamptz(3)
+  response Json     @db.JsonB
 
   claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
 

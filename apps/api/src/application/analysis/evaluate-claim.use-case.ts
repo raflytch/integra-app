@@ -3,7 +3,7 @@ import type {
   ClaimEvidence,
   EvidenceRule,
 } from '../../domain/analysis/claim-evidence';
-import { countSecondaryDiagnosisEvidence } from '../../domain/analysis/existence-test';
+import { assessSecondaryDiagnoses } from '../../domain/analysis/existence-test';
 import { calculatePriorityScore } from '../../domain/analysis/priority-score';
 import type { RunConsistencyTestUseCase } from './run-consistency-test.use-case';
 import type { RunExistenceTestUseCase } from './run-existence-test.use-case';
@@ -36,7 +36,7 @@ export class EvaluateClaimUseCase {
     onStep('CONSISTENCY');
     await this.runConsistencyTest.execute(claim);
     onStep('SIMILARITY');
-    await this.runSimilarityTest.execute(claim);
+    const similarityCoverage = await this.runSimilarityTest.execute(claim);
 
     const findingSignals = await this.analysisRepository.findFindingSignals(
       claim.claimId,
@@ -45,7 +45,7 @@ export class EvaluateClaimUseCase {
       (gapTotal, signal) => gapTotal + (signal.tariffGap ?? 0),
       0,
     );
-    const evidenceCount = countSecondaryDiagnosisEvidence(claim, evidenceRules);
+    const assessments = assessSecondaryDiagnoses(claim, evidenceRules);
     await this.analysisRepository.saveClaimScores(claim.claimId, {
       potentialGap,
       priorityScore: calculatePriorityScore(
@@ -54,8 +54,15 @@ export class EvaluateClaimUseCase {
         claim.tariffAmount,
       ),
       analyzedAt: new Date(),
-      requiredEvidenceCount: evidenceCount.requiredCount,
-      foundEvidenceCount: evidenceCount.foundCount,
+      requiredEvidenceCount: assessments.reduce(
+        (total, assessment) => total + assessment.requiredCount,
+        0,
+      ),
+      foundEvidenceCount: assessments.reduce(
+        (total, assessment) => total + assessment.foundCount,
+        0,
+      ),
+      ...similarityCoverage,
     });
     return { findingCount: findingSignals.length, potentialGap };
   }

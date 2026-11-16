@@ -27,8 +27,9 @@ These values are set by the team for the demo and are not yet validated by BPJS 
 
 **Uji Ada**
 
-- Flag a secondary diagnosis when at least 50% of its evidence is missing; each flag lowers severity by 1 level.
-- Evidence rules: Syok hipovolemik (R57.1) and Syok (R57.9) need resusitasi cairan, akral dingin, hipotensi; Gagal napas akut (J96.0) needs oksigen, sesak napas, desaturasi.
+- Status per secondary diagnosis: Didukung (every required evidence found), Sebagian (some found), Tidak ditemukan (none found), Dibantah data (found evidence contradicted by a daily note within 24 hours or by the same note's measured vital sign). Every status but Didukung is flagged; only Tidak ditemukan lowers severity by 1 level (Permenkes 3/2023 tariff gap).
+- Batas klinis: a measured vital sign proves or refutes hipotensi (TD sistolik ≤ 90 mmHg, the adult 80 to 90 mmHg band of PNPK Dengue), tekanan nadi ≤ 20 mmHg (PNPK Dengue), and desaturasi (SpO2 < 90%, the hipoksemia limit PaO2 < 60 mmHg or SaO2 < 90% of PNPK Anestesiologi hlm. 72). Not yet checked: trombositopenia (≤ 100.000/mm³, PNPK Dengue), because the extraction does not read lab results.
+- Evidence rules (PNPK) apply only to claims whose primary diagnosis belongs to the PNPK's disease: shock rules to dengue (A90, A91, A97), respiratory failure rules to pneumonia (J12 to J18); other diseases get no status until their PNPK is added. Syok hipovolemik (R57.1) and Syok (R57.9) need resusitasi cairan and tanda syok, any one of takikardi, akral dingin, pengisian kapiler melambat, nadi lemah, tekanan nadi ≤ 20 mmHg, or hipotensi (KMK HK.01.07/MENKES/9845/2020, PNPK Infeksi Dengue Dewasa, Bab III hlm. 23 and 43; fluids hlm. 43 and 46); Gagal napas akut (J96.0) needs oksigen (KMK HK.01.07/MENKES/1541/2022, PNPK Anestesiologi dan Terapi Intensif, hlm. 311; KMK HK.01.07/MENKES/1168/2025, PNPK Pneumonia Dewasa, hlm. 34), sesak napas (PNPK Pneumonia hlm. 12 and 18), and desaturasi (PNPK Anestesiologi hlm. 72). Every quote is checked against the official PDFs.
 - Fluids shown as "looks like, but is not, resusitasi cairan" (display only): infus, cairan, ringer, asering, NaCl, normal saline, dekstrosa, D5, KA-EN, KAEN, kristaloid, koloid, gelofusin, loading, guyur, grojok.
 
 **Uji Konsisten**
@@ -42,7 +43,7 @@ These values are set by the team for the demo and are not yet validated by BPJS 
 
 **Uji Bukan Salinan**
 
-- Similarity threshold 65% (`SIMILARITY_THRESHOLD`); at most 5 similar claims per claim.
+- Similarity threshold: computed from the data, mean + 2 x RMSE of every claim's highest similarity to another patient's claim with the same primary diagnosis, pooled over all claims (an RMSE anomaly approach like Prakosa and Rokhman 2021, IJCCS 15(4), DOI 10.22146/ijccs.68160). Pooling keeps small diagnosis groups testable: with fewer than 6 claims, a per-diagnosis 2 x RMSE can never be exceeded. At most 5 similar claims per claim.
 - Ignored lines: sentences starting with "Diagnosis" or holding an ICD-10 code in parentheses.
 - Highlights: at most 3 shared sentences of at least 25 characters, skipping sentences shared by more than 10% of claims.
 
@@ -118,7 +119,6 @@ Key variables in `apps/api/.env`:
 | `JWT_SECRET`                               | Session signing secret, at least 32 characters             |
 | `TOTP_ENCRYPTION_KEY`                      | AES-256 key for TOTP secrets (`openssl rand -base64 32`)   |
 | `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL` | Any OpenAI-compatible LLM provider                         |
-| `SIMILARITY_THRESHOLD`                     | Uji Bukan Salinan similarity threshold (default 0.65)      |
 
 `apps/web/.env.local` only needs `NEXT_PUBLIC_API_URL=http://localhost:3001`. Every new API variable also goes in `deploy/.env.example`.
 

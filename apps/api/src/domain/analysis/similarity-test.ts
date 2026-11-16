@@ -1,4 +1,5 @@
 import type { DocumentType } from '../claims/claim-detail';
+import { ANOMALY_RMSE_MULTIPLIER } from '../claims/similar-pattern';
 import type { ClaimEvidence, SimilarityCandidate } from './claim-evidence';
 
 const SHINGLE_SIZE = 3;
@@ -6,6 +7,7 @@ const MIN_IDENTICAL_TEXT_LENGTH = 25;
 /** Sentences shared by more claims than this are template boilerplate, not copying. */
 const MAX_IDENTICAL_TEXT_CLAIM_RATIO = 0.1;
 const MAX_IDENTICAL_TEXTS_PER_MATCH = 3;
+const MAX_DIFFERENT_TEXTS_PER_SIDE = 3;
 /** Same order as the database enum, so candidates sorted by the repository keep it. */
 const DOCUMENT_TYPE_ORDER: readonly DocumentType[] = [
   'MEDICAL_RESUME',
@@ -39,11 +41,18 @@ export interface SimilarClaimMatch {
   relatedClaimNo: string;
   /** TF-IDF cosine similarity, 0..1. */
   similarity: number;
+  phraseCount: number;
+  sharedPhraseCount: number;
   documentId: string;
   relatedDocumentId: string;
   identicalTexts: {
     documentId: string;
     relatedDocumentId: string;
+    text: string;
+  }[];
+  differentTexts: {
+    side: 'CLAIM' | 'RELATED_CLAIM';
+    documentId: string;
     text: string;
   }[];
 }
@@ -154,10 +163,74 @@ function representativeDocumentId(claim: ComparedClaim): string {
   );
 }
 
-/**
- * Every candidate scored against the claim. Unfiltered, for calibration.
- * Candidates from the same patient are never compared.
- */
+function average(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function toIdfByShingle(
+  shingleCountsPerClaim: Map<string, number>[],
+): Map<string, number> {
+  const documentFrequency = new Map<string, number>();
+  for (const shingleCounts of shingleCountsPerClaim) {
+    for (const shingle of shingleCounts.keys()) {
+      documentFrequency.set(shingle, (documentFrequency.get(shingle) ?? 0) + 1);
+    }
+  }
+  const claimCount = shingleCountsPerClaim.length;
+  return new Map(
+    [...documentFrequency].map(([shingle, frequency]) => [
+      shingle,
+      Math.log((1 + claimCount) / (1 + frequency)) + 1,
+    ]),
+  );
+}
+
+function collectMaxSimilarities(group: ComparedClaim[]): number[] {
+  const shingleCountsPerClaim = group.map(countShingles);
+  const idfByShingle = toIdfByShingle(shingleCountsPerClaim);
+  const vectors = shingleCountsPerClaim.map((shingleCounts) =>
+    toWeightedVector(shingleCounts, idfByShingle),
+  );
+  const maxSimilarities: (number | null)[] = group.map(() => null);
+  for (let first = 0; first < group.length; first += 1) {
+    for (let second = first + 1; second < group.length; second += 1) {
+      if (group[first].patientId === group[second].patientId) continue;
+      const similarity = cosine(vectors[first], vectors[second]);
+      maxSimilarities[first] = Math.max(
+        maxSimilarities[first] ?? 0,
+        similarity,
+      );
+      maxSimilarities[second] = Math.max(
+        maxSimilarities[second] ?? 0,
+        similarity,
+      );
+    }
+  }
+  return maxSimilarities.filter((similarity) => similarity !== null);
+}
+
+// Prakosa dan Rokhman (2021), IJCCS 15(4): data klaim BPJS anomali bila residual > 2 x RMSE, di sini atas kemiripan tertinggi semua klaim.
+export function findSimilarityAnomalyThreshold(
+  groups: SimilarityCandidate[][],
+): { meanMaxSimilarity: number; anomalyThreshold: number } | null {
+  const maxSimilarities = groups.flatMap(collectMaxSimilarities);
+  if (maxSimilarities.length === 0) return null;
+  const meanMaxSimilarity = average(maxSimilarities);
+  const rootMeanSquareError = Math.sqrt(
+    average(
+      maxSimilarities.map(
+        (similarity) => (similarity - meanMaxSimilarity) ** 2,
+      ),
+    ),
+  );
+  return {
+    meanMaxSimilarity,
+    anomalyThreshold:
+      meanMaxSimilarity + ANOMALY_RMSE_MULTIPLIER * rootMeanSquareError,
+  };
+}
+
+/** Candidates from the same patient are never compared. */
 export function scoreSimilarClaims(
   claim: ClaimEvidence,
   candidates: SimilarityCandidate[],
@@ -171,19 +244,8 @@ export function scoreSimilarClaims(
   const shingleCountsPerClaim = corpus.map(countShingles);
   const sentencesPerClaim = corpus.map(collectSentences);
 
-  const documentFrequency = new Map<string, number>();
-  for (const shingleCounts of shingleCountsPerClaim) {
-    for (const shingle of shingleCounts.keys()) {
-      documentFrequency.set(shingle, (documentFrequency.get(shingle) ?? 0) + 1);
-    }
-  }
   const claimCount = corpus.length;
-  const idfByShingle = new Map(
-    [...documentFrequency].map(([shingle, frequency]) => [
-      shingle,
-      Math.log((1 + claimCount) / (1 + frequency)) + 1,
-    ]),
-  );
+  const idfByShingle = toIdfByShingle(shingleCountsPerClaim);
 
   const sentenceClaimCount = new Map<string, number>();
   for (const sentences of sentencesPerClaim) {
@@ -197,12 +259,17 @@ export function scoreSimilarClaims(
     Math.floor(claimCount * MAX_IDENTICAL_TEXT_CLAIM_RATIO),
   );
 
-  const claimVector = toWeightedVector(shingleCountsPerClaim[0], idfByShingle);
+  const claimShingles = [...shingleCountsPerClaim[0].keys()];
+  const vectors = shingleCountsPerClaim.map((shingleCounts) =>
+    toWeightedVector(shingleCounts, idfByShingle),
+  );
+  const claimVector = vectors[0];
   const claimSentences = sentencesPerClaim[0];
   const claimDocumentId = representativeDocumentId(claim);
 
   return comparedCandidates.map((candidate, index) => {
     const candidateSentences = sentencesPerClaim[index + 1];
+    const candidateShingleCounts = shingleCountsPerClaim[index + 1];
     const identicalTexts = [...claimSentences]
       .filter(
         ([key]) =>
@@ -215,27 +282,35 @@ export function scoreSimilarClaims(
         relatedDocumentId: candidateSentences.get(key)!.documentId,
         text: sentence.text,
       }));
+    const sentencesMissingFrom = (
+      side: 'CLAIM' | 'RELATED_CLAIM',
+      sentences: Map<string, Sentence>,
+      otherSentences: Map<string, Sentence>,
+    ) =>
+      [...sentences]
+        .filter(([key]) => !otherSentences.has(key))
+        .slice(0, MAX_DIFFERENT_TEXTS_PER_SIDE)
+        .map(([, sentence]) => ({ side, ...sentence }));
+    const differentTexts = [
+      ...sentencesMissingFrom('CLAIM', claimSentences, candidateSentences),
+      ...sentencesMissingFrom(
+        'RELATED_CLAIM',
+        candidateSentences,
+        claimSentences,
+      ),
+    ];
     return {
       relatedClaimId: candidate.claimId,
       relatedClaimNo: candidate.claimNo,
-      similarity: cosine(
-        claimVector,
-        toWeightedVector(shingleCountsPerClaim[index + 1], idfByShingle),
-      ),
+      similarity: cosine(claimVector, vectors[index + 1]),
+      phraseCount: claimShingles.length,
+      sharedPhraseCount: claimShingles.filter((shingle) =>
+        candidateShingleCounts.has(shingle),
+      ).length,
       documentId: claimDocumentId,
       relatedDocumentId: representativeDocumentId(candidate),
       identicalTexts,
+      differentTexts,
     };
   });
-}
-
-/** Matches at or above the threshold, strongest first. */
-export function findSimilarClaims(
-  claim: ClaimEvidence,
-  candidates: SimilarityCandidate[],
-  threshold: number,
-): SimilarClaimMatch[] {
-  return scoreSimilarClaims(claim, candidates)
-    .filter((match) => match.similarity >= threshold)
-    .sort((first, second) => second.similarity - first.similarity);
 }

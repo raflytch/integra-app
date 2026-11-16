@@ -6,8 +6,9 @@ import {
   toIcd10Category,
 } from '../../domain/analysis/claim-evidence';
 import {
+  assessSecondaryDiagnoses,
+  type DiagnosisEvidenceAssessment,
   findLookalikeEvidence,
-  findUnsupportedDiagnoses,
 } from '../../domain/analysis/existence-test';
 import {
   calculateTariffGaps,
@@ -16,6 +17,31 @@ import {
 import type { TariffSchedule } from '../ports/tariff-schedule.port';
 
 const STRENGTH_DECIMALS = 2;
+
+function describeAssessment({
+  diagnosis,
+  status,
+  requiredCount,
+  foundCount,
+  missingRules,
+  refutedEvidence,
+}: DiagnosisEvidenceAssessment): string {
+  const diagnosisLabel = `${diagnosis.name} (${diagnosis.icd10Code})`;
+  const missingLabel = missingRules.map((rule) => rule.expected).join(', ');
+  if (status === 'NOT_FOUND') {
+    return `Diagnosis sekunder ${diagnosisLabel} tidak didukung bukti klinis: ${missingLabel} tidak ditemukan.`;
+  }
+  if (status === 'PARTIAL') {
+    return `Diagnosis sekunder ${diagnosisLabel} baru didukung sebagian (${foundCount} dari ${requiredCount} bukti): ${missingLabel} tidak ditemukan.`;
+  }
+  const refutedLabel = refutedEvidence
+    .map((evidence) => evidence.rule.expected)
+    .join(', ');
+  const missingSentence = missingLabel
+    ? ` Bukti ${missingLabel} juga tidak ditemukan.`
+    : '';
+  return `Bukti diagnosis sekunder ${diagnosisLabel} dibantah data rekam medis: ${refutedLabel}.${missingSentence}`;
+}
 
 export class RunExistenceTestUseCase {
   constructor(
@@ -27,50 +53,76 @@ export class RunExistenceTestUseCase {
     claim: ClaimEvidence,
     evidenceRules: EvidenceRule[],
   ): Promise<void> {
-    const unsupportedDiagnoses = findUnsupportedDiagnoses(claim, evidenceRules);
+    const assessments = assessSecondaryDiagnoses(claim, evidenceRules);
+    const flaggedAssessments = assessments
+      .filter((assessment) => assessment.status !== 'SUPPORTED')
+      .sort(
+        (first, second) =>
+          first.foundCount / first.requiredCount -
+          second.foundCount / second.requiredCount,
+      );
+
+    // Permenkes 3/2023: selisih tarif = tarif klaim - tarif INA-CBG yang berlaku bila diagnosis tanpa bukti dihapus.
+    const unsupportedCategories = [
+      ...new Set(
+        flaggedAssessments
+          .filter((assessment) => assessment.status === 'NOT_FOUND')
+          .map(({ diagnosis }) => toIcd10Category(diagnosis.icd10Code)),
+      ),
+    ];
     const inacbgGroupCode = toInacbgGroupCode(claim.inacbgCode);
-    // Codes of one ICD-10 category describe one condition, so they lower severity once.
-    const categories = unsupportedDiagnoses.map(({ diagnosis }) =>
-      toIcd10Category(diagnosis.icd10Code),
-    );
-    const distinctCategories = [...new Set(categories)];
     const tariffGaps = calculateTariffGaps(
       claim.severityLevel,
       claim.tariffAmount,
-      distinctCategories.length,
+      unsupportedCategories.length,
       (severityLevel) =>
         this.tariffSchedule.findTariff(inacbgGroupCode, severityLevel),
     );
-
-    // A repeated category adds no further gap: 0 when known, null when unknown.
-    const findingTariffGap = (index: number) => {
-      const categoryGap =
-        tariffGaps[distinctCategories.indexOf(categories[index])];
-      const isFirstOfCategory = categories.indexOf(categories[index]) === index;
-      return isFirstOfCategory || categoryGap === null ? categoryGap : 0;
+    const pricedCategories = new Set<string>();
+    // Codes of one ICD-10 category describe one condition, so they lower severity once.
+    const findingTariffGap = (assessment: DiagnosisEvidenceAssessment) => {
+      if (assessment.status !== 'NOT_FOUND') return 0;
+      const category = toIcd10Category(assessment.diagnosis.icd10Code);
+      const categoryGap = tariffGaps[unsupportedCategories.indexOf(category)];
+      if (categoryGap === null) return null;
+      if (pricedCategories.has(category)) return 0;
+      pricedCategories.add(category);
+      return categoryGap;
     };
 
-    const existenceFindings: NewFinding[] = unsupportedDiagnoses.map(
-      ({ diagnosis, missingRules, missingEvidenceRatio, mentions }, index) => ({
+    const existenceFindings: NewFinding[] = flaggedAssessments.map(
+      (assessment) => ({
         testType: 'EXISTENCE',
-        strength: Number(missingEvidenceRatio.toFixed(STRENGTH_DECIMALS)),
-        summary: `Diagnosis sekunder ${diagnosis.name} (${diagnosis.icd10Code}) belum didukung bukti klinis: ${missingRules.map((rule) => rule.expected).join(', ')}.`,
+        strength: Number(
+          (1 - assessment.foundCount / assessment.requiredCount).toFixed(
+            STRENGTH_DECIMALS,
+          ),
+        ),
+        summary: describeAssessment(assessment),
         citations: [
-          ...missingRules.map((rule) => ({
+          ...assessment.missingRules.map((rule) => ({
             kind: 'MISSING_EVIDENCE' as const,
             evidenceType: rule.evidenceType,
             expected: rule.expected,
             guidelineRef: rule.guidelineRef,
             lookalike: findLookalikeEvidence(claim.documents, rule.expected),
           })),
-          ...mentions,
+          ...assessment.refutedEvidence.map(({ rule, reason, quotes }) => ({
+            kind: 'REFUTED_EVIDENCE' as const,
+            evidenceType: rule.evidenceType,
+            expected: rule.expected,
+            guidelineRef: rule.guidelineRef,
+            reason,
+            quotes,
+          })),
+          ...assessment.mentions,
         ],
-        documentId: mentions[0]?.documentId ?? null,
+        documentId: assessment.mentions[0]?.documentId ?? null,
         relatedDocumentId: null,
-        diagnosisId: diagnosis.id,
+        diagnosisId: assessment.diagnosis.id,
         relatedClaimId: null,
         similarity: null,
-        tariffGap: findingTariffGap(index),
+        tariffGap: findingTariffGap(assessment),
       }),
     );
 
@@ -78,6 +130,13 @@ export class RunExistenceTestUseCase {
       claim.claimId,
       'EXISTENCE',
       existenceFindings,
+    );
+    await this.analysisRepository.saveDiagnosisEvidenceStatuses(
+      claim.claimId,
+      assessments.map(({ diagnosis, status }) => ({
+        diagnosisId: diagnosis.id,
+        status,
+      })),
     );
   }
 }

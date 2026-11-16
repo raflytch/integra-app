@@ -18,6 +18,7 @@ import {
   DATASET_FILE_PATH,
   syntheticDatasetSchema,
 } from './synthetic/dataset.schema';
+import { EVIDENCE_RULES } from './synthetic/scenarios';
 import { upsertEvidenceRules } from './synthetic/upsert-evidence-rules';
 
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
@@ -70,7 +71,7 @@ async function main(): Promise<void> {
       patientIdByRecordNo.set(patient.medicalRecordNo, id);
     }
 
-    await upsertEvidenceRules(prisma, dataset.evidenceRules);
+    await upsertEvidenceRules(prisma, EVIDENCE_RULES);
 
     for (const claim of dataset.claims) {
       const facilityId = facilityIdByCode.get(claim.facilityCode);

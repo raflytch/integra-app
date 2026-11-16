@@ -32,7 +32,6 @@ export const envSchema = z.object({
   /** Rupiah per 1M LLM output tokens. Set together with the input price. */
   LLM_OUTPUT_PRICE_PER_MTOK_IDR: optionalPrice,
   /** Uji Bukan Salinan: minimum TF-IDF cosine similarity to flag a claim pair; calibrated with `npm run eval:similarity`. */
-  SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.65),
 });
 
 export type Env = z.infer<typeof envSchema>;
