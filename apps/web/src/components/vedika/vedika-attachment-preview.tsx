@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { buildVedikaAttachmentUrl } from '@/services/vedika.service';
 import type { VedikaAttachment } from '@/types/vedika.types';
 import { formatFileSize } from './vedika-details';
+import { VedikaPdfPreview } from './vedika-pdf-preview';
 
 const PDF_MIME_TYPE = 'application/pdf';
 
@@ -87,10 +88,10 @@ export function VedikaAttachmentPreview({
         </div>
       </div>
       {isPdf ? (
-        <iframe
-          src={fileUrl}
-          title={`Pratinjau ${selectedAttachment.fileName}`}
-          className="h-[60vh] w-full rounded-lg border border-hairline bg-canvas"
+        <VedikaPdfPreview
+          claimId={claimId}
+          attachmentId={selectedAttachment.id}
+          fileName={selectedAttachment.fileName}
         />
       ) : (
         <p className="rounded-lg border border-hairline bg-canvas px-3 py-6 text-center text-small text-ink-secondary">
