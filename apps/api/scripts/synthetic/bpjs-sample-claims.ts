@@ -26,7 +26,13 @@ type DocumentType =
   'MEDICAL_RESUME' | 'EXAM_NOTE' | 'DAILY_NOTE' | 'PRESCRIPTION' | 'PROCEDURE';
 type EvidenceMode = 'SUPPORTED' | 'PARTIAL' | 'NOT_FOUND';
 export type SampleProfile =
-  'SUPPORTED' | 'PARTIAL' | 'UPCODING' | 'NO_RULE' | 'NORMAL' | 'CLONING';
+  | 'SUPPORTED'
+  | 'PARTIAL'
+  | 'UPCODING'
+  | 'NO_RULE'
+  | 'NORMAL'
+  | 'CLONING'
+  | 'ALL_TESTS';
 
 interface BpjsVisit {
   bucket: string;
@@ -639,6 +645,7 @@ export function generateBpjsSampleClaims(
   });
 
   injectCloningClusters(claims, random);
+  injectAllTestsCluster(claims);
   return { claims, facilities: [...facilityByKey.values()] };
 }
 
@@ -662,17 +669,55 @@ function injectCloningClusters(claims: SampleClaim[], random: Random): void {
     for (const member of members) {
       member.profile = 'CLONING';
       member.injectedCase = ['CLONING'];
-      if (member === source) continue;
-      const shiftMs = member.admittedAt.getTime() - source.admittedAt.getTime();
-      member.dischargedAt = new Date(
-        member.admittedAt.getTime() +
-          (source.dischargedAt.getTime() - source.admittedAt.getTime()),
-      );
-      member.documents = source.documents.map((document) => ({
-        ...document,
-        recordedAt: new Date(document.recordedAt.getTime() + shiftMs),
-        extracted: structuredClone(document.extracted),
-      }));
+      if (member !== source) copyDocuments(source, member);
     }
+  }
+}
+
+function copyDocuments(source: SampleClaim, member: SampleClaim): void {
+  const shiftMs = member.admittedAt.getTime() - source.admittedAt.getTime();
+  member.dischargedAt = new Date(
+    member.admittedAt.getTime() +
+      (source.dischargedAt.getTime() - source.admittedAt.getTime()),
+  );
+  member.documents = source.documents.map((document) => ({
+    ...document,
+    recordedAt: new Date(document.recordedAt.getTime() + shiftMs),
+    extracted: structuredClone(document.extracted),
+  }));
+}
+
+function injectAllTestsCluster(claims: SampleClaim[]): void {
+  const upcodedByPrimary = new Map<string, SampleClaim[]>();
+  for (const claim of claims) {
+    if (claim.profile !== 'UPCODING' || claim.careType !== 'INPATIENT')
+      continue;
+    const primaryCode = claim.diagnoses[0].icd10Code;
+    upcodedByPrimary.set(primaryCode, [
+      ...(upcodedByPrimary.get(primaryCode) ?? []),
+      claim,
+    ]);
+  }
+  const group = [...upcodedByPrimary.values()]
+    .filter(
+      (candidates) =>
+        candidates.length >= CLONING_CLUSTER_SIZE &&
+        candidates.some((claim) =>
+          claim.injectedCase.includes('EXAM_MANIPULATION'),
+        ),
+    )
+    .sort((first, second) => second.length - first.length)[0];
+  if (!group) return;
+  const source = group.find((claim) =>
+    claim.injectedCase.includes('EXAM_MANIPULATION'),
+  )!;
+  const members = [source, ...group.filter((claim) => claim !== source)].slice(
+    0,
+    CLONING_CLUSTER_SIZE,
+  );
+  for (const member of members) {
+    member.profile = 'ALL_TESTS';
+    member.injectedCase = ['UPCODING', 'EXAM_MANIPULATION', 'CLONING'];
+    if (member !== source) copyDocuments(source, member);
   }
 }
