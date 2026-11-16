@@ -23,6 +23,7 @@ import {
 } from '../../../../domain/claims/similar-pattern';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
+import { RULE_READER_SOURCE } from '../../../../domain/analysis/rule-reader';
 import { countFindingsByTestType } from './finding-counts';
 import { DECISION_FIELDS, toDecision } from './prisma-decision.repository';
 
@@ -162,19 +163,22 @@ export class PrismaClaimRepository extends ClaimRepository {
       }),
     ]);
     const extractedDocumentCounts = await this.prisma.clinicalDocument.groupBy({
-      by: ['claimId'],
+      by: ['claimId', 'extractedModel'],
       where: {
         claimId: { in: claims.map((claim) => claim.id) },
         NOT: { extracted: { equals: Prisma.DbNull } },
       },
       _count: { _all: true },
     });
-    const extractedDocumentCountByClaimId = new Map(
-      extractedDocumentCounts.map((group) => [
-        group.claimId,
-        group._count._all,
-      ]),
-    );
+    const countDocuments = (claimId: string, isReadByRules: boolean) =>
+      extractedDocumentCounts
+        .filter(
+          (group) =>
+            group.claimId === claimId &&
+            (group.extractedModel === RULE_READER_SOURCE.model) ===
+              isReadByRules,
+        )
+        .reduce((total, group) => total + group._count._all, 0);
 
     const codingOutliers = findCodingOutliers(await this.findCodingRates());
 
@@ -185,8 +189,8 @@ export class PrismaClaimRepository extends ClaimRepository {
       primaryDiagnosis: diagnoses[0] ?? null,
       findingCounts: countFindingsByTestType(findings),
       documentCount: _count.documents,
-      extractedDocumentCount:
-        extractedDocumentCountByClaimId.get(claim.id) ?? 0,
+      extractedDocumentCount: countDocuments(claim.id, false),
+      ruleReadDocumentCount: countDocuments(claim.id, true),
       hasSimilarPattern:
         _count.diagnoses > 1 &&
         diagnoses[0] !== undefined &&
@@ -195,6 +199,22 @@ export class PrismaClaimRepository extends ClaimRepository {
         ),
     }));
     return { items, total, page: query.page, pageSize: query.pageSize };
+  }
+
+  async findQueueClaimIds(
+    query: ClaimQueueQuery,
+    limit: number,
+  ): Promise<string[]> {
+    const claims = await this.prisma.claim.findMany({
+      where: toQueueWhere(query),
+      orderBy: [
+        QUEUE_ORDER_BY[query.sortBy](query.sortDirection),
+        ...QUEUE_TIEBREAKERS,
+      ],
+      take: limit,
+      select: { id: true },
+    });
+    return claims.map(({ id }) => id);
   }
 
   async getStatistics(): Promise<ClaimStatistics> {
@@ -274,6 +294,7 @@ export class PrismaClaimRepository extends ClaimRepository {
             recordedAt: true,
             content: true,
             extracted: true,
+            extractedModel: true,
           },
           orderBy: { recordedAt: 'asc' },
         },
@@ -318,10 +339,14 @@ export class PrismaClaimRepository extends ClaimRepository {
       patient: claim.patient,
       diagnoses: claim.diagnoses,
       procedures: claim.procedures,
-      documents: claim.documents.map(({ extracted, ...document }) => ({
-        ...document,
-        isExtracted: extracted !== null,
-      })),
+      documents: claim.documents.map(
+        ({ extracted, extractedModel, ...document }) => ({
+          ...document,
+          isExtracted:
+            extracted !== null && extractedModel !== RULE_READER_SOURCE.model,
+          isReadByRules: extractedModel === RULE_READER_SOURCE.model,
+        }),
+      ),
       findings: claim.findings.map((finding) => ({
         id: finding.id,
         testType: finding.testType,
