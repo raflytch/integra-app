@@ -130,7 +130,7 @@ Key variables in `apps/api/.env`:
 - `npm run seed:fixture` loads the UC-1 contract claim with its AI extraction and evidence rules from `docs/contracts`.
 - Anyone can create a verifier account from the login page: enter an email that has no account, confirm the prompt, scan the QR code with an authenticator app, and enter its 6-digit code within 5 minutes. The account is created only once the code matches.
 
-AI analysis costs money. Nothing is analyzed until a verifier chooses it: click "Analisis" in the Aksi column of one row in Antrean Klaim or Eskalasi. There is no bulk selection and no analysis button on the claim card. Each unread document is one LLM call (about 6 per claim); a confirmation dialog shows the count first, and the run can be stopped from the loading screen.
+AI analysis costs money. Nothing is analyzed until a verifier chooses it: click "Analisis" on a claim that is not analyzed yet (one LLM call per claim, about 6 seconds), or tick claims in Antrean Klaim and click "Analisis massal". Bulk analysis runs on the server in two stages: the rule reader reads and tests every selected claim without the LLM (about 3 minutes for 5,000 claims), then the LLM rereads the flagged claims, largest tariff gap first; the confirmation dialog shows time and token estimates and can turn the second stage off. Rule-read claims are labeled "Dibaca aturan", and analyzed claims show no analysis button.
 
 ## Everyday commands
 
