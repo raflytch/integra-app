@@ -107,8 +107,53 @@ function VedikaClaimEmpty() {
   );
 }
 
+function VedikaClaimNotPulled({
+  isPulling,
+  hasError,
+  onPull,
+}: {
+  isPulling: boolean;
+  hasError: boolean;
+  onPull: () => void;
+}) {
+  return (
+    <Empty className="rounded-xl border border-hairline bg-surface shadow-xs">
+      <EmptyHeader>
+        <EmptyMedia variant="icon" className="bg-subtle text-ink">
+          <LuInbox aria-hidden="true" />
+        </EmptyMedia>
+        <EmptyTitle className="text-ink">Data VEDIKA belum ditarik</EmptyTitle>
+        <EmptyDescription className="text-ink-secondary">
+          Klik Refresh semua data untuk menarik rincian klaim terbaru.
+        </EmptyDescription>
+      </EmptyHeader>
+      {hasError && (
+        <p role="alert" className="text-small text-error-ink">
+          Data VEDIKA gagal diperbarui. {FRIENDLY_RETRY_MESSAGE}
+        </p>
+      )}
+      <Button disabled={isPulling} onClick={onPull}>
+        <LuRefreshCw
+          aria-hidden="true"
+          className={cn(isPulling && 'motion-safe:animate-spin')}
+        />
+        {isPulling ? 'Menarik semua data…' : 'Refresh semua data'}
+      </Button>
+    </Empty>
+  );
+}
+
+function rankBySeed(claimId: string, seed: number): number {
+  let hash = seed;
+  for (const character of claimId) {
+    hash = Math.imul(hash ^ character.charCodeAt(0), 2654435761);
+  }
+  return hash >>> 0;
+}
+
 export function VedikaClaimTable() {
   const queryClient = useQueryClient();
+  const [shuffleSeed, setShuffleSeed] = useState<number | null>(null);
   const [syncStateFilter, setSyncStateFilter] = useState<SyncStateFilter>(ALL);
   const table = useServerTableControls({ initialSort: INITIAL_VEDIKA_SORT });
   const claimParams: VedikaClaimParams = {
@@ -123,16 +168,28 @@ export function VedikaClaimTable() {
     queryKey: ['vedika', 'claims', claimParams],
     queryFn: () => fetchVedikaClaimPage(claimParams),
     placeholderData: keepPreviousData,
+    enabled: shuffleSeed !== null,
   });
   const refreshAllMutation = useMutation({
     mutationFn: refreshAllVedika,
-    onSuccess: () =>
-      Promise.all([
+    onSuccess: () => {
+      setShuffleSeed(Math.floor(Math.random() * 2 ** 31));
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: ['vedika'] }),
         queryClient.invalidateQueries({ queryKey: ['claims'] }),
-      ]),
+      ]);
+    },
   });
 
+  if (shuffleSeed === null) {
+    return (
+      <VedikaClaimNotPulled
+        isPulling={refreshAllMutation.isPending}
+        hasError={refreshAllMutation.isError}
+        onPull={() => refreshAllMutation.mutate()}
+      />
+    );
+  }
   if (claimQuery.isPending) return <VedikaClaimTableSkeleton />;
   if (claimQuery.isError) {
     return (
@@ -149,7 +206,11 @@ export function VedikaClaimTable() {
   if (claimPage.total === 0 && !hasSearchOrFilter) {
     return <VedikaClaimEmpty />;
   }
-  const claims = claimPage.items;
+  const claims = [...claimPage.items].sort(
+    (first, second) =>
+      rankBySeed(first.claimId, shuffleSeed) -
+      rankBySeed(second.claimId, shuffleSeed),
+  );
   const firstRowIndex = (claimPage.page - 1) * claimPage.pageSize;
   const pageCount = Math.max(
     1,
@@ -323,8 +384,8 @@ export function VedikaClaimTable() {
                     </div>
                   </TableCell>
                   <TableCell className="text-center text-ink-secondary">
-                    {claim.syncState === 'VERIFIED' && claim.syncedAt
-                      ? formatDateTime(claim.syncedAt)
+                    {claim.refreshedAt
+                      ? formatDateTime(claim.refreshedAt)
                       : '-'}
                   </TableCell>
                   <TableCell className="text-center">

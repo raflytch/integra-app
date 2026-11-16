@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
 import type {
+  ScannedSep,
   VedikaAttachment,
   VedikaBulkRefreshResult,
   VedikaClaimPage,
@@ -35,6 +36,13 @@ export async function fetchVedikaStatus(
 ): Promise<VedikaStatus> {
   const response = await apiClient.get<VedikaStatus>(
     `/claims/${claimId}/vedika`,
+  );
+  return response.data;
+}
+
+export async function scanVedikaSep(claimId: string): Promise<ScannedSep> {
+  const response = await apiClient.get<ScannedSep>(
+    `/claims/${claimId}/vedika/sep-scan`,
   );
   return response.data;
 }

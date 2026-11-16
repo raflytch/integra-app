@@ -25,6 +25,7 @@ export interface VedikaClaimSummary {
   primaryDiagnosis: string | null;
   attachmentCount: number;
   syncedAt: Date | null;
+  refreshedAt: Date | null;
   syncState: VedikaSyncState;
 }
 

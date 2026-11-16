@@ -47,6 +47,11 @@ export interface VedikaStatus {
   reply: VedikaReply | null;
 }
 
+export interface ScannedSep {
+  fileName: string | null;
+  fields: { label: string; value: string }[];
+}
+
 export type VedikaSyncState = 'LATEST' | 'SENT' | 'VERIFIED';
 
 export type VedikaClaimSortKey =
@@ -63,6 +68,7 @@ export interface VedikaClaimSummary {
   primaryDiagnosis: string | null;
   attachmentCount: number;
   syncedAt: string | null;
+  refreshedAt: string | null;
   syncState: VedikaSyncState;
 }
 

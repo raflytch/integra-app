@@ -39,6 +39,7 @@ export function presentVedikaClaimPage(claimPage: VedikaClaimPage) {
       ...item,
       admittedAt: toDateOnly(item.admittedAt),
       syncedAt: item.syncedAt?.toISOString() ?? null,
+      refreshedAt: item.refreshedAt?.toISOString() ?? null,
     })),
   };
 }

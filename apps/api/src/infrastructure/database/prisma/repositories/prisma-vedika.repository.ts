@@ -37,7 +37,7 @@ const VEDIKA_CLAIM_ORDER_BY: Record<VedikaClaimSortKey, Prisma.Sql> = {
   claimNo: Prisma.sql`c.claim_no`,
   facility: Prisma.sql`fa.name`,
   admittedAt: Prisma.sql`c.admitted_at`,
-  syncedAt: Prisma.sql`c.vedika_synced_at`,
+  syncedAt: Prisma.sql`(SELECT r.synced_at FROM vedika_responses r WHERE r.claim_id = c.id)`,
 };
 
 const SYNC_STATE_CONDITIONS: Record<VedikaSyncState, Prisma.Sql> = {
@@ -62,6 +62,7 @@ interface VedikaClaimRow {
   primaryDiagnosis: string | null;
   attachmentCount: number;
   syncedAt: Date | null;
+  refreshedAt: Date | null;
 }
 
 type SyncStateCountRow = Record<VedikaSyncState, number> & { total: number };
@@ -257,7 +258,11 @@ export class PrismaVedikaRepository extends VedikaRepository {
             SELECT count(*)::int FROM vedika_attachments a
             WHERE a.claim_id = c.id
           ) AS "attachmentCount",
-          c.vedika_synced_at AS "syncedAt"
+          c.vedika_synced_at AS "syncedAt",
+          (
+            SELECT r.synced_at FROM vedika_responses r
+            WHERE r.claim_id = c.id
+          ) AS "refreshedAt"
         ${CLAIM_JOINS}
         ${where}
         ORDER BY ${VEDIKA_CLAIM_ORDER_BY[query.sortBy]} ${direction} NULLS LAST, c.id ASC

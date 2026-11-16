@@ -25,6 +25,20 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+@theme {
+  --animate-sep-scan: sep-scan 1.4s ease-in-out infinite;
+
+  @keyframes sep-scan {
+    0%,
+    100% {
+      top: 0%;
+    }
+    50% {
+      top: calc(100% - 2px);
+    }
+  }
+}
+
 /* vaul injects unlayered drawer motion, so reduced motion has to override it here. */
 @media (prefers-reduced-motion: reduce) {
   [data-vaul-drawer],
