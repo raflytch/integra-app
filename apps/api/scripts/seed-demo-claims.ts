@@ -5,7 +5,8 @@
  * unread, so Analisis in the app reads them with the LLM. Runs on every
  * deploy: it skips when the same claims are already seeded, unless --force.
  * It replaces only claims whose SEP number starts with 9900R (with their
- * findings and decisions) and their patients.
+ * findings and decisions) and their patients, and removes the KLM-BPJS-* claims
+ * imported from data/integra-claim-import-bpjs.json even when it skips.
  *
  *   npm run seed:demo                      # 5,000 claims
  *   npm run seed:demo -- --count=800       # custom size
@@ -44,6 +45,7 @@ const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 5000;
 const MAX_CLAIM_COUNT = 5000;
 const LEGACY_DEMO_CLAIM_NO_PREFIX = 'KLM-DEMO-';
+const IMPORTED_CLAIM_NO_PREFIX = 'KLM-BPJS-';
 const INSERT_BATCH_SIZE = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ATTACHED_CLARIFICATION_COUNT = 14;
@@ -123,6 +125,49 @@ function chunks<Item>(items: Item[]): Item[][] {
   );
 }
 
+async function removeImportedClaims(
+  prisma: PrismaService,
+  logger: Logger,
+): Promise<void> {
+  const importedClaimFilter = {
+    claimNo: { startsWith: IMPORTED_CLAIM_NO_PREFIX },
+  };
+  const importedClaims = await prisma.claim.findMany({
+    where: importedClaimFilter,
+    select: { patientId: true, facilityId: true },
+  });
+  if (importedClaims.length === 0) return;
+
+  await prisma.$transaction(
+    async (transaction) => {
+      await transaction.decision.deleteMany({
+        where: { claim: importedClaimFilter },
+      });
+      await transaction.claim.deleteMany({ where: importedClaimFilter });
+      await transaction.patient.deleteMany({
+        where: {
+          id: {
+            in: [...new Set(importedClaims.map((claim) => claim.patientId))],
+          },
+          claims: { none: {} },
+        },
+      });
+      await transaction.facility.deleteMany({
+        where: {
+          id: {
+            in: [...new Set(importedClaims.map((claim) => claim.facilityId))],
+          },
+          claims: { none: {} },
+        },
+      });
+    },
+    { timeout: 120_000 },
+  );
+  logger.log(
+    `${importedClaims.length} klaim ${IMPORTED_CLAIM_NO_PREFIX}* dihapus.`,
+  );
+}
+
 async function main(): Promise<void> {
   const logger = new Logger('SeedDemoClaims');
   const { claims, facilities } = generateBpjsSampleClaims(
@@ -136,6 +181,8 @@ async function main(): Promise<void> {
   const prisma = new PrismaService(app.get(ConfigService<Env, true>));
 
   try {
+    await removeImportedClaims(prisma, logger);
+
     const demoClaimFilter = {
       OR: [SAMPLE_CLAIM_NO_PREFIX, LEGACY_DEMO_CLAIM_NO_PREFIX].map(
         (prefix) => ({ claimNo: { startsWith: prefix } }),
