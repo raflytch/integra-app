@@ -36,12 +36,35 @@ export function FindingCitationItem({
     );
   }
 
+  if (citation.kind === 'REFUTED_EVIDENCE') {
+    return (
+      <div className="flex flex-col gap-1">
+        <p className="text-caption text-ink-secondary">
+          Bukti dibantah data · {EVIDENCE_TYPE_LABELS[citation.evidenceType]}
+        </p>
+        <p className="text-small font-medium text-ink">{citation.expected}</p>
+        <p className="text-caption text-ink-secondary">{citation.reason}</p>
+      </div>
+    );
+  }
+
   if (citation.kind === 'QUOTE') {
     return (
       <figure className="flex flex-col gap-1 border-l-2 border-ink-muted pl-3">
         <blockquote className="text-small text-ink-secondary">
           “{citation.quote}”
         </blockquote>
+        <figcaption>
+          <DocumentSource document={documentsById.get(citation.documentId)} />
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (citation.kind === 'DIFFERENT_TEXT') {
+    return (
+      <figure className="flex flex-col gap-1">
+        <blockquote className="text-small text-ink">{citation.text}</blockquote>
         <figcaption>
           <DocumentSource document={documentsById.get(citation.documentId)} />
         </figcaption>

@@ -30,6 +30,7 @@ import type {
   TestType,
 } from '@/types/claim.types';
 import { FindingCitationItem } from './finding-citation';
+import { ClaimLink, LinkedClaimText } from './linked-claim-text';
 
 const TEST_TYPE_ICONS: Record<TestType, IconType> = {
   EXISTENCE: LuFileSearch,
@@ -44,9 +45,42 @@ function FindingItem({
   finding: ClaimFinding;
   documentsById: Map<string, ClaimDocument>;
 }) {
+  const sharedCitations = finding.citations.filter(
+    (citation) => citation.kind !== 'DIFFERENT_TEXT',
+  );
+  const differentTextSides: { side: string; label: ReactNode }[] = [
+    { side: 'CLAIM', label: 'Hanya di klaim ini' },
+    {
+      side: 'RELATED_CLAIM',
+      label: finding.relatedClaim ? (
+        <>
+          Hanya di klaim <ClaimLink claim={finding.relatedClaim} />
+        </>
+      ) : (
+        'Hanya di klaim pembanding'
+      ),
+    },
+  ];
+  const differentTextGroups = differentTextSides.map(({ side, label }) => ({
+    side,
+    label,
+    citations: finding.citations.filter(
+      (citation) =>
+        citation.kind === 'DIFFERENT_TEXT' && citation.side === side,
+    ),
+  }));
+  const hasDifferentTexts = differentTextGroups.some(
+    ({ citations }) => citations.length > 0,
+  );
+
   return (
     <article className="flex flex-col gap-3">
-      <p className="text-body text-ink">{finding.summary}</p>
+      <p className="text-body text-ink">
+        <LinkedClaimText
+          text={finding.summary}
+          relatedClaims={finding.relatedClaim ? [finding.relatedClaim] : []}
+        />
+      </p>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-ink-secondary">
         <span>Kekuatan sinyal {formatPercent(finding.strength)}</span>
         {finding.tariffGap !== null && (
@@ -70,17 +104,51 @@ function FindingItem({
           {finding.relatedClaim.facilityName}
         </Link>
       )}
-      {finding.citations.length > 0 && (
-        <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
-          {finding.citations.map((citation, citationIndex) => (
-            <li key={citationIndex} className="px-3 py-2.5">
-              <FindingCitationItem
-                citation={citation}
-                documentsById={documentsById}
-              />
-            </li>
+      {sharedCitations.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {hasDifferentTexts && (
+            <h3 className="text-caption font-medium text-ink-secondary">
+              Yang sama persis
+            </h3>
+          )}
+          <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
+            {sharedCitations.map((citation, citationIndex) => (
+              <li key={citationIndex} className="px-3 py-2.5">
+                <FindingCitationItem
+                  citation={citation}
+                  documentsById={documentsById}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {hasDifferentTexts && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {differentTextGroups.map(({ side, label, citations }) => (
+            <div key={side} className="flex flex-col gap-2">
+              <h3 className="text-caption font-medium text-ink-secondary">
+                Yang beda: {label}
+              </h3>
+              {citations.length === 0 ? (
+                <p className="text-small text-ink-secondary">
+                  Tidak ada kalimat yang berbeda.
+                </p>
+              ) : (
+                <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
+                  {citations.map((citation, citationIndex) => (
+                    <li key={citationIndex} className="px-3 py-2.5">
+                      <FindingCitationItem
+                        citation={citation}
+                        documentsById={documentsById}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </article>
   );
@@ -89,10 +157,12 @@ function FindingItem({
 export function TestPanelShell({
   testType,
   findingCount,
+  overview,
   children,
 }: {
   testType: TestType;
   findingCount: number;
+  overview?: ReactNode;
   children: ReactNode;
 }) {
   const testDetails = TEST_TYPE_DETAILS[testType];
@@ -103,6 +173,7 @@ export function TestPanelShell({
   return (
     <Collapsible asChild defaultOpen={hasFindings}>
       <section
+        id={`panel-${testType.toLowerCase()}`}
         aria-labelledby={headingId}
         className="group rounded-xl border border-hairline bg-surface shadow-xs"
       >
@@ -164,6 +235,9 @@ export function TestPanelShell({
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
+          {overview && (
+            <div className="border-b border-hairline px-6 py-4">{overview}</div>
+          )}
           {hasFindings ? (
             children
           ) : (
@@ -180,14 +254,20 @@ export function TestPanelShell({
 export function TestPanel({
   testType,
   findings,
+  overview,
   documentsById,
 }: {
   testType: TestType;
   findings: ClaimFinding[];
+  overview?: ReactNode;
   documentsById: Map<string, ClaimDocument>;
 }) {
   return (
-    <TestPanelShell testType={testType} findingCount={findings.length}>
+    <TestPanelShell
+      testType={testType}
+      findingCount={findings.length}
+      overview={overview}
+    >
       <ul className="divide-y divide-hairline">
         {findings.map((finding) => (
           <li key={finding.id} className="px-6 py-4">

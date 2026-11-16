@@ -67,7 +67,10 @@ export function suggestMissingDocumentTypes(
   const suggested = new Set<DocumentType>();
   for (const finding of findings) {
     for (const citation of finding.citations) {
-      if (citation.kind === 'MISSING_EVIDENCE') {
+      if (
+        citation.kind === 'MISSING_EVIDENCE' ||
+        citation.kind === 'REFUTED_EVIDENCE'
+      ) {
         suggested.add(DOCUMENT_TYPE_BY_EVIDENCE_TYPE[citation.evidenceType]);
       }
     }

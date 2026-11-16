@@ -18,8 +18,12 @@ import {
 } from './decision-panel';
 import { ExistencePanel } from './existence-panel';
 import { VerificationCard } from './verification-card';
-import { SimilarPatternPanel } from './similar-pattern-panel';
 import { TestPanel } from './test-panel';
+import {
+  ConsistencyOverview,
+  ExistenceOverview,
+  SimilarityOverview,
+} from './test-overviews';
 
 function focusDecisionReason() {
   requestAnimationFrame(() => {
@@ -79,17 +83,20 @@ export function ClaimCard({ claimId }: { claimId: string }) {
               findings={findingsOfType('EXISTENCE')}
               diagnoses={claim.diagnoses}
               tariffAmount={claim.tariffAmount}
+              overview={<ExistenceOverview claim={claim} />}
               documentsById={documentsById}
               onRequestClarification={requestClarification}
             />
             <TestPanel
               testType="CONSISTENCY"
               findings={findingsOfType('CONSISTENCY')}
+              overview={<ConsistencyOverview claim={claim} />}
               documentsById={documentsById}
             />
             <TestPanel
               testType="SIMILARITY"
               findings={findingsOfType('SIMILARITY')}
+              overview={<SimilarityOverview claim={claim} />}
               documentsById={documentsById}
             />
           </div>
@@ -104,16 +111,9 @@ export function ClaimCard({ claimId }: { claimId: string }) {
             recommendation={claim.verification?.recommendation ?? null}
             suggestedDocumentTypes={suggestedDocumentTypes}
           />
-          {claim.similarPattern && (
-            <SimilarPatternPanel
-              claim={claim}
-              similarPattern={claim.similarPattern}
-            />
-          )}
           <ClaimDiagnoses
             diagnoses={claim.diagnoses}
             procedures={claim.procedures}
-            findings={claim.findings}
           />
           <ClaimDocuments documents={claim.documents} />
         </aside>

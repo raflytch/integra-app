@@ -1,23 +1,47 @@
+'use client';
+
+import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
 import {
+  LuCircleCheck,
   LuClock,
+  LuCopy,
+  LuFileSearch,
+  LuFlag,
+  LuGitCompareArrows,
   LuLightbulb,
-  LuScale,
+  LuRefreshCw,
   LuSparkles,
-  LuUserCheck,
 } from 'react-icons/lu';
-import { IntegraAiPill, Pill } from '@/components/claim-pills';
-import { TEST_TYPE_DETAILS, TEST_TYPE_ORDER } from '@/lib/claim-labels';
-import { formatDateTime, formatRupiah } from '@/lib/format';
-import type { ClaimDetail } from '@/types/claim.types';
+import { useClaimAnalysisRunner } from '@/components/analysis/use-claim-analysis-runner';
+import { Button } from '@/components/ui/button';
+import {
+  DecisionActionPill,
+  IntegraAiPill,
+  Pill,
+} from '@/components/claim-pills';
+import { EVIDENCE_STATUS_LABELS, TEST_TYPE_DETAILS } from '@/lib/claim-labels';
+import { formatDateTime, formatPercent } from '@/lib/format';
+import type { ClaimDetail, TestType } from '@/types/claim.types';
+import {
+  ClaimLink,
+  LinkedClaimText,
+  relatedClaimsOf,
+} from './linked-claim-text';
+import { findSimilarityCoverage } from './test-overviews';
 
-interface AnalysisNarrative {
-  headline: string;
-  explanation: string;
-  suggestion: string;
+interface TestSummary {
+  testType: TestType;
+  icon: IconType;
+  isFlagged: boolean;
+  isSupporting: boolean;
+  sentence: ReactNode;
 }
 
-function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
+function describePendingAnalysis(claim: ClaimDetail): {
+  headline: string;
+  suggestion: string;
+} | null {
   const documentCount = claim.documents.length;
   const extractedDocumentCount = claim.documents.filter(
     (document) => document.isExtracted,
@@ -25,83 +49,112 @@ function describeAnalysis(claim: ClaimDetail): AnalysisNarrative {
 
   if (documentCount === 0 || extractedDocumentCount < documentCount) {
     return {
-      headline: 'Rekam medis belum selesai dibaca AI',
-      explanation: `${extractedDocumentCount} dari ${documentCount} dokumen sudah diekstraksi. Uji baru bisa menilai klaim setelah semua dokumen dibaca.`,
+      headline: `Rekam medis belum selesai dibaca AI (${extractedDocumentCount} dari ${documentCount} dokumen).`,
       suggestion:
-        'Klik Analisis pada baris klaim ini di Antrean Klaim agar AI membaca rekam medisnya dan aturan klinis mengujinya.',
+        'Klik Analisis di kartu ini agar AI membaca rekam medisnya dan aturan INTEGRA mengujinya.',
     };
   }
-
-  if (!claim.analyzedAt) {
+  if (!claim.analyzedAt || !claim.verification) {
     return {
-      headline: 'Rekam medis sudah dibaca AI, uji belum dijalankan',
-      explanation: `Semua ${documentCount} dokumen sudah diekstraksi, tetapi aturan klinis belum menilai klaim ini.`,
+      headline: 'Rekam medis sudah dibaca AI, aturan INTEGRA belum dijalankan.',
       suggestion:
-        'Klik Analisis pada baris klaim ini di Antrean Klaim untuk menjalankan uji. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
+        'Klik Analisis di kartu ini. Tidak ada dokumen baru yang dikirim ke AI, jadi tanpa biaya token.',
     };
   }
-
-  const readingSentence = `AI membaca ${documentCount} dokumen rekam medis dan menyusun bukti klinisnya: diagnosis, temuan, tanda vital, obat, dan tindakan.`;
-  if (claim.findings.length === 0) {
-    return {
-      headline: 'Belum ada tanda pada klaim ini',
-      explanation: `${readingSentence} Aturan klinis belum menemukan bukti yang kurang, tidak konsisten, atau tersalin.`,
-      suggestion: 'Periksa ringkasan klaim, lalu putuskan.',
-    };
-  }
-
-  const diagnosesById = new Map(
-    claim.diagnoses.map((diagnosis) => [diagnosis.id, diagnosis]),
-  );
-  const unsupportedDiagnosisNames = claim.findings
-    .filter((finding) => finding.testType === 'EXISTENCE')
-    .map((finding) => diagnosesById.get(finding.diagnosisId ?? '')?.name)
-    .filter(Boolean);
-  const flaggedTestSummaries = TEST_TYPE_ORDER.map((testType) => ({
-    title: TEST_TYPE_DETAILS[testType].title,
-    findingCount: claim.findings.filter(
-      (finding) => finding.testType === testType,
-    ).length,
-  }))
-    .filter((testSummary) => testSummary.findingCount > 0)
-    .map((testSummary) => `${testSummary.title} (${testSummary.findingCount})`);
-  const unsupportedSentence =
-    unsupportedDiagnosisNames.length > 0
-      ? ` Diagnosis sekunder ${unsupportedDiagnosisNames.join(', ')} belum didukung bukti klinis.`
-      : '';
-  const gapSentence =
-    claim.potentialGap > 0
-      ? ` Potensi selisih tarif ${formatRupiah(claim.potentialGap)}.`
-      : '';
-
-  return {
-    headline: `INTEGRA menemukan ${claim.findings.length} tanda yang perlu diklarifikasi`,
-    explanation: `${readingSentence} Aturan klinis menandai ${flaggedTestSummaries.join(', ')}.${unsupportedSentence}${gapSentence}`,
-    suggestion:
-      'Minta klarifikasi ke faskes dengan menyebut bukti yang belum ditemukan. Label ini bukan tuduhan, faskes tetap bisa melengkapi dokumentasinya.',
-  };
+  return null;
 }
 
-const ANALYSIS_STEPS: { icon: IconType; title: string; detail: string }[] = [
-  {
-    icon: LuSparkles,
-    title: 'AI membaca rekam medis',
-    detail: 'Mengekstrak bukti beserta kutipan aslinya.',
-  },
-  {
-    icon: LuScale,
-    title: 'Aturan klinis menilai',
-    detail: 'Pedoman klinis yang bisa diaudit, bukan skor tanpa alasan.',
-  },
-  {
-    icon: LuUserCheck,
-    title: 'Anda memutuskan',
-    detail: 'Setujui, minta klarifikasi, atau eskalasi.',
-  },
-];
+function summarizeTests(claim: ClaimDetail): TestSummary[] {
+  const findingsOf = (testType: TestType) =>
+    claim.findings.filter((finding) => finding.testType === testType);
+  const similarityFindings = findingsOf('SIMILARITY');
+  const isEscalated = similarityFindings.length > 0;
+  const diagnosisStatuses = claim.diagnoses.flatMap((diagnosis) =>
+    diagnosis.evidenceStatus
+      ? [{ name: diagnosis.name, status: diagnosis.evidenceStatus }]
+      : [],
+  );
+  const flaggedStatuses = diagnosisStatuses.filter(
+    ({ status }) => status !== 'SUPPORTED',
+  );
+  const consistencyCount = findingsOf('CONSISTENCY').length;
+  const existenceCount = findingsOf('EXISTENCE').length;
+  const primaryName =
+    claim.diagnoses.find((diagnosis) => diagnosis.isPrimary)?.name ??
+    'penyakit ini';
+  const secondaryCount = claim.diagnoses.filter(
+    (diagnosis) => !diagnosis.isPrimary,
+  ).length;
+  const coverage = findSimilarityCoverage(claim);
+  const highestSimilarity = Math.max(
+    0,
+    ...similarityFindings.map((finding) => finding.similarity ?? 0),
+  );
+
+  return [
+    {
+      testType: 'SIMILARITY',
+      icon: LuCopy,
+      isFlagged: isEscalated,
+      isSupporting: false,
+      sentence: isEscalated ? (
+        <>
+          Mirip sampai {formatPercent(highestSimilarity)} dengan{' '}
+          {relatedClaimsOf(similarityFindings).map((relatedClaim, index) => (
+            <span key={relatedClaim.id}>
+              {index > 0 && ', '}
+              <ClaimLink claim={relatedClaim} />
+            </span>
+          ))}
+          , di atas ambang kemiripan.
+        </>
+      ) : coverage ? (
+        `Paling mirip ${formatPercent(coverage.max)}, di bawah ambang ${formatPercent(coverage.threshold)} untuk penyakit ini.`
+      ) : (
+        'Ambang kemiripan belum dihitung untuk klaim ini. Klik Analisis ulang di kartu ini (tanpa biaya token).'
+      ),
+    },
+    {
+      testType: 'EXISTENCE',
+      icon: LuFileSearch,
+      isFlagged: flaggedStatuses.length > 0 || existenceCount > 0,
+      isSupporting: isEscalated,
+      sentence:
+        flaggedStatuses.length > 0
+          ? flaggedStatuses
+              .map(
+                ({ name, status }) =>
+                  `${name}: ${EVIDENCE_STATUS_LABELS[status]}`,
+              )
+              .join(' · ')
+          : existenceCount > 0
+            ? `${existenceCount} diagnosis sekunder belum didukung bukti. Klik Analisis ulang untuk melihat statusnya per diagnosis.`
+            : diagnosisStatuses.length > 0
+              ? 'Semua diagnosis sekunder didukung bukti klinis.'
+              : secondaryCount > 0
+                ? `Belum ada aturan PNPK untuk diagnosis sekunder pada ${primaryName}.`
+                : 'Tidak ada diagnosis sekunder.',
+    },
+    {
+      testType: 'CONSISTENCY',
+      icon: LuGitCompareArrows,
+      isFlagged: consistencyCount > 0,
+      isSupporting: isEscalated,
+      sentence:
+        consistencyCount > 0
+          ? `${consistencyCount} catatan tidak sejalan dengan catatan lain atau data rumah sakit.`
+          : 'Isi dokumen sejalan satu sama lain dan dengan data rumah sakit.',
+    },
+  ];
+}
 
 export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
-  const { headline, explanation, suggestion } = describeAnalysis(claim);
+  const pendingAnalysis = describePendingAnalysis(claim);
+  const { verification } = claim;
+  const analysisRunner = useClaimAnalysisRunner();
+  const unreadDocumentCount = claim.documents.filter(
+    (document) => !document.isExtracted,
+  ).length;
 
   return (
     <section
@@ -109,60 +162,117 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
       data-tour="claim-ai-analysis"
       className="flex flex-col gap-4 rounded-xl border border-primary/30 bg-surface p-6 shadow-xs"
     >
-      <div className="flex flex-col items-start gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <IntegraAiPill />
-          {claim.analyzedAt ? (
-            <Pill tone="neutral" icon={LuClock}>
-              Dianalisis{' '}
-              <time dateTime={claim.analyzedAt}>
-                {formatDateTime(claim.analyzedAt)}
-              </time>
-            </Pill>
-          ) : (
-            <Pill tone="outline">Belum dianalisis AI</Pill>
-          )}
-        </div>
-        <h2
-          id="ai-analysis-heading"
-          className="font-display text-body font-semibold tracking-display text-primary-hover"
+      <div className="flex flex-wrap items-center gap-2">
+        <IntegraAiPill />
+        {claim.analyzedAt ? (
+          <Pill tone="neutral" icon={LuClock}>
+            Dianalisis{' '}
+            <time dateTime={claim.analyzedAt}>
+              {formatDateTime(claim.analyzedAt)}
+            </time>
+          </Pill>
+        ) : (
+          <Pill tone="outline">Belum dianalisis AI</Pill>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="ml-auto"
+          disabled={analysisRunner.isRunning}
+          onClick={() =>
+            analysisRunner.requestAnalysis([
+              { id: claim.id, claimNo: claim.claimNo, unreadDocumentCount },
+            ])
+          }
         >
-          {headline}
-        </h2>
-        <p className="text-body text-ink-secondary">{explanation}</p>
+          {claim.analyzedAt ? (
+            <LuRefreshCw aria-hidden="true" />
+          ) : (
+            <LuSparkles aria-hidden="true" />
+          )}
+          {claim.analyzedAt ? 'Analisis ulang' : 'Analisis'}
+        </Button>
       </div>
-      <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary-wash px-4 py-3">
-        <LuLightbulb
-          className="mt-0.5 size-4 shrink-0 text-primary-hover"
-          aria-hidden="true"
-        />
-        <p className="text-small text-ink">
-          <span className="font-semibold text-primary-hover">
-            Saran langkah berikutnya.{' '}
-          </span>
-          {suggestion}
-        </p>
-      </div>
-      <ol className="grid gap-3 sm:grid-cols-3">
-        {ANALYSIS_STEPS.map((analysisStep, stepIndex) => (
-          <li key={analysisStep.title} className="flex gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-primary-wash text-primary-hover">
-              <analysisStep.icon className="size-4" aria-hidden="true" />
+      <h2
+        id="ai-analysis-heading"
+        className="font-display text-body font-semibold tracking-display text-primary-hover"
+      >
+        Hasil INTEGRA
+      </h2>
+
+      {pendingAnalysis || !verification ? (
+        <div className="flex gap-3 rounded-lg border border-primary/20 bg-primary-wash px-4 py-3">
+          <LuLightbulb
+            className="mt-0.5 size-4 shrink-0 text-primary-hover"
+            aria-hidden="true"
+          />
+          <p className="text-small text-ink">
+            <span className="font-semibold text-primary-hover">
+              {pendingAnalysis?.headline}{' '}
             </span>
-            <span className="flex flex-col gap-0.5">
-              <span className="text-caption text-ink-secondary">
-                Langkah {stepIndex + 1}
+            {pendingAnalysis?.suggestion}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2 rounded-lg border border-primary/20 bg-primary-wash px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-small font-semibold text-ink">
+                Keputusan per SEP
               </span>
-              <span className="text-small font-medium text-ink">
-                {analysisStep.title}
-              </span>
-              <span className="text-caption text-ink-secondary">
-                {analysisStep.detail}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ol>
+              <DecisionActionPill action={verification.recommendation} />
+            </div>
+            <p className="text-small text-ink">
+              <LinkedClaimText
+                text={verification.reason}
+                relatedClaims={relatedClaimsOf(claim.findings)}
+              />
+            </p>
+            <p className="text-caption text-ink-secondary">
+              Salinan: Eskalasi. Bukti kurang atau ada temuan: Minta
+              Klarifikasi. Semua lengkap: Setuju. (Peraturan BPJS 7/2018,
+              Kepmenkes 129/2008, Permenkes 16/2019)
+            </p>
+          </div>
+          <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
+            {summarizeTests(claim).map((testSummary) => (
+              <li
+                key={testSummary.testType}
+                className="flex flex-col gap-1.5 px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
+              >
+                <a
+                  href={`#panel-${testSummary.testType.toLowerCase()}`}
+                  className="flex w-44 shrink-0 items-center gap-2 text-small font-semibold text-ink hover:text-primary-hover hover:underline"
+                >
+                  <testSummary.icon
+                    className="size-4 text-primary-hover"
+                    aria-hidden="true"
+                  />
+                  {TEST_TYPE_DETAILS[testSummary.testType].title}
+                </a>
+                <span className="flex shrink-0 gap-1">
+                  {testSummary.isFlagged ? (
+                    <Pill tone="warning" icon={LuFlag}>
+                      Ditandai
+                    </Pill>
+                  ) : (
+                    <Pill tone="success" icon={LuCircleCheck}>
+                      Sesuai
+                    </Pill>
+                  )}
+                  {testSummary.isSupporting && testSummary.isFlagged && (
+                    <Pill tone="outline">Pendukung</Pill>
+                  )}
+                </span>
+                <span className="text-small text-ink-secondary">
+                  {testSummary.sentence}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {analysisRunner.dialogs}
     </section>
   );
 }

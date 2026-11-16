@@ -8,6 +8,7 @@ export type DocumentType =
 export type EvidenceType =
   'MEDICATION' | 'PROCEDURE' | 'FINDING' | 'VITAL_SIGN';
 export type TestType = 'EXISTENCE' | 'CONSISTENCY' | 'SIMILARITY';
+export type EvidenceStatus = 'SUPPORTED' | 'PARTIAL' | 'NOT_FOUND' | 'REFUTED';
 export type DecisionAction = 'APPROVE' | 'REQUEST_CLARIFICATION' | 'ESCALATE';
 
 export interface ClaimDecision {
@@ -38,11 +39,25 @@ export type FindingCitation =
         quotes: { documentId: string; quote: string }[];
       };
     }
+  | {
+      kind: 'REFUTED_EVIDENCE';
+      evidenceType: EvidenceType;
+      expected: string;
+      guidelineRef: string;
+      reason: string;
+      quotes: { documentId: string; quote: string }[];
+    }
   | { kind: 'QUOTE'; documentId: string; quote: string }
   | {
       kind: 'IDENTICAL_TEXT';
       documentId: string;
       relatedDocumentId: string;
+      text: string;
+    }
+  | {
+      kind: 'DIFFERENT_TEXT';
+      side: 'CLAIM' | 'RELATED_CLAIM';
+      documentId: string;
       text: string;
     };
 
@@ -65,6 +80,7 @@ export interface ClaimDiagnosis {
   icd10Code: string;
   name: string;
   isPrimary: boolean;
+  evidenceStatus: EvidenceStatus | null;
 }
 
 export interface ClaimFinding {
@@ -114,6 +130,10 @@ export interface ClaimDetail {
   priorityScore: number;
   /** ISO timestamp of the last completed AI analysis; null while unanalyzed. */
   analyzedAt: string | null;
+  comparedClaimCount: number | null;
+  maxSimilarity: number | null;
+  similarityMean: number | null;
+  similarityThreshold: number | null;
   facility: {
     id: string;
     code: string;
