@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
-import { LuFileSearch, LuGavel, LuQuote } from 'react-icons/lu';
+import { LuFileSearch, LuQuote, LuUserCheck } from 'react-icons/lu';
 import Image from 'next/image';
-import { DOT_GRID_CLASS_NAME } from '@/lib/dot-grid';
 
 const PRODUCT_PRINCIPLES: {
   icon: IconType;
   title: string;
   description: string;
+  highlight?: boolean;
 }[] = [
   {
     icon: LuFileSearch,
@@ -22,18 +22,17 @@ const PRODUCT_PRINCIPLES: {
       'Setiap tanda menautkan rekam medis yang bisa dicek verifikator.',
   },
   {
-    icon: LuGavel,
+    icon: LuUserCheck,
     title: 'Manusia yang memutuskan',
     description:
-      'Label sistem selalu perlu klarifikasi, tidak pernah tuduhan fraud.',
+      'Label sistem hanya meminta klarifikasi, bukan tuduhan fraud. Keputusan akhir tetap di tangan verifikator.',
+    highlight: true,
   },
 ];
 
 function BrandPanel() {
   return (
-    <aside
-      className={`hidden flex-col items-center justify-center gap-12 border-r border-hairline bg-canvas p-12 lg:flex ${DOT_GRID_CLASS_NAME}`}
-    >
+    <aside className="hidden flex-col items-center justify-center gap-12 border-r border-hairline bg-canvas p-12 lg:flex">
       <Image
         src="/integra-logo.png"
         alt="INTEGRA"
@@ -41,14 +40,18 @@ function BrandPanel() {
         height={82}
         priority
       />
-      <ul className="flex w-full max-w-md flex-col gap-3">
+      <ul className="grid w-full max-w-md auto-rows-fr gap-3">
         {PRODUCT_PRINCIPLES.map((principle) => (
           <li
             key={principle.title}
-            className="flex gap-3 rounded-xl border border-hairline bg-surface px-4 py-3 shadow-xs"
+            className={`flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xs ${
+              principle.highlight
+                ? 'border-transparent [background:linear-gradient(var(--color-surface),var(--color-surface))_padding-box,linear-gradient(to_right,var(--sidebar),var(--sidebar-bottom))_border-box]'
+                : 'border-hairline bg-surface'
+            }`}
           >
             <principle.icon
-              className="mt-0.5 size-4 shrink-0 text-ink"
+              className="size-4 shrink-0 text-ink"
               aria-hidden="true"
             />
             <span className="flex flex-col gap-0.5">

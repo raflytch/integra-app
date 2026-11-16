@@ -16,6 +16,7 @@ import {
 } from 'react-icons/lu';
 import { CareTypePill, ClaimStatusPill } from '@/components/claim-pills';
 import { CENTERED_COLUMN_CLASS_NAME } from '@/components/data-table/centered-column';
+import { GRADIENT_HEADER_ROW_CLASS_NAME } from '@/components/data-table/gradient-header-row';
 import { SortableTableHead } from '@/components/data-table/sortable-table-head';
 import { TablePagination } from '@/components/data-table/table-pagination';
 import {
@@ -202,8 +203,9 @@ export function VedikaClaimTable() {
           Data VEDIKA gagal diperbarui. {FRIENDLY_RETRY_MESSAGE}
         </p>
       )}
-      <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
-        <TableToolbar>
+      {/* Search and the bulk refresh sit in their own card above the table. */}
+      <div className="rounded-lg border border-hairline bg-surface shadow-xs">
+        <TableToolbar className="border-b-0">
           <TableSearch
             value={table.searchQuery}
             onChange={table.setSearchQuery}
@@ -225,13 +227,15 @@ export function VedikaClaimTable() {
               : 'Refresh semua data'}
           </Button>
         </TableToolbar>
+      </div>
+      <div className="overflow-hidden border border-hairline bg-surface shadow-xs">
         <div
           aria-busy={claimQuery.isPlaceholderData}
           className="motion-safe:transition-opacity motion-safe:duration-200 aria-busy:opacity-60"
         >
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
+              <TableRow className={GRADIENT_HEADER_ROW_CLASS_NAME}>
                 <SortableTableHead
                   sortKey="claimNo"
                   sort={table.sort}

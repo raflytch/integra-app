@@ -65,7 +65,7 @@ export function TourStepCard({
             point.selectable && onSelectPoint ? (
               <li
                 key={point.label}
-                className="flex items-center justify-between gap-2 text-small text-ink-secondary"
+                className="flex items-center justify-between gap-2 border-t border-hairline py-2.5 text-small text-ink-secondary first:border-t-0 first:pt-0 last:pb-0"
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-mono text-caption break-all text-ink">
