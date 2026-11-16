@@ -8,8 +8,9 @@ export interface ClaimVerification {
   evidenceRate: number;
   requiredEvidenceCount: number;
   foundEvidenceCount: number;
-  recommendation: DecisionAction;
+  recommendation: DecisionAction | null;
   reason: string;
+  unassessedDiagnoses: string[];
 }
 
 interface VerifiedFinding {
@@ -35,6 +36,7 @@ function strongestOf(findings: VerifiedFinding[]): VerifiedFinding | null {
 export function assessClaim(
   findings: VerifiedFinding[],
   claim: AnalyzedClaim,
+  unassessedDiagnoses: string[],
 ): ClaimVerification | null {
   const { analyzedAt, requiredEvidenceCount, foundEvidenceCount } = claim;
   if (
@@ -48,7 +50,12 @@ export function assessClaim(
     requiredEvidenceCount === 0
       ? 1
       : foundEvidenceCount / requiredEvidenceCount;
-  const evidence = { evidenceRate, requiredEvidenceCount, foundEvidenceCount };
+  const evidence = {
+    evidenceRate,
+    requiredEvidenceCount,
+    foundEvidenceCount,
+    unassessedDiagnoses,
+  };
 
   // Permenkes 16/2019 Lampiran Bab II: menyalin rekam medis pasien lain (cloning) adalah kecurangan, diteruskan untuk ditindaklanjuti.
   const copiedDocument = strongestOf(
@@ -72,6 +79,14 @@ export function assessClaim(
       reason:
         strongestFinding?.summary ??
         `Baru ${foundEvidenceCount} dari ${requiredEvidenceCount} bukti wajib diagnosis sekunder ditemukan di berkas.`,
+    };
+  }
+
+  if (unassessedDiagnoses.length > 0) {
+    return {
+      ...evidence,
+      recommendation: null,
+      reason: `Belum bisa dinilai: belum ada aturan PNPK untuk ${unassessedDiagnoses.join(', ')}. Keputusan diserahkan ke verifikator.`,
     };
   }
 

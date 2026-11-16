@@ -24,8 +24,9 @@ export interface ClaimVerification {
   evidenceRate: number;
   requiredEvidenceCount: number;
   foundEvidenceCount: number;
-  recommendation: DecisionAction;
+  recommendation: DecisionAction | null;
   reason: string;
+  unassessedDiagnoses: string[];
 }
 
 export type FindingCitation =

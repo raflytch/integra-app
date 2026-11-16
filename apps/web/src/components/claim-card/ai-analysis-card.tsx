@@ -220,7 +220,11 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
               <span className="text-small font-semibold text-ink">
                 Keputusan per SEP
               </span>
-              <DecisionActionPill action={verification.recommendation} />
+              {verification.recommendation ? (
+                <DecisionActionPill action={verification.recommendation} />
+              ) : (
+                <Pill tone="outline">Belum bisa dinilai</Pill>
+              )}
             </div>
             <p className="text-small text-ink">
               <LinkedClaimText
@@ -230,8 +234,9 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
             </p>
             <p className="text-caption text-ink-secondary">
               Salinan: Eskalasi. Bukti kurang atau ada temuan: Minta
-              Klarifikasi. Semua lengkap: Setuju. (Peraturan BPJS 7/2018,
-              Kepmenkes 129/2008, Permenkes 16/2019)
+              Klarifikasi. Semua lengkap: Setuju. Ada diagnosis sekunder tanpa
+              aturan PNPK: belum bisa dinilai. (Peraturan BPJS 7/2018, Kepmenkes
+              129/2008, Permenkes 16/2019)
             </p>
           </div>
           <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
