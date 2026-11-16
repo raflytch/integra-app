@@ -125,7 +125,7 @@ Key variables in `apps/api/.env`:
 ## Demo data and accounts
 
 - `npm run seed:users` creates the demo accounts `verifikator@integra.local` and `supervisor@integra.local` and prints each TOTP setup key with a QR code. The QR code is also saved as a PNG in the gitignored `apps/api/.totp-qr/`. Add `-- --rotate` for a new key. Both demo accounts sign in with the email alone, without an authenticator code; every other account always needs its code.
-- `npm run seed:demo` creates 5,000 demo claims from BPJS Kesehatan sample visits (`apps/api/data/bpjs-sample-visits.json`: real diagnoses, INA-CBG codes, Permenkes tariffs, and length of stay, inpatient and outpatient) with synthetic patients and SEP numbers. Documents come from templates and are stored already read, so Analisis runs the rules without an LLM call. The scenarios trip every test: evidence complete, partial, or missing for diagnoses with PNPK rules (Uji Ada and the tariff gap), contradictions (Uji Konsisten), and copied clusters (Uji Bukan Salinan). It also seeds the VEDIKA side: sample decisions (10 Setuju verified in VEDIKA, 20 Minta Klarifikasi, 6 Eskalasi), clarification PDFs for 14 of the clarification claims (8 already refreshed, 6 waiting for a refresh), a claim file PDF (a first page laid out like the SEP form of the VEDIKA dummy template, then the diagnoses, INA-CBG, tariff, and every clinical document) and a SEP snapshot for every demo claim. Production runs it on every deploy and it skips when the same claims exist; `npm run seed:demo -- --force` reseeds, `--count=N` changes the size.
+- `npm run seed:demo` creates 5,000 demo claims from BPJS Kesehatan sample visits (`apps/api/data/bpjs-sample-visits.json`: real diagnoses, INA-CBG codes, Permenkes tariffs, and length of stay, inpatient and outpatient) with synthetic patients and SEP numbers. Documents come from templates and are stored unread, so Analisis has the LLM read them (paid) before the rules run. The scenarios trip every test: evidence complete, partial, or missing for diagnoses with PNPK rules (Uji Ada and the tariff gap), contradictions (Uji Konsisten), and copied clusters (Uji Bukan Salinan). It also seeds the VEDIKA side: sample decisions (10 Setuju verified in VEDIKA, 20 Minta Klarifikasi, 6 Eskalasi), clarification PDFs for 14 of the clarification claims (8 already refreshed, 6 waiting for a refresh), a claim file PDF (a first page laid out like the SEP form of the VEDIKA dummy template, then the diagnoses, INA-CBG, tariff, and every clinical document) and a SEP snapshot for every demo claim. Production runs it on every deploy and it skips when the same claims exist; `npm run seed:demo -- --force` reseeds, `--count=N` changes the size.
 - `npm run seed:rules` loads only the Uji Ada evidence rules (no claims), and `npm run seed:tariffs` loads the official INA-CBG tariffs. Both are idempotent, and production runs them on every deploy, so imported claims are judged and priced without `seed:demo`.
 - `npm run seed:fixture` loads the UC-1 contract claim with its AI extraction and evidence rules from `docs/contracts`.
 - Anyone can create a verifier account from the login page: enter an email that has no account, confirm the prompt, scan the QR code with an authenticator app, and enter its 6-digit code within 5 minutes. The account is created only once the code matches.
@@ -134,32 +134,34 @@ AI analysis costs money. Nothing is analyzed until a verifier chooses it: click 
 
 ## Everyday commands
 
-| Command                   | Action                                                                   |
-| ------------------------- | ------------------------------------------------------------------------ |
-| `npm run dev`             | Start the API and web together; Ctrl+C stops both                        |
-| `npm run dev:client`      | Start the web app at `http://localhost:3000`                             |
-| `npm run dev:server`      | Start the API at `http://localhost:3001`                                 |
-| `npm run build`           | Build both workspaces                                                    |
-| `npm run lint`            | Lint both workspaces                                                     |
-| `npm run typecheck`       | Typecheck both workspaces                                                |
-| `npm run format`          | Format repository files                                                  |
-| `npm run format:check`    | Check formatting                                                         |
-| `npm run prisma:generate` | Generate the Prisma client                                               |
-| `npm run prisma:validate` | Validate the Prisma schema                                               |
-| `npm run prisma:migrate`  | Create and apply a local migration after a schema change                 |
-| `npm run prisma:deploy`   | Apply committed migrations                                               |
-| `npm run prisma:studio`   | Open Prisma Studio                                                       |
-| `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)                          |
-| `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR codes                 |
-| `npm run seed:demo`       | Seed the 5,000 BPJS-based demo claims (`9900R*`), skipped when present   |
-| `npm run seed:rules`      | Load the Uji Ada evidence rules only (no claims, no LLM)                 |
-| `npm run seed:tariffs`    | Load the Permenkes 3/2023 inpatient INA-CBG tariffs (idempotent)         |
-| `npm run seed:fixture`    | Load the UC-1 contract claim                                             |
-| `npm run llm:smoke`       | Two small LLM calls to check the configuration (paid)                    |
-| `npm run data:generate`   | Generate the synthetic dataset with the LLM (paid)                       |
-| `npm run data:seed`       | Load the dataset produced by `data:generate`                             |
-| `npm run eval:similarity` | Calibration report for the Uji Bukan Salinan threshold                   |
-| `npm run eval:detection`  | Precision and recall of the three tests against the synthetic answer key |
+| Command                   | Action                                                                      |
+| ------------------------- | --------------------------------------------------------------------------- |
+| `npm run dev`             | Start the API and web together; Ctrl+C stops both                           |
+| `npm run dev:client`      | Start the web app at `http://localhost:3000`                                |
+| `npm run dev:server`      | Start the API at `http://localhost:3001`                                    |
+| `npm run build`           | Build both workspaces                                                       |
+| `npm run lint`            | Lint both workspaces                                                        |
+| `npm run typecheck`       | Typecheck both workspaces                                                   |
+| `npm run format`          | Format repository files                                                     |
+| `npm run format:check`    | Check formatting                                                            |
+| `npm run prisma:generate` | Generate the Prisma client                                                  |
+| `npm run prisma:validate` | Validate the Prisma schema                                                  |
+| `npm run prisma:migrate`  | Create and apply a local migration after a schema change                    |
+| `npm run prisma:deploy`   | Apply committed migrations                                                  |
+| `npm run prisma:studio`   | Open Prisma Studio                                                          |
+| `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)                             |
+| `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR codes                    |
+| `npm run seed:demo`       | Seed the 5,000 BPJS-based demo claims (`9900R*`), skipped when present      |
+| `npm run seed:rules`      | Load the Uji Ada evidence rules only (no claims, no LLM)                    |
+| `npm run seed:tariffs`    | Load the Permenkes 3/2023 inpatient INA-CBG tariffs (idempotent)            |
+| `npm run seed:fixture`    | Load the UC-1 contract claim                                                |
+| `npm run llm:smoke`       | Two small LLM calls to check the configuration (paid)                       |
+| `npm run data:generate`   | Generate the synthetic dataset with the LLM (paid)                          |
+| `npm run data:seed`       | Load the dataset produced by `data:generate`                                |
+| `npm run eval:similarity` | Calibration report for the Uji Bukan Salinan threshold                      |
+| `npm run eval:detection`  | Precision and recall of the three tests against the synthetic answer key    |
+| `npm run eval:impact`     | Measured impact on the demo claims, rules only, no LLM (`-- --workers=N`)   |
+| `npm run eval:ai`         | LLM reading versus the template reading on a sample (paid, `-- --sample=N`) |
 
 Per-workspace variants are also available: `build:client`, `build:server`, `lint:client`, `lint:server`, `typecheck:client`, and `typecheck:server`.
 
