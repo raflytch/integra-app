@@ -27,7 +27,7 @@ services:
       timeout: 5s
       retries: 10
 
-  # Runs `prisma migrate deploy` and `seed:rules` (Uji Ada evidence rules) once
+  # Runs `prisma migrate deploy`, `seed:rules`, `seed:tariffs`, and `seed:demo` once
   # per `up`, before the API starts.
   migrate:
     image: ${IMAGE_PREFIX}-migrate:${IMAGE_TAG:-latest}

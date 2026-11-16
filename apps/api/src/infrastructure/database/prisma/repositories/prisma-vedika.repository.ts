@@ -189,7 +189,7 @@ function parseStoredResponse(
   };
 }
 
-function serializeResponse(
+export function serializeResponse(
   reply: ReturnType<typeof buildSimulatedVedikaReply>,
 ): Prisma.InputJsonObject {
   return {
