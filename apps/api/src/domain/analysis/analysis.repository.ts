@@ -1,4 +1,4 @@
-import type { TestType } from '../claims/claim-detail';
+import type { EvidenceStatus, TestType } from '../claims/claim-detail';
 import type {
   ClaimEvidence,
   DocumentToExtract,
@@ -27,10 +27,15 @@ export abstract class AnalysisRepository {
   abstract findSimilarityCandidates(
     claim: ClaimEvidence,
   ): Promise<SimilarityCandidate[]>;
+  abstract findSimilarityGroups(): Promise<SimilarityCandidate[][]>;
   abstract replaceFindings(
     claimId: string,
     testType: TestType,
     findings: NewFinding[],
+  ): Promise<void>;
+  abstract saveDiagnosisEvidenceStatuses(
+    claimId: string,
+    statuses: { diagnosisId: string; status: EvidenceStatus }[],
   ): Promise<void>;
   abstract findFindingSignals(claimId: string): Promise<FindingSignal[]>;
   abstract saveClaimScores(
@@ -41,6 +46,10 @@ export abstract class AnalysisRepository {
       analyzedAt: Date;
       requiredEvidenceCount: number;
       foundEvidenceCount: number;
+      comparedClaimCount: number;
+      maxSimilarity: number;
+      similarityMean: number | null;
+      similarityThreshold: number | null;
     },
   ): Promise<void>;
 }

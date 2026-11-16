@@ -4,36 +4,19 @@ import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import type { EvidenceRule } from '../src/domain/analysis/claim-evidence';
 import type { ClinicalExtraction } from '../src/domain/analysis/clinical-extraction';
 import type { Prisma } from '../src/generated/prisma/client';
 import { type Env, validateEnv } from '../src/infrastructure/config/env.schema';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import type { ClaimDetailResponse } from '../src/presentation/presenters/claim-detail.presenter';
+import { EVIDENCE_RULES } from './synthetic/scenarios';
 
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const CONTRACTS_DIRECTORY = join(__dirname, '../../../docs/contracts');
 const FIXTURE_INJECTED_CASES = ['UPCODING'] as const;
-const FIXTURE_EVIDENCE_RULES: EvidenceRule[] = [
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'PROCEDURE',
-    expected: 'resusitasi cairan',
-    guidelineRef: 'PNPK Dengue 2021, hlm. 34',
-  },
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'FINDING',
-    expected: 'akral dingin',
-    guidelineRef: 'PNPK Dengue 2021, hlm. 31',
-  },
-  {
-    icd10Code: 'R57.9',
-    evidenceType: 'VITAL_SIGN',
-    expected: 'hipotensi',
-    guidelineRef: 'PNPK Dengue 2021, hlm. 31',
-  },
-];
+const FIXTURE_EVIDENCE_RULES = EVIDENCE_RULES.filter(
+  (evidenceRule) => evidenceRule.icd10Code === 'R57.9',
+);
 
 @Module({
   imports: [
@@ -138,14 +121,18 @@ async function main(): Promise<void> {
     ...FIXTURE_EVIDENCE_RULES.map((evidenceRule) =>
       prisma.evidenceRule.upsert({
         where: {
-          icd10Code_evidenceType_expected: {
+          icd10Code_disease_evidenceType_expected: {
             icd10Code: evidenceRule.icd10Code,
+            disease: evidenceRule.disease,
             evidenceType: evidenceRule.evidenceType,
             expected: evidenceRule.expected,
           },
         },
         create: evidenceRule,
-        update: { guidelineRef: evidenceRule.guidelineRef },
+        update: {
+          guidelineRef: evidenceRule.guidelineRef,
+          primaryIcd10Prefixes: evidenceRule.primaryIcd10Prefixes,
+        },
       }),
     ),
   ]);

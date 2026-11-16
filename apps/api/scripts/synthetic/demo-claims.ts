@@ -6,6 +6,7 @@
  */
 import { SyntheticTariffSchedule } from '../../src/infrastructure/tariffs/synthetic-tariff-schedule';
 import type { CareType } from '../../src/domain/claims/claim-detail';
+import { toInacbgGroupCode } from '../../src/domain/analysis/tariff-gap';
 import type { InjectedCase } from './dataset.schema';
 import { DISEASES, type DiseaseKey, FACILITIES } from './scenarios';
 
@@ -72,6 +73,8 @@ export interface DemoClaim {
  *   are copied word for word from one source claim in the cluster, numbers
  *   included. Only `recordedAt` follows each claim's stay and the exam note's
  *   vital-sign sentence gets new numbers (Uji Bukan Salinan flags them).
+ *   One copy in the first cluster also codes Syok without evidence and records
+ *   a normal temperature under "demam tinggi", so all three tests flag it.
  * - Consistent upcoding: after cloning, every normal DBD claim of RS-SIM-005
  *   becomes `SHOCK_UPCODING`, so one facility codes shock on all its DBD
  *   claims (the similar pattern marker flags it).
@@ -723,6 +726,8 @@ const CLONING_CLUSTERS = [
 const CLONING_CLUSTER_DAY_SPAN = 60;
 const CONSISTENT_UPCODING_FACILITY_CODE = 'RS-SIM-005';
 const MIN_CLONING_CLUSTER_SIZE = 3;
+const ALL_TESTS_SECONDARY = { icd10Code: 'R57.9', name: 'Syok' } as const;
+const ALL_TESTS_SEVERITY_LEVEL = 3;
 const EXAM_VITAL_SIGN_PATTERN =
   /TD \d+\/\d+ mmHg, nadi \d+ x\/menit, suhu \d+,\d °C\./;
 
@@ -828,7 +833,12 @@ function injectCloningClusters(
       source.admittedAt,
       sourceLengthOfStay,
     );
+    const allTestsMember =
+      facilityCode === CLONING_CLUSTERS[0].facilityCode
+        ? members.find((member) => member !== source)
+        : undefined;
     for (const member of members) {
+      const isAllTestsMember = member === allTestsMember;
       const shiftMs = member.admittedAt.getTime() - source.admittedAt.getTime();
       const documents =
         member === source
@@ -843,7 +853,7 @@ function injectCloningClusters(
                       vitalSignSentence(
                         random,
                         bloodPressure(random),
-                        [38.2, 39.6],
+                        isAllTestsMember ? [36.4, 37.2] : [38.2, 39.6],
                       ),
                     )
                   : document.content,
@@ -855,6 +865,23 @@ function injectCloningClusters(
         dischargedAt: addDays(member.admittedAt, sourceLengthOfStay),
         documents,
       } satisfies Partial<DemoClaim>);
+      if (isAllTestsMember) {
+        const inacbgGroupCode = toInacbgGroupCode(sourceContent.inacbgCode);
+        Object.assign(member, {
+          injectedCase: ['CLONING', 'UPCODING', 'EXAM_MANIPULATION'],
+          diagnoses: [
+            ...sourceContent.diagnoses,
+            { ...ALL_TESTS_SECONDARY, isPrimary: false },
+          ],
+          severityLevel: ALL_TESTS_SEVERITY_LEVEL,
+          inacbgCode: `${inacbgGroupCode}-${SEVERITY_NUMERALS[ALL_TESTS_SEVERITY_LEVEL - 1]}`,
+          tariffAmount:
+            tariffSchedule.findTariff(
+              inacbgGroupCode,
+              ALL_TESTS_SEVERITY_LEVEL,
+            ) ?? sourceContent.tariffAmount,
+        } satisfies Partial<DemoClaim>);
+      }
     }
   }
   return warnings;

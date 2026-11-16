@@ -28,8 +28,10 @@ import { DECISION_FIELDS, toDecision } from './prisma-decision.repository';
 
 const CITATION_KINDS = new Set<FindingCitation['kind']>([
   'MISSING_EVIDENCE',
+  'REFUTED_EVIDENCE',
   'QUOTE',
   'IDENTICAL_TEXT',
+  'DIFFERENT_TEXT',
 ]);
 
 function isFindingCitation(value: unknown): value is FindingCitation {
@@ -256,7 +258,13 @@ export class PrismaClaimRepository extends ClaimRepository {
           orderBy: { icd9cmCode: 'asc' },
         },
         diagnoses: {
-          select: { id: true, icd10Code: true, name: true, isPrimary: true },
+          select: {
+            id: true,
+            icd10Code: true,
+            name: true,
+            isPrimary: true,
+            evidenceStatus: true,
+          },
           orderBy: [{ isPrimary: 'desc' }, { icd10Code: 'asc' }],
         },
         documents: {
@@ -302,6 +310,10 @@ export class PrismaClaimRepository extends ClaimRepository {
       potentialGap: claim.potentialGap.toNumber(),
       priorityScore: claim.priorityScore,
       analyzedAt: claim.analyzedAt,
+      comparedClaimCount: claim.comparedClaimCount,
+      maxSimilarity: claim.maxSimilarity,
+      similarityMean: claim.similarityMean,
+      similarityThreshold: claim.similarityThreshold,
       facility: claim.facility,
       patient: claim.patient,
       diagnoses: claim.diagnoses,

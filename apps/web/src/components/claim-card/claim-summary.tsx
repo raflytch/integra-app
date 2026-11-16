@@ -7,7 +7,6 @@ import {
   CareTypePill,
   ClaimStatusPill,
   FacilityTypePill,
-  NeedsClarificationPill,
   PriorityPill,
   SeverityPill,
 } from '@/components/claim-pills';
@@ -91,7 +90,6 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
   const primaryDiagnosis = claim.diagnoses.find(
     (diagnosis) => diagnosis.isPrimary,
   );
-  const needsClarification = claim.findings.length > 0;
   const existenceFindings = claim.findings.filter(
     (finding) => finding.testType === 'EXISTENCE',
   );
@@ -107,7 +105,7 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
   return (
     <section
       aria-label="Ringkasan klaim"
-      className="flex flex-col gap-6 rounded-xl border border-hairline bg-surface shadow-xs p-6 lg:flex-row lg:items-start lg:justify-between"
+      className="flex flex-col gap-6 rounded-xl border border-hairline bg-surface p-5 shadow-xs lg:flex-row lg:items-stretch lg:justify-between"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -116,14 +114,13 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           </span>
           <CareTypePill careType={claim.careType} />
           <ClaimStatusPill status={claim.status} />
-          {needsClarification && <NeedsClarificationPill />}
           <PriorityPill priorityScore={claim.priorityScore} />
           <FacilityTypePill facilityType={claim.facility.type} />
         </div>
         <h1 className="font-display text-section font-semibold tracking-display text-ink">
           {primaryDiagnosis?.name ?? claim.inacbgCode}
         </h1>
-        <dl className="grid divide-y divide-hairline rounded-xl border border-hairline bg-surface text-small sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <dl className="grid divide-y divide-hairline rounded-xl border border-hairline bg-surface text-small sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:flex-1">
           <SummaryItem
             icon={LuHospital}
             label="Faskes"
@@ -148,7 +145,7 @@ export function ClaimSummary({ claim }: { claim: ClaimDetail }) {
           <CareSummaryItem claim={claim} />
         </dl>
       </div>
-      <div className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72 lg:self-end">
+      <div className="flex shrink-0 flex-col gap-4 rounded-lg border border-hairline bg-canvas p-4 lg:w-72">
         <div className="flex flex-col gap-1">
           <p className="text-caption text-ink-secondary">
             Potensi selisih tarif

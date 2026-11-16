@@ -380,49 +380,60 @@ export const GLOBAL_RULES: readonly ContentRule[] = [
 /** Scenario whose rules and narrative produce the UC-3 base document set. */
 export const CLONING_BASE_SCENARIO: ScenarioName = 'NORMAL_DBD';
 
-const SHOCK_GUIDELINE_REF = 'Kriteria klinis syok hipovolemik';
-const RESPIRATORY_FAILURE_GUIDELINE_REF = 'Kriteria klinis gagal napas akut';
+const SHOCK_GUIDELINE_REF =
+  'PNPK Tata Laksana Infeksi Dengue pada Dewasa (KMK HK.01.07/MENKES/9845/2020) Bab III';
+const PNEUMONIA_GUIDELINE_REF =
+  'PNPK Tata Laksana Pneumonia pada Dewasa (KMK HK.01.07/MENKES/1168/2025)';
+const INTENSIVE_CARE_GUIDELINE_REF =
+  'PNPK Tata Laksana Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)';
 // R57.0 (cardiogenic) is left out: fluid resuscitation is not its expected care.
 const HYPOVOLEMIC_SHOCK_CODES = ['R57.1', 'R57.9'] as const;
+const DENGUE_RULE_SCOPE = {
+  disease: 'Infeksi dengue',
+  primaryIcd10Prefixes: ['A90', 'A91', 'A97'],
+};
+const PNEUMONIA_RULE_SCOPE = {
+  disease: 'Pneumonia',
+  primaryIcd10Prefixes: ['J12', 'J13', 'J14', 'J15', 'J16', 'J17', 'J18'],
+};
 
 /** Clinical evidence rules for secondary diagnoses, consumed by Uji Ada. */
 export const EVIDENCE_RULES: readonly EvidenceRule[] = [
   ...HYPOVOLEMIC_SHOCK_CODES.flatMap((icd10Code): EvidenceRule[] => [
     {
       icd10Code,
+      ...DENGUE_RULE_SCOPE,
       evidenceType: 'PROCEDURE',
       expected: 'resusitasi cairan',
-      guidelineRef: SHOCK_GUIDELINE_REF,
+      guidelineRef: `${SHOCK_GUIDELINE_REF} hlm. 43 dan 46: resusitasi cairan kristaloid 5-10 ml/kgBB/jam pada syok terkompensasi atau 10-20 ml/kgBB pada sindroma syok dengue`,
     },
     {
       icd10Code,
+      ...DENGUE_RULE_SCOPE,
       evidenceType: 'FINDING',
-      expected: 'akral dingin',
-      guidelineRef: SHOCK_GUIDELINE_REF,
-    },
-    {
-      icd10Code,
-      evidenceType: 'VITAL_SIGN',
-      expected: 'hipotensi',
-      guidelineRef: SHOCK_GUIDELINE_REF,
+      expected: 'tanda syok',
+      guidelineRef: `${SHOCK_GUIDELINE_REF} hlm. 23 dan 43: takikardi, akral dingin, pengisian kapiler melambat, nadi lemah, tekanan nadi ≤ 20 mmHg, atau hipotensi (sistolik 80-90 mmHg pada dewasa)`,
     },
   ]),
   {
     icd10Code: 'J96.0',
+    ...PNEUMONIA_RULE_SCOPE,
     evidenceType: 'MEDICATION',
     expected: 'oksigen',
-    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
+    guidelineRef: `${INTENSIVE_CARE_GUIDELINE_REF} hlm. 311: manajemen gagal napas dimulai dengan terapi oksigen; ${PNEUMONIA_GUIDELINE_REF} hlm. 34: terapi oksigen pada rawat inap`,
   },
   {
     icd10Code: 'J96.0',
+    ...PNEUMONIA_RULE_SCOPE,
     evidenceType: 'FINDING',
     expected: 'sesak napas',
-    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
+    guidelineRef: `${PNEUMONIA_GUIDELINE_REF} hlm. 12 dan 18: sesak napas; gawat napas bila frekuensi napas > 30 kali/menit`,
   },
   {
     icd10Code: 'J96.0',
+    ...PNEUMONIA_RULE_SCOPE,
     evidenceType: 'VITAL_SIGN',
     expected: 'desaturasi',
-    guidelineRef: RESPIRATORY_FAILURE_GUIDELINE_REF,
+    guidelineRef: `${INTENSIVE_CARE_GUIDELINE_REF} hlm. 72: hipoksemia bila PaO2 < 60 mmHg atau SaO2 < 90%`,
   },
 ];

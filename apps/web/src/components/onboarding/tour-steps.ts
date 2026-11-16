@@ -60,9 +60,9 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'claim-ai-analysis',
     page: 'claim',
     target: 'claim-ai-analysis',
-    title: 'Baca ringkasan INTEGRA AI',
+    title: 'Baca Hasil INTEGRA',
     description:
-      'AI membaca rekam medis dan mengekstrak buktinya, lalu aturan klinis menilai. Ringkasan ini menjelaskan temuan dan langkah berikutnya. Potensi selisih tarif di atas kartu menunjukkan dampak finansialnya.',
+      'Ringkasan INTEGRA: rekomendasi keputusan per SEP dan satu baris hasil untuk tiap uji. Klik nama uji untuk membuka detail, parameter, dan dasar aturannya di panel uji.',
     missingTargetDescription:
       'Ringkasan AI muncul di Kartu Klaim. Jika klaim belum dianalisis, klik Analisis pada barisnya di Antrean Klaim.',
   },

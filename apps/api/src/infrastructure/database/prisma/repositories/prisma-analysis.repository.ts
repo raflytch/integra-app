@@ -12,7 +12,10 @@ import type {
   ClinicalExtraction,
   ExtractionSource,
 } from '../../../../domain/analysis/clinical-extraction';
-import type { TestType } from '../../../../domain/claims/claim-detail';
+import type {
+  EvidenceStatus,
+  TestType,
+} from '../../../../domain/claims/claim-detail';
 import { Prisma } from '../../../../generated/prisma/client';
 import { PrismaService } from '../prisma.service';
 import { parseClinicalExtraction } from './clinical-extraction.parser';
@@ -105,6 +108,8 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
       where: { icd10Code: { in: icd10Codes } },
       select: {
         icd10Code: true,
+        disease: true,
+        primaryIcd10Prefixes: true,
         evidenceType: true,
         expected: true,
         guidelineRef: true,
@@ -144,6 +149,32 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
     }));
   }
 
+  async findSimilarityGroups(): Promise<SimilarityCandidate[][]> {
+    const claims = await this.prisma.claim.findMany({
+      orderBy: { claimNo: 'asc' },
+      select: {
+        id: true,
+        claimNo: true,
+        patientId: true,
+        diagnoses: { where: { isPrimary: true }, select: { icd10Code: true } },
+        documents: {
+          orderBy: [{ type: 'asc' }, { recordedAt: 'asc' }],
+          select: { id: true, type: true, content: true },
+        },
+      },
+    });
+    const groups = new Map<string, SimilarityCandidate[]>();
+    for (const { id, diagnoses, ...claim } of claims) {
+      const primaryCode = diagnoses[0]?.icd10Code;
+      if (!primaryCode) continue;
+      groups.set(primaryCode, [
+        ...(groups.get(primaryCode) ?? []),
+        { ...claim, claimId: id },
+      ]);
+    }
+    return [...groups.values()];
+  }
+
   async replaceFindings(
     claimId: string,
     testType: TestType,
@@ -154,6 +185,24 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
       this.prisma.finding.createMany({
         data: findings.map((finding) => ({ ...finding, claimId })),
       }),
+    ]);
+  }
+
+  async saveDiagnosisEvidenceStatuses(
+    claimId: string,
+    statuses: { diagnosisId: string; status: EvidenceStatus }[],
+  ): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.claimDiagnosis.updateMany({
+        where: { claimId },
+        data: { evidenceStatus: null },
+      }),
+      ...statuses.map(({ diagnosisId, status }) =>
+        this.prisma.claimDiagnosis.update({
+          where: { id: diagnosisId },
+          data: { evidenceStatus: status },
+        }),
+      ),
     ]);
   }
 
@@ -176,6 +225,10 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
       analyzedAt: Date;
       requiredEvidenceCount: number;
       foundEvidenceCount: number;
+      comparedClaimCount: number;
+      maxSimilarity: number;
+      similarityMean: number | null;
+      similarityThreshold: number | null;
     },
   ): Promise<void> {
     await this.prisma.claim.update({ where: { id: claimId }, data: scores });

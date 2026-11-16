@@ -21,6 +21,7 @@ import {
   CARE_TYPE_LABELS,
   CLAIM_STATUS_LABELS,
   DECISION_RESULT_LABELS,
+  EVIDENCE_STATUS_LABELS,
   TEST_TYPE_DETAILS,
 } from '@/lib/claim-labels';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ import type {
   CareType,
   ClaimStatus,
   DecisionAction,
+  EvidenceStatus,
   FacilityType,
   TestType,
 } from '@/types/claim.types';
@@ -165,10 +167,21 @@ export function NotAnalyzedPill() {
   );
 }
 
-export function MissingEvidencePill() {
+const EVIDENCE_STATUS_APPEARANCE: Record<
+  EvidenceStatus,
+  { tone: PillTone; icon: IconType }
+> = {
+  SUPPORTED: { tone: 'success', icon: LuCircleCheck },
+  PARTIAL: { tone: 'warning', icon: LuCircleAlert },
+  NOT_FOUND: { tone: 'error', icon: LuCircleAlert },
+  REFUTED: { tone: 'error', icon: LuShieldAlert },
+};
+
+export function EvidenceStatusPill({ status }: { status: EvidenceStatus }) {
+  const { tone, icon } = EVIDENCE_STATUS_APPEARANCE[status];
   return (
-    <Pill tone="warning" icon={LuCircleAlert}>
-      Belum ada bukti
+    <Pill tone={tone} icon={icon}>
+      {EVIDENCE_STATUS_LABELS[status]}
     </Pill>
   );
 }

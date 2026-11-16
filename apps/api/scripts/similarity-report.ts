@@ -1,7 +1,7 @@
 /**
  * Read-only calibration report for Uji Bukan Salinan (M-06). Scores every
  * cloning claim and a sample of non-cloning claims against their candidates,
- * without an LLM, and shows whether the active threshold separates them.
+ * without an LLM, and shows which ones the 2 x RMSE threshold flags.
  *
  *   npm run eval:similarity
  */
@@ -10,7 +10,10 @@ import { join } from 'node:path';
 import { Logger, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { scoreSimilarClaims } from '../src/domain/analysis/similarity-test';
+import {
+  findSimilarityAnomalyThreshold,
+  scoreSimilarClaims,
+} from '../src/domain/analysis/similarity-test';
 import { type Env, validateEnv } from '../src/infrastructure/config/env.schema';
 import { PrismaService } from '../src/infrastructure/database/prisma/prisma.service';
 import { PrismaAnalysisRepository } from '../src/infrastructure/database/prisma/repositories/prisma-analysis.repository';
@@ -34,6 +37,7 @@ interface ScoredPair {
   claimNo: string;
   relatedClaimNo: string;
   similarity: number;
+  threshold: number;
 }
 
 /** Evenly spaced picks, so the sample covers the whole claim range. */
@@ -45,8 +49,13 @@ function sampleEvenly<Item>(items: Item[], size: number): Item[] {
   );
 }
 
-function formatPair({ claimNo, relatedClaimNo, similarity }: ScoredPair) {
-  return `  ${similarity.toFixed(3)}  ${claimNo} ↔ ${relatedClaimNo}`;
+function formatPair({
+  claimNo,
+  relatedClaimNo,
+  similarity,
+  threshold,
+}: ScoredPair) {
+  return `  ${similarity.toFixed(3)} (ambang ${threshold.toFixed(3)})  ${claimNo} ↔ ${relatedClaimNo}`;
 }
 
 async function main(): Promise<void> {
@@ -59,7 +68,6 @@ async function main(): Promise<void> {
   const config = app.get(ConfigService<Env, true>);
   const prisma = new PrismaService(config);
   const analysisRepository = new PrismaAnalysisRepository(prisma);
-  const threshold = config.get('SIMILARITY_THRESHOLD', { infer: true });
 
   try {
     const claims = await prisma.claim.findMany({
@@ -82,6 +90,10 @@ async function main(): Promise<void> {
       NON_CLONING_SAMPLE_SIZE,
     );
 
+    const anomalyThreshold =
+      findSimilarityAnomalyThreshold(
+        await analysisRepository.findSimilarityGroups(),
+      )?.anomalyThreshold ?? Infinity;
     const nonClonePairs: ScoredPair[] = [];
     const clusterPairs: ScoredPair[] = [];
     for (const { id } of [...cloningClaims, ...sampledClaims]) {
@@ -94,6 +106,7 @@ async function main(): Promise<void> {
           claimNo: claim.claimNo,
           relatedClaimNo: match.relatedClaimNo,
           similarity: match.similarity,
+          threshold: anomalyThreshold,
         };
         if (isSameCluster(id, match.relatedClaimId)) {
           clusterPairs.push(pair);
@@ -111,14 +124,9 @@ async function main(): Promise<void> {
         !lowest || pair.similarity < lowest.similarity ? pair : lowest,
       null,
     );
-    const highestNonClone = topNonClonePairs[0]?.similarity ?? 0;
-    const separation = !lowestClusterPair
-      ? 'Tidak ada pasangan sesama kluster kloning; jalankan npm run seed:demo.'
-      : lowestClusterPair.similarity >= threshold && highestNonClone < threshold
-        ? 'Ambang memisahkan kloning dari non-kloning.'
-        : lowestClusterPair.similarity > highestNonClone
-          ? 'Ambang aktif TIDAK di antara kedua angka; sesuaikan SIMILARITY_THRESHOLD.'
-          : 'TUMPANG TINDIH: skor non-kloning tertinggi >= skor kluster terendah.';
+    const isFlagged = (pair: ScoredPair) => pair.similarity > pair.threshold;
+    const flaggedClusterPairs = clusterPairs.filter(isFlagged).length;
+    const flaggedNonClonePairs = nonClonePairs.filter(isFlagged);
 
     logger.log(
       [
@@ -128,8 +136,9 @@ async function main(): Promise<void> {
         ...topNonClonePairs.map(formatPair),
         'Skor terendah pasangan sesama kluster kloning:',
         lowestClusterPair ? formatPair(lowestClusterPair) : '  -',
-        `Ambang aktif (SIMILARITY_THRESHOLD): ${threshold}`,
-        separation,
+        `Ambang 2 x RMSE menandai ${flaggedClusterPairs} dari ${clusterPairs.length} pasangan sesama kluster.`,
+        `Pasangan bukan-keduanya-kloning yang ikut ditandai: ${flaggedNonClonePairs.length}`,
+        ...flaggedNonClonePairs.slice(0, TOP_NON_CLONE_PAIRS).map(formatPair),
       ].join('\n'),
     );
   } finally {

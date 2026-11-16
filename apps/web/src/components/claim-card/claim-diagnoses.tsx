@@ -1,23 +1,13 @@
-import { MissingEvidencePill, Pill } from '@/components/claim-pills';
-import type {
-  ClaimDiagnosis,
-  ClaimFinding,
-  ClaimProcedure,
-} from '@/types/claim.types';
+import { Pill } from '@/components/claim-pills';
+import type { ClaimDiagnosis, ClaimProcedure } from '@/types/claim.types';
 
 export function ClaimDiagnoses({
   diagnoses,
   procedures,
-  findings,
 }: {
   diagnoses: ClaimDiagnosis[];
   procedures: ClaimProcedure[];
-  findings: ClaimFinding[];
 }) {
-  const flaggedDiagnosisIds = new Set(
-    findings.map((finding) => finding.diagnosisId),
-  );
-
   return (
     <section
       aria-labelledby="claim-diagnoses-heading"
@@ -41,9 +31,6 @@ export function ClaimDiagnoses({
                 <Pill tone={diagnosis.isPrimary ? 'outline' : 'neutral'}>
                   {diagnosis.isPrimary ? 'Utama' : 'Sekunder'}
                 </Pill>
-                {flaggedDiagnosisIds.has(diagnosis.id) && (
-                  <MissingEvidencePill />
-                )}
               </div>
             </div>
           </li>

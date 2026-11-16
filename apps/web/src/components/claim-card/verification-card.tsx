@@ -1,7 +1,7 @@
 import { LuCircleCheck, LuCircleDashed } from 'react-icons/lu';
 import { DecisionActionPill } from '@/components/claim-pills';
 import { DOCUMENT_TYPE_LABELS } from '@/lib/claim-labels';
-import { formatDateTime, formatPercent } from '@/lib/format';
+import { formatDateTime } from '@/lib/format';
 import type { ClaimDecision, ClaimDetail } from '@/types/claim.types';
 
 function MissingDocumentChecklist({ decision }: { decision: ClaimDecision }) {
@@ -37,12 +37,11 @@ function MissingDocumentChecklist({ decision }: { decision: ClaimDecision }) {
 
 export function VerificationCard({ claim }: { claim: ClaimDetail }) {
   const latestDecision = claim.decisions[0];
-  const { verification } = claim;
 
   return (
     <section
       aria-labelledby="verification-heading"
-      className="grid gap-4 rounded-xl border border-hairline bg-surface p-4 shadow-xs md:grid-cols-2"
+      className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface p-4 shadow-xs"
     >
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-0.5">
@@ -72,44 +71,6 @@ export function VerificationCard({ claim }: { claim: ClaimDetail }) {
         ) : (
           <p className="text-small text-ink-secondary">
             Belum ada keputusan verifikator untuk SEP ini.
-          </p>
-        )}
-      </div>
-      <div className="flex flex-col gap-2 rounded-lg border border-hairline bg-canvas p-3">
-        <h3 className="text-small font-semibold text-ink">
-          Rekomendasi INTEGRA
-        </h3>
-        {verification ? (
-          <>
-            <div className="flex flex-wrap items-center gap-3">
-              <DecisionActionPill action={verification.recommendation} />
-              {verification.requiredEvidenceCount > 0 ? (
-                <span className="text-small text-ink-secondary">
-                  Kelengkapan bukti{' '}
-                  <span className="font-display text-subhead font-semibold text-ink tabular-nums">
-                    {formatPercent(verification.evidenceRate)}
-                  </span>{' '}
-                  ({verification.foundEvidenceCount} dari{' '}
-                  {verification.requiredEvidenceCount} bukti wajib)
-                </span>
-              ) : (
-                <span className="text-small text-ink-secondary">
-                  Tidak ada diagnosis sekunder yang perlu bukti
-                </span>
-              )}
-            </div>
-            <p className="text-small text-ink">{verification.reason}</p>
-            <p className="text-caption text-ink-secondary">
-              Dokumen tersalin: Eskalasi (Permenkes 16/2019). Bukti belum 100%
-              atau ada temuan lain: Minta Klarifikasi (Peraturan BPJS 7/2018
-              Pasal 31 ayat 3). Bukti 100% dan semua uji lolos: Setuju (Pasal 31
-              ayat 2).
-            </p>
-          </>
-        ) : (
-          <p className="text-small text-ink-secondary">
-            Kelengkapan bukti dan rekomendasi muncul setelah klaim dianalisis
-            AI.
           </p>
         )}
       </div>

@@ -4,6 +4,7 @@ import type {
   ClaimStatus,
   DecisionAction,
   DocumentType,
+  EvidenceStatus,
   EvidenceType,
   Gender,
   TestType,
@@ -63,6 +64,13 @@ export const EVIDENCE_TYPE_LABELS: Record<EvidenceType, string> = {
   PROCEDURE: 'Tindakan',
   FINDING: 'Temuan',
   VITAL_SIGN: 'Tanda vital',
+};
+
+export const EVIDENCE_STATUS_LABELS: Record<EvidenceStatus, string> = {
+  SUPPORTED: 'Didukung',
+  PARTIAL: 'Sebagian',
+  NOT_FOUND: 'Tidak ditemukan',
+  REFUTED: 'Dibantah data',
 };
 
 export const GENDER_LABELS: Record<Gender, string> = {

@@ -119,9 +119,9 @@ function collectTimedFindings(claim: ClaimEvidence): TimedFinding[] {
   );
 }
 
-function findContradictedFindings(
+function pairContradictedFindings(
   timedFindings: TimedFinding[],
-): Inconsistency[] {
+): Map<string, { claimed: TimedFinding; negated: TimedFinding }> {
   const closestPairByName = new Map<
     string,
     { claimed: TimedFinding; negated: TimedFinding; gapMs: number }
@@ -152,17 +152,25 @@ function findContradictedFindings(
     }
   }
 
-  return [...closestPairByName.values()].map(({ claimed, negated }) => ({
-    code: 'CONTRADICTED_FINDING',
-    strength: STRENGTH_BY_CODE.CONTRADICTED_FINDING,
-    summary: `${capitalize(documentLabel(claimed.document))} menulis "${claimed.canonicalName}", tetapi ${documentLabel(negated.document)} menulis sebaliknya.`,
-    documentId: claimed.document.id,
-    relatedDocumentId: negated.document.id,
-    quotes: [
-      quoteOf(claimed.document, claimed.quote),
-      quoteOf(negated.document, negated.quote),
-    ],
-  }));
+  return closestPairByName;
+}
+
+function findContradictedFindings(
+  timedFindings: TimedFinding[],
+): Inconsistency[] {
+  return [...pairContradictedFindings(timedFindings).values()].map(
+    ({ claimed, negated }) => ({
+      code: 'CONTRADICTED_FINDING',
+      strength: STRENGTH_BY_CODE.CONTRADICTED_FINDING,
+      summary: `${capitalize(documentLabel(claimed.document))} menulis "${claimed.canonicalName}", tetapi ${documentLabel(negated.document)} menulis sebaliknya.`,
+      documentId: claimed.document.id,
+      relatedDocumentId: negated.document.id,
+      quotes: [
+        quoteOf(claimed.document, claimed.quote),
+        quoteOf(negated.document, negated.quote),
+      ],
+    }),
+  );
 }
 
 function parseTemperature(value: string): number | null {
@@ -426,6 +434,22 @@ function findDuplicateDiagnosisCategories(
       },
     ];
   });
+}
+
+export function findContradictedFindingQuotes(
+  claim: ClaimEvidence,
+): Map<string, QuoteCitation[]> {
+  return new Map(
+    [...pairContradictedFindings(collectTimedFindings(claim))].map(
+      ([canonicalName, { claimed, negated }]) => [
+        canonicalName,
+        [
+          quoteOf(claimed.document, claimed.quote),
+          quoteOf(negated.document, negated.quote),
+        ],
+      ],
+    ),
+  );
 }
 
 /**

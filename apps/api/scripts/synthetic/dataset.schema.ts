@@ -75,6 +75,8 @@ export const syntheticDatasetSchema = z.object({
   evidenceRules: z.array(
     z.object({
       icd10Code: z.string().min(1),
+      disease: z.string().optional(),
+      primaryIcd10Prefixes: z.array(z.string()).optional(),
       evidenceType: z.enum([
         'MEDICATION',
         'PROCEDURE',

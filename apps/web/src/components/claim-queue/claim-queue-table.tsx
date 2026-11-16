@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { LuSparkles } from 'react-icons/lu';
+import { LuRefreshCw, LuSparkles } from 'react-icons/lu';
 import {
   type AnalysisTarget,
   useClaimAnalysisRunner,
@@ -12,6 +12,7 @@ import {
 import {
   CareTypePill,
   ClaimStatusPill,
+  DecisionActionPill,
   FacilityTypePill,
   NeedsClarificationPill,
   NotAnalyzedPill,
@@ -153,7 +154,11 @@ function FindingSignals({ claim }: { claim: ClaimQueueItem }) {
 
   return (
     <div className="flex flex-col items-start gap-1.5">
-      <NeedsClarificationPill />
+      {claim.findingCounts.SIMILARITY > 0 ? (
+        <DecisionActionPill action="ESCALATE" />
+      ) : (
+        <NeedsClarificationPill />
+      )}
       <div className="flex flex-wrap gap-1">
         {flaggedTestTypes.map((testType) => (
           <TestSignalPill
@@ -234,6 +239,19 @@ function AnalysisAction({
         >
           {formatDateTime(claim.analyzedAt)}
         </time>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-mr-2 text-primary-hover"
+          disabled={isAnalysisRunning}
+          onClick={(event) => {
+            event.stopPropagation();
+            onAnalyze();
+          }}
+        >
+          <LuRefreshCw aria-hidden="true" />
+          Analisis ulang
+        </Button>
       </div>
     );
   }

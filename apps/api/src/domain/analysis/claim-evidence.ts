@@ -8,6 +8,8 @@ import type { ClinicalExtraction } from './clinical-extraction';
 
 export interface EvidenceRule {
   icd10Code: string;
+  disease: string;
+  primaryIcd10Prefixes: string[];
   evidenceType: EvidenceType;
   expected: string;
   guidelineRef: string;

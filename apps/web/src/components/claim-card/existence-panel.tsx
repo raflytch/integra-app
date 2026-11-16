@@ -1,5 +1,6 @@
-import { LuCircleX, LuMessageSquareText } from 'react-icons/lu';
-import { MissingEvidencePill } from '@/components/claim-pills';
+import type { ReactNode } from 'react';
+import { LuCircleX, LuMessageSquareText, LuShieldAlert } from 'react-icons/lu';
+import { EvidenceStatusPill } from '@/components/claim-pills';
 import { Button } from '@/components/ui/button';
 import { EVIDENCE_TYPE_LABELS } from '@/lib/claim-labels';
 import { formatPercent, formatRupiah } from '@/lib/format';
@@ -13,6 +14,7 @@ import { FindingCitationItem } from './finding-citation';
 import { TestPanelShell } from './test-panel';
 
 type MissingEvidence = Extract<FindingCitation, { kind: 'MISSING_EVIDENCE' }>;
+type RefutedEvidence = Extract<FindingCitation, { kind: 'REFUTED_EVIDENCE' }>;
 
 function isMissingEvidence(
   citation: FindingCitation,
@@ -20,9 +22,16 @@ function isMissingEvidence(
   return citation.kind === 'MISSING_EVIDENCE';
 }
 
+function isRefutedEvidence(
+  citation: FindingCitation,
+): citation is RefutedEvidence {
+  return citation.kind === 'REFUTED_EVIDENCE';
+}
+
 function buildClarificationReason(
   diagnosis: ClaimDiagnosis | undefined,
   missingEvidence: MissingEvidence[],
+  refutedEvidence: RefutedEvidence[],
 ): string {
   const diagnosisLabel = diagnosis
     ? `${diagnosis.name} (${diagnosis.icd10Code})`
@@ -37,7 +46,15 @@ function buildClarificationReason(
         ]
       : [],
   );
-  return `Mohon lengkapi bukti untuk diagnosis sekunder ${diagnosisLabel}: ${expectedEvidence}. Bukti tersebut belum ditemukan di rekam medis klaim ini.${lookalikeSentences.join('')}`;
+  const missingSentence =
+    missingEvidence.length > 0
+      ? ` Mohon lengkapi bukti untuk diagnosis sekunder ${diagnosisLabel}: ${expectedEvidence}. Bukti tersebut belum ditemukan di rekam medis klaim ini.${lookalikeSentences.join('')}`
+      : '';
+  const refutedSentences = refutedEvidence.map(
+    (evidence) =>
+      ` Mohon jelaskan bukti ${evidence.expected} untuk diagnosis sekunder ${diagnosisLabel}. ${evidence.reason}`,
+  );
+  return `${missingSentence}${refutedSentences.join('')}`.trim();
 }
 
 function UnsupportedDiagnosis({
@@ -54,6 +71,7 @@ function UnsupportedDiagnosis({
   onRequestClarification: (reason: string) => void;
 }) {
   const missingEvidence = finding.citations.filter(isMissingEvidence);
+  const refutedEvidence = finding.citations.filter(isRefutedEvidence);
   const diagnosisMentions = finding.citations.filter(
     (citation) => citation.kind === 'QUOTE',
   );
@@ -74,14 +92,18 @@ function UnsupportedDiagnosis({
                 {diagnosis.icd10Code}
               </span>
             )}
-            <MissingEvidencePill />
+            {diagnosis?.evidenceStatus && (
+              <EvidenceStatusPill status={diagnosis.evidenceStatus} />
+            )}
           </div>
           <span className="text-caption text-ink-secondary">
-            {missingEvidence.length} bukti tidak ditemukan · kekuatan sinyal{' '}
-            {formatPercent(finding.strength)}
+            {missingEvidence.length} bukti tidak ditemukan
+            {refutedEvidence.length > 0 &&
+              ` · ${refutedEvidence.length} bukti dibantah data`}{' '}
+            · kekuatan sinyal {formatPercent(finding.strength)}
           </span>
         </div>
-        {finding.tariffGap !== null && (
+        {finding.tariffGap !== null && finding.tariffGap > 0 && (
           <div className="flex shrink-0 flex-col gap-0.5 sm:items-end">
             <span className="text-caption text-ink-secondary">
               Potensi selisih
@@ -97,52 +119,94 @@ function UnsupportedDiagnosis({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h3 className="text-caption font-medium text-ink-secondary">
-          Bukti yang dicari di rekam medis
-        </h3>
-        <ul className="divide-y divide-hairline rounded-lg border border-hairline">
-          {missingEvidence.map((evidence) => (
-            <li
-              key={`${evidence.evidenceType}-${evidence.expected}`}
-              className="flex items-start gap-3 px-3 py-2.5"
-            >
-              <LuCircleX
-                className="mt-0.5 size-4 shrink-0 text-ink-secondary"
-                aria-hidden="true"
-              />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="text-small text-ink">{evidence.expected}</span>
-                <span className="text-caption text-ink-secondary">
-                  {EVIDENCE_TYPE_LABELS[evidence.evidenceType]} ·{' '}
-                  {evidence.guidelineRef}
+      {missingEvidence.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-caption font-medium text-ink-secondary">
+            Bukti yang dicari di rekam medis
+          </h3>
+          <ul className="divide-y divide-hairline rounded-lg border border-hairline">
+            {missingEvidence.map((evidence) => (
+              <li
+                key={`${evidence.evidenceType}-${evidence.expected}`}
+                className="flex items-start gap-3 px-3 py-2.5"
+              >
+                <LuCircleX
+                  className="mt-0.5 size-4 shrink-0 text-ink-secondary"
+                  aria-hidden="true"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-small text-ink">
+                    {evidence.expected}
+                  </span>
+                  <span className="text-caption text-ink-secondary">
+                    {EVIDENCE_TYPE_LABELS[evidence.evidenceType]} ·{' '}
+                    {evidence.guidelineRef}
+                  </span>
+                  {evidence.lookalike && (
+                    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-hairline bg-canvas px-3 py-2.5">
+                      <p className="text-caption font-medium text-ink">
+                        Yang mirip di rekam medis, tetapi bukan{' '}
+                        {evidence.expected}
+                      </p>
+                      {evidence.lookalike.quotes.map((lookalikeQuote) => (
+                        <FindingCitationItem
+                          key={`${lookalikeQuote.documentId}-${lookalikeQuote.quote}`}
+                          citation={{ kind: 'QUOTE', ...lookalikeQuote }}
+                          documentsById={documentsById}
+                        />
+                      ))}
+                      <p className="text-caption text-ink-secondary">
+                        {evidence.lookalike.note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <span className="shrink-0 text-caption text-ink-secondary">
+                  {evidence.lookalike ? 'Belum terbukti' : 'Tidak ditemukan'}
                 </span>
-                {evidence.lookalike && (
-                  <div className="mt-2 flex flex-col gap-2 rounded-lg border border-hairline bg-canvas px-3 py-2.5">
-                    <p className="text-caption font-medium text-ink">
-                      Yang mirip di rekam medis, tetapi bukan{' '}
-                      {evidence.expected}
-                    </p>
-                    {evidence.lookalike.quotes.map((lookalikeQuote) => (
-                      <FindingCitationItem
-                        key={`${lookalikeQuote.documentId}-${lookalikeQuote.quote}`}
-                        citation={{ kind: 'QUOTE', ...lookalikeQuote }}
-                        documentsById={documentsById}
-                      />
-                    ))}
-                    <p className="text-caption text-ink-secondary">
-                      {evidence.lookalike.note}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <span className="shrink-0 text-caption text-ink-secondary">
-                {evidence.lookalike ? 'Belum terbukti' : 'Tidak ditemukan'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {refutedEvidence.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-caption font-medium text-ink-secondary">
+            Bukti yang dibantah data rekam medis
+          </h3>
+          <ul className="divide-y divide-hairline rounded-lg border border-hairline">
+            {refutedEvidence.map((evidence) => (
+              <li
+                key={`${evidence.evidenceType}-${evidence.expected}`}
+                className="flex items-start gap-3 px-3 py-2.5"
+              >
+                <LuShieldAlert
+                  className="mt-0.5 size-4 shrink-0 text-ink-secondary"
+                  aria-hidden="true"
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <span className="text-small text-ink">
+                    {evidence.expected}
+                  </span>
+                  <span className="text-caption text-ink-secondary">
+                    {EVIDENCE_TYPE_LABELS[evidence.evidenceType]} ·{' '}
+                    {evidence.guidelineRef}
+                  </span>
+                  <p className="text-caption text-ink">{evidence.reason}</p>
+                  {evidence.quotes.map((refutingQuote) => (
+                    <FindingCitationItem
+                      key={`${refutingQuote.documentId}-${refutingQuote.quote}`}
+                      citation={{ kind: 'QUOTE', ...refutingQuote }}
+                      documentsById={documentsById}
+                    />
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {diagnosisMentions.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -168,7 +232,11 @@ function UnsupportedDiagnosis({
         className="w-fit"
         onClick={() =>
           onRequestClarification(
-            buildClarificationReason(diagnosis, missingEvidence),
+            buildClarificationReason(
+              diagnosis,
+              missingEvidence,
+              refutedEvidence,
+            ),
           )
         }
       >
@@ -183,12 +251,14 @@ export function ExistencePanel({
   findings,
   diagnoses,
   tariffAmount,
+  overview,
   documentsById,
   onRequestClarification,
 }: {
   findings: ClaimFinding[];
   diagnoses: ClaimDiagnosis[];
   tariffAmount: number;
+  overview?: ReactNode;
   documentsById: Map<string, ClaimDocument>;
   onRequestClarification: (reason: string) => void;
 }) {
@@ -204,7 +274,11 @@ export function ExistencePanel({
   );
 
   return (
-    <TestPanelShell testType="EXISTENCE" findingCount={findings.length}>
+    <TestPanelShell
+      testType="EXISTENCE"
+      findingCount={findings.length}
+      overview={overview}
+    >
       <ul className="divide-y divide-hairline">
         {findings.map((finding, findingIndex) => (
           <li key={finding.id} className="px-6 py-5">
