@@ -17,7 +17,6 @@ import {
   suggestMissingDocumentTypes,
 } from './decision-panel';
 import { ExistencePanel } from './existence-panel';
-import { VerificationCard } from './verification-card';
 import { TestPanel } from './test-panel';
 import {
   ConsistencyOverview,
@@ -74,7 +73,6 @@ export function ClaimCard({ claimId }: { claimId: string }) {
   return (
     <div className="flex flex-col gap-6">
       <ClaimSummary claim={claim} />
-      <VerificationCard claim={claim} />
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex flex-col gap-4">
           <AiAnalysisCard claim={claim} />

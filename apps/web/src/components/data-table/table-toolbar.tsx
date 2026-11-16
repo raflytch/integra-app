@@ -42,9 +42,20 @@ const SELECT_TRIGGER_CLASS_NAME =
   'h-9 w-full justify-start bg-surface text-left text-small sm:w-auto sm:min-w-40 *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:flex-1';
 
 /** Search and filters above a table, inside its card; stacked full width on phones. */
-export function TableToolbar({ children }: { children: ReactNode }) {
+export function TableToolbar({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-stretch gap-2 border-b border-hairline p-3 sm:flex-row sm:flex-wrap sm:items-center">
+    <div
+      className={cn(
+        'flex flex-col items-stretch gap-2 border-b border-hairline p-3 sm:flex-row sm:flex-wrap sm:items-center',
+        className,
+      )}
+    >
       {children}
     </div>
   );

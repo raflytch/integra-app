@@ -276,28 +276,32 @@ export function DecisionPanel({
       data-tour="claim-decision-panel"
       className="flex flex-col gap-4 rounded-xl border border-hairline bg-surface shadow-xs p-4"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-1">
           <h2
             id="decision-panel-heading"
             className="text-body font-semibold tracking-display text-ink"
           >
             Keputusan verifikator
           </h2>
-          <p className="text-caption text-ink-secondary">
-            INTEGRA menandai, Anda yang memutuskan.
-          </p>
+          <VedikaStatusDialog
+            claimId={claimId}
+            claimNo={claimNo}
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 shrink-0 text-ink-secondary"
+                aria-label="Lihat data VEDIKA"
+              >
+                <LuInfo aria-hidden="true" />
+              </Button>
+            }
+          />
         </div>
-        <VedikaStatusDialog
-          claimId={claimId}
-          claimNo={claimNo}
-          trigger={
-            <Button variant="outline" size="sm" className="shrink-0">
-              <LuInfo aria-hidden="true" />
-              Data VEDIKA
-            </Button>
-          }
-        />
+        <p className="text-caption text-ink-secondary">
+          INTEGRA menandai, Anda yang memutuskan.
+        </p>
       </div>
       {savedDecision && (
         <Alert role="status" className="border-success/30 bg-success/10">
