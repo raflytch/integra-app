@@ -96,7 +96,8 @@ function parseStoredResponse(
     service === undefined ||
     !isJsonObject(participant) ||
     !isJsonObject(service)
-  ) return null;
+  )
+    return null;
   const cardNumber = getString(participant, 'cardNumber');
   const medicalRecordNo = getString(participant, 'medicalRecordNo');
   const name = getString(participant, 'name');
@@ -127,12 +128,14 @@ function parseStoredResponse(
     specialty === null ||
     doctor === null ||
     note === null
-  ) return null;
+  )
+    return null;
   let initialDiagnosis: VedikaReply['sep']['initialDiagnosis'];
   if (
     diagnosis !== null &&
     (diagnosis === undefined || !isJsonObject(diagnosis))
-  ) return null;
+  )
+    return null;
   if (diagnosis === null) {
     initialDiagnosis = null;
   } else {
@@ -374,7 +377,11 @@ export class PrismaVedikaRepository extends VedikaRepository {
           syncedAt,
           claim.status === 'APPROVED',
         );
-        return { claimId: claim.id, syncedAt, response: serializeResponse(reply) };
+        return {
+          claimId: claim.id,
+          syncedAt,
+          response: serializeResponse(reply),
+        };
       });
 
       const claimIds = claims.map((claim) => claim.id);
