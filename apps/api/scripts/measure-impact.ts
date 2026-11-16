@@ -11,6 +11,8 @@ import { RunConsistencyTestUseCase } from '../src/application/analysis/run-consi
 import { RunExistenceTestUseCase } from '../src/application/analysis/run-existence-test.use-case';
 import { RunSimilarityTestUseCase } from '../src/application/analysis/run-similarity-test.use-case';
 import type { ClaimEvidence } from '../src/domain/analysis/claim-evidence';
+import { groundExtraction } from '../src/domain/analysis/clinical-extraction';
+import { readClinicalDocument } from '../src/domain/analysis/rule-reader';
 import type { ClaimDetail } from '../src/domain/claims/claim-detail';
 import { COPIED_DOCUMENT_SIMILARITY } from '../src/domain/claims/claim-verification';
 import type { InjectedCase, TestType } from '../src/generated/prisma/client';
@@ -60,6 +62,24 @@ interface Confusion {
   caught: number;
   missed: number;
   outsideAnswerKey: number;
+}
+
+function outcomeKey(detail: ClaimDetail): string {
+  const tests = [...new Set(detail.findings.map(({ testType }) => testType))];
+  return `${detail.verification?.recommendation ?? 'UNASSESSED'} ${tests.sort().join(',')}`;
+}
+
+function withRuleReading(evidence: ClaimEvidence): ClaimEvidence {
+  return {
+    ...evidence,
+    documents: evidence.documents.map((document) => ({
+      ...document,
+      extracted: groundExtraction(
+        readClinicalDocument(document.content),
+        document.content,
+      ),
+    })),
+  };
 }
 
 interface MeasuredClaim {
@@ -226,17 +246,41 @@ async function main(): Promise<void> {
           collectSecondaryDiagnosisCodes([evidence]),
         ),
       );
+    const useRuleReader = process.argv.includes('--reader=rules');
+    const disagreements: string[] = [];
+    let sameRecommendationCount = 0;
     const measured: MeasuredClaim[] = [];
     const queue = [...claims];
     const startedAt = performance.now();
     const runWorker = async () => {
       for (let claim = queue.shift(); claim; claim = queue.shift()) {
-        const started = performance.now();
         const evidence = await analysisRepository.findClaimEvidence(claim.id);
         if (!evidence) continue;
-        await evaluate(withTemplateExtractions(evidence, templates));
+        let templateKey = '';
+        if (useRuleReader) {
+          await evaluate(withTemplateExtractions(evidence, templates));
+          const templateDetail = await claimRepository.findDetailById(claim.id);
+          templateKey = templateDetail ? outcomeKey(templateDetail) : '';
+        }
+        const started = performance.now();
+        await evaluate(
+          useRuleReader
+            ? withRuleReading(evidence)
+            : withTemplateExtractions(evidence, templates),
+        );
         const durationMs = performance.now() - started;
         const detail = await claimRepository.findDetailById(claim.id);
+        if (detail && useRuleReader) {
+          const ruleKey = outcomeKey(detail);
+          if (ruleKey.split(' ')[0] === templateKey.split(' ')[0]) {
+            sameRecommendationCount += 1;
+          }
+          if (ruleKey !== templateKey) {
+            disagreements.push(
+              `${detail.claimNo}: templat ${templateKey} | aturan ${ruleKey}`,
+            );
+          }
+        }
         if (detail) {
           measured.push({
             injectedCase: claim.injectedCase,
@@ -263,6 +307,13 @@ async function main(): Promise<void> {
         `Dampak terukur: ${measured.length} klaim demo, ${workerCount} worker, selesai dalam ${totalSeconds.toFixed(1)} detik (${Math.round(measured.length / totalSeconds)} klaim per detik)`,
         '',
         ...summarize(measured),
+        ...(useRuleReader
+          ? [
+              '',
+              `Pembaca aturan dibanding bacaan templat: rekomendasi sama ${sameRecommendationCount}/${measured.length} (${formatPercent(sameRecommendationCount, measured.length)}), rekomendasi dan uji sama ${measured.length - disagreements.length}/${measured.length}`,
+              ...disagreements.slice(0, 15).map((line) => `  ${line}`),
+            ]
+          : []),
       ].join('\n'),
     );
   } finally {
