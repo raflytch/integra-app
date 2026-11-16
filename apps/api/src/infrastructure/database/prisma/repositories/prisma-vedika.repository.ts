@@ -4,6 +4,10 @@ import type {
   VedikaAttachment,
   VedikaAttachmentFile,
 } from '../../../../domain/vedika/vedika-attachment';
+import {
+  buildSimulatedVedikaReply,
+  type VedikaReply,
+} from '../../../../domain/vedika/vedika-reply';
 import type {
   CareType,
   ClaimStatus,
@@ -61,6 +65,145 @@ interface VedikaClaimRow {
 }
 
 type SyncStateCountRow = Record<VedikaSyncState, number> & { total: number };
+
+function isJsonObject(value: Prisma.JsonValue): value is Prisma.JsonObject {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getString(record: Prisma.JsonObject, key: string): string | null {
+  const value = record[key];
+  return typeof value === 'string' ? value : null;
+}
+
+function parseStoredResponse(
+  value: Prisma.JsonValue,
+  syncedAt: Date,
+): VedikaReply | null {
+  if (!isJsonObject(value) || value.isSimulated !== true) return null;
+  const sep = value.sep;
+  const checks = value.checks;
+  if (sep === undefined || !isJsonObject(sep) || !Array.isArray(checks))
+    return null;
+  const number = getString(sep, 'number');
+  const sepDateValue = getString(sep, 'date');
+  if (number === null || sepDateValue === null) return null;
+
+  const participant = sep.participant;
+  const service = sep.service;
+  const diagnosis = sep.initialDiagnosis;
+  if (
+    participant === undefined ||
+    service === undefined ||
+    !isJsonObject(participant) ||
+    !isJsonObject(service)
+  ) return null;
+  const cardNumber = getString(participant, 'cardNumber');
+  const medicalRecordNo = getString(participant, 'medicalRecordNo');
+  const name = getString(participant, 'name');
+  const birthDateValue = getString(participant, 'birthDate');
+  const phone = getString(participant, 'phone');
+  const membership = getString(participant, 'membership');
+  const entitledClass = getString(participant, 'entitledClass');
+  const facilityName = getString(service, 'facilityName');
+  const referringFacility = getString(service, 'referringFacility');
+  const careType = getString(service, 'careType');
+  const visitType = getString(service, 'visitType');
+  const specialty = getString(service, 'specialty');
+  const doctor = getString(service, 'doctor');
+  const note = getString(service, 'note');
+  if (
+    cardNumber === null ||
+    medicalRecordNo === null ||
+    name === null ||
+    birthDateValue === null ||
+    (participant.gender !== 'M' && participant.gender !== 'F') ||
+    phone === null ||
+    membership === null ||
+    entitledClass === null ||
+    facilityName === null ||
+    referringFacility === null ||
+    careType === null ||
+    visitType === null ||
+    specialty === null ||
+    doctor === null ||
+    note === null
+  ) return null;
+  let initialDiagnosis: VedikaReply['sep']['initialDiagnosis'];
+  if (
+    diagnosis !== null &&
+    (diagnosis === undefined || !isJsonObject(diagnosis))
+  ) return null;
+  if (diagnosis === null) {
+    initialDiagnosis = null;
+  } else {
+    const icd10Code = getString(diagnosis, 'icd10Code');
+    const diagnosisName = getString(diagnosis, 'name');
+    if (icd10Code === null || diagnosisName === null) return null;
+    initialDiagnosis = { icd10Code, name: diagnosisName };
+  }
+
+  const parsedChecks: VedikaReply['checks'] = [];
+  for (const check of checks) {
+    if (!isJsonObject(check)) return null;
+    const label = getString(check, 'label');
+    if (label === null || check.isPassed !== true) return null;
+    parsedChecks.push({ label, isPassed: true });
+  }
+
+  const sepDate = new Date(sepDateValue);
+  const birthDate = new Date(birthDateValue);
+  if (Number.isNaN(sepDate.getTime()) || Number.isNaN(birthDate.getTime()))
+    return null;
+
+  return {
+    isSimulated: true,
+    syncedAt,
+    sep: {
+      number,
+      date: sepDate,
+      participant: {
+        cardNumber,
+        medicalRecordNo,
+        name,
+        birthDate,
+        gender: participant.gender,
+        phone,
+        membership,
+        entitledClass,
+      },
+      service: {
+        facilityName,
+        referringFacility,
+        careType,
+        visitType,
+        specialty,
+        doctor,
+        note,
+      },
+      initialDiagnosis,
+    },
+    checks: parsedChecks,
+  };
+}
+
+function serializeResponse(
+  reply: ReturnType<typeof buildSimulatedVedikaReply>,
+): Prisma.InputJsonObject {
+  return {
+    isSimulated: true,
+    sep: {
+      number: reply.sep.number,
+      date: reply.sep.date.toISOString(),
+      participant: {
+        ...reply.sep.participant,
+        birthDate: reply.sep.participant.birthDate.toISOString(),
+      },
+      service: reply.sep.service,
+      initialDiagnosis: reply.sep.initialDiagnosis,
+    },
+    checks: reply.checks.map(({ label, isPassed }) => ({ label, isPassed })),
+  };
+}
 
 function toWhere(conditions: Prisma.Sql[]): Prisma.Sql {
   return conditions.length > 0
@@ -177,17 +320,87 @@ export class PrismaVedikaRepository extends VedikaRepository {
     return claim?.vedikaSyncedAt ?? null;
   }
 
-  async syncAllClaims(syncedAt: Date): Promise<number> {
-    const [{ count }] = await this.prisma.$transaction([
-      this.prisma.claim.updateMany({
-        where: { status: 'APPROVED' },
-        data: { vedikaSyncedAt: syncedAt },
-      }),
-      this.prisma.vedikaAttachment.updateMany({
+  async findClaimResponse(claimId: string): Promise<VedikaReply | null> {
+    const snapshot = await this.prisma.vedikaResponse.findUnique({
+      where: { claimId },
+      select: { response: true, syncedAt: true },
+    });
+    return snapshot
+      ? parseStoredResponse(snapshot.response, snapshot.syncedAt)
+      : null;
+  }
+
+  async syncAllClaims(
+    syncedAt: Date,
+  ): Promise<{ refreshedClaimCount: number; verifiedClaimCount: number }> {
+    return this.prisma.$transaction(async (transaction) => {
+      const claims = await transaction.claim.findMany({
+        select: {
+          id: true,
+          status: true,
+          claimNo: true,
+          admittedAt: true,
+          careType: true,
+          patient: {
+            select: {
+              medicalRecordNo: true,
+              name: true,
+              gender: true,
+              birthDate: true,
+            },
+          },
+          facility: { select: { name: true } },
+          diagnoses: {
+            where: { isPrimary: true },
+            select: { icd10Code: true, name: true },
+            take: 1,
+          },
+          vedikaAttachments: { select: { id: true } },
+        },
+      });
+
+      const snapshots = claims.map((claim) => {
+        const diagnosis = claim.diagnoses[0];
+        const reply = buildSimulatedVedikaReply(
+          {
+            claimNo: claim.claimNo,
+            admittedAt: claim.admittedAt,
+            careType: claim.careType,
+            patient: claim.patient,
+            facility: claim.facility,
+            diagnoses: diagnosis ? [{ ...diagnosis, isPrimary: true }] : [],
+          },
+          claim.vedikaAttachments.length > 0,
+          syncedAt,
+          claim.status === 'APPROVED',
+        );
+        return { claimId: claim.id, syncedAt, response: serializeResponse(reply) };
+      });
+
+      const claimIds = claims.map((claim) => claim.id);
+      const approvedClaimIds = claims
+        .filter((claim) => claim.status === 'APPROVED')
+        .map((claim) => claim.id);
+      if (claimIds.length > 0) {
+        await transaction.vedikaResponse.deleteMany({
+          where: { claimId: { in: claimIds } },
+        });
+        await transaction.vedikaResponse.createMany({ data: snapshots });
+      }
+      if (approvedClaimIds.length > 0) {
+        await transaction.claim.updateMany({
+          where: { id: { in: approvedClaimIds }, status: 'APPROVED' },
+          data: { vedikaSyncedAt: syncedAt },
+        });
+      }
+      await transaction.vedikaAttachment.updateMany({
         where: { syncedAt: null },
         data: { syncedAt },
-      }),
-    ]);
-    return count;
+      });
+      return {
+        refreshedClaimCount: claims.length,
+        verifiedClaimCount: approvedClaimIds.length,
+      };
+    });
   }
 }

@@ -2,8 +2,6 @@ import type { CareType, ClaimDetail, Gender } from '../claims/claim-detail';
 import type { VedikaAttachment } from './vedika-attachment';
 
 const SIMULATED_SEP_TEMPLATE = {
-  number: '0301R0011125V000123',
-  cardNumber: '0001234567890',
   phone: '0812-0000-0000',
   membership: 'PBI (APBN)',
   entitledClass: 'Kelas 3',
@@ -13,6 +11,14 @@ const SIMULATED_SEP_TEMPLATE = {
   referringFacility: 'Puskesmas Simulasi',
   note: 'Kontrol rutin',
 } as const;
+
+function simulatedCardNumber(seed: string): string {
+  let value = 0;
+  for (const character of seed) {
+    value = (value * 31 + character.charCodeAt(0)) % 10_000_000_000_000;
+  }
+  return String(value).padStart(13, '0');
+}
 
 const CARE_TYPE_LABELS: Record<CareType, string> = {
   OUTPATIENT: 'Rawat Jalan',
@@ -64,16 +70,24 @@ export interface VedikaStatus {
   reply: VedikaReply | null;
 }
 
-function buildSimulatedSep(claim: ClaimDetail): VedikaSep {
+type SimulatedClaim = Pick<ClaimDetail, 'claimNo' | 'admittedAt' | 'careType'> & {
+  patient: Pick<ClaimDetail['patient'], 'medicalRecordNo' | 'name' | 'gender' | 'birthDate'>;
+  facility: Pick<ClaimDetail['facility'], 'name'>;
+  diagnoses: Array<
+    Pick<ClaimDetail['diagnoses'][number], 'icd10Code' | 'name' | 'isPrimary'>
+  >;
+};
+
+function buildSimulatedSep(claim: SimulatedClaim): VedikaSep {
   const template = SIMULATED_SEP_TEMPLATE;
   const primaryDiagnosis = claim.diagnoses.find(
     (diagnosis) => diagnosis.isPrimary,
   );
   return {
-    number: template.number,
+    number: claim.claimNo,
     date: claim.admittedAt,
     participant: {
-      cardNumber: template.cardNumber,
+      cardNumber: simulatedCardNumber(claim.patient.medicalRecordNo),
       medicalRecordNo: claim.patient.medicalRecordNo,
       name: claim.patient.name,
       birthDate: claim.patient.birthDate,
@@ -97,20 +111,40 @@ function buildSimulatedSep(claim: ClaimDetail): VedikaSep {
   };
 }
 
-export function buildVedikaStatus(
-  claim: ClaimDetail,
-  attachments: VedikaAttachment[],
-  syncedAt: Date | null,
-): VedikaStatus {
-  const checkLabels =
-    attachments.length > 0
+export function buildSimulatedVedikaReply(
+  claim: SimulatedClaim,
+  hasAttachments: boolean,
+  syncedAt: Date,
+  isApproved: boolean,
+): VedikaReply {
+  const checkLabels = isApproved
+    ? hasAttachments
       ? [...SEP_CHECK_LABELS, ATTACHMENT_CHECK_LABEL]
-      : SEP_CHECK_LABELS;
-  const reply: VedikaReply | null = syncedAt && {
+      : SEP_CHECK_LABELS
+    : [];
+  return {
     isSimulated: true,
     syncedAt,
     sep: buildSimulatedSep(claim),
     checks: checkLabels.map((label) => ({ label, isPassed: true })),
   };
+}
+
+export function buildVedikaStatus(
+  claim: ClaimDetail,
+  attachments: VedikaAttachment[],
+  syncedAt: Date | null,
+  savedReply: VedikaReply | null = null,
+): VedikaStatus {
+  const reply: VedikaReply | null =
+    savedReply ??
+    (syncedAt
+      ? buildSimulatedVedikaReply(
+          claim,
+          attachments.length > 0,
+          syncedAt,
+          claim.status === 'APPROVED',
+        )
+      : null);
   return { attachments, reply };
 }

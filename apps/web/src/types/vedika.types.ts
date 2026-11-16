@@ -85,5 +85,6 @@ export interface VedikaClaimPage {
 
 export interface VedikaBulkRefreshResult {
   refreshedClaimCount: number;
+  verifiedClaimCount: number;
   syncedAt: string;
 }
