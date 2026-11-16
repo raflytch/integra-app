@@ -14,7 +14,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchVedikaStatus } from '@/services/vedika.service';
 import { VedikaAttachmentPreview } from './vedika-attachment-preview';
-import { FRIENDLY_RETRY_MESSAGE, VedikaReplyDetails } from './vedika-details';
+import { FRIENDLY_RETRY_MESSAGE } from './vedika-details';
+import { VedikaSepSection } from './vedika-sep-scan';
 
 export const CLAIM_DETAILS_PAGE_PATH = '/claim-details';
 
@@ -69,10 +70,11 @@ function VedikaStatusBody({ claimId }: { claimId: string }) {
         </p>
       )}
       {reply && (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-small font-semibold text-ink">Rincian SEP</h3>
-          <VedikaReplyDetails reply={reply} />
-        </section>
+        <VedikaSepSection
+          claimId={claimId}
+          reply={reply}
+          canScan={attachments.length > 0}
+        />
       )}
     </div>
   );

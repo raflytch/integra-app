@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
 import { LuCircleCheck, LuInbox, LuSend } from 'react-icons/lu';
 import { Pill } from '@/components/claim-pills';
@@ -39,7 +40,30 @@ export function VedikaSyncPill({ syncState }: { syncState: VedikaSyncState }) {
   );
 }
 
-export function VedikaReplyDetails({ reply }: { reply: VedikaReply }) {
+export function SepFieldList({
+  fields,
+}: {
+  fields: { label: string; value: string }[];
+}) {
+  return (
+    <dl className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline text-small">
+      {fields.map((field) => (
+        <div key={field.label} className="flex gap-3 px-3 py-2">
+          <dt className="w-28 shrink-0 text-ink-secondary">{field.label}</dt>
+          <dd className="min-w-0 break-words text-ink">{field.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function VedikaReplyDetails({
+  reply,
+  sepFields,
+}: {
+  reply: VedikaReply;
+  sepFields?: ReactNode;
+}) {
   const { sep } = reply;
   const sepRows = [
     { label: 'No. SEP', value: sep.number },
@@ -85,14 +109,7 @@ export function VedikaReplyDetails({ reply }: { reply: VedikaReply }) {
           ))}
         </ul>
       )}
-      <dl className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline text-small">
-        {sepRows.map((row) => (
-          <div key={row.label} className="flex gap-3 px-3 py-2">
-            <dt className="w-28 shrink-0 text-ink-secondary">{row.label}</dt>
-            <dd className="min-w-0 break-words text-ink">{row.value}</dd>
-          </div>
-        ))}
-      </dl>
+      {sepFields ?? <SepFieldList fields={sepRows} />}
     </div>
   );
 }

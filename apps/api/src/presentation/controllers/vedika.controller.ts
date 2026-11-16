@@ -10,6 +10,10 @@ import {
 import type { SessionClaims } from '../../application/ports/session-token.port';
 import { DownloadVedikaAttachmentUseCase } from '../../application/vedika/download-vedika-attachment.use-case';
 import { GetVedikaStatusUseCase } from '../../application/vedika/get-vedika-status.use-case';
+import {
+  type ScannedSep,
+  ScanVedikaSepUseCase,
+} from '../../application/vedika/scan-vedika-sep.use-case';
 import { SendVedikaAttachmentUseCase } from '../../application/vedika/send-vedika-attachment.use-case';
 import { CurrentSession } from '../auth/auth.decorators';
 import { SendVedikaAttachmentDto } from '../dtos/send-vedika-attachment.dto';
@@ -26,6 +30,7 @@ export class VedikaController {
     private readonly getVedikaStatus: GetVedikaStatusUseCase,
     private readonly sendVedikaAttachment: SendVedikaAttachmentUseCase,
     private readonly downloadVedikaAttachment: DownloadVedikaAttachmentUseCase,
+    private readonly scanVedikaSep: ScanVedikaSepUseCase,
   ) {}
 
   @Get()
@@ -49,6 +54,13 @@ export class VedikaController {
       content: Buffer.from(contentBase64, 'base64'),
     });
     return presentVedikaAttachment(attachment);
+  }
+
+  @Get('sep-scan')
+  scanSep(
+    @Param('claimId', ParseUUIDPipe) claimId: string,
+  ): Promise<ScannedSep> {
+    return this.scanVedikaSep.execute(claimId);
   }
 
   @Get('attachments/:attachmentId/file')

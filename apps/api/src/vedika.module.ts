@@ -3,6 +3,7 @@ import { DownloadVedikaAttachmentUseCase } from './application/vedika/download-v
 import { ListVedikaClaimsUseCase } from './application/vedika/list-vedika-claims.use-case';
 import { GetVedikaStatusUseCase } from './application/vedika/get-vedika-status.use-case';
 import { RefreshAllVedikaUseCase } from './application/vedika/refresh-all-vedika.use-case';
+import { ScanVedikaSepUseCase } from './application/vedika/scan-vedika-sep.use-case';
 import { SendVedikaAttachmentUseCase } from './application/vedika/send-vedika-attachment.use-case';
 import { ClaimRepository } from './domain/claims/claim.repository';
 import { VedikaRepository } from './domain/vedika/vedika.repository';
@@ -44,6 +45,12 @@ import { VedikaController } from './presentation/controllers/vedika.controller';
       provide: RefreshAllVedikaUseCase,
       useFactory: (vedikaRepository: VedikaRepository) =>
         new RefreshAllVedikaUseCase(vedikaRepository),
+      inject: [VedikaRepository],
+    },
+    {
+      provide: ScanVedikaSepUseCase,
+      useFactory: (vedikaRepository: VedikaRepository) =>
+        new ScanVedikaSepUseCase(vedikaRepository),
       inject: [VedikaRepository],
     },
     {
