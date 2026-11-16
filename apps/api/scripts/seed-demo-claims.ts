@@ -4,9 +4,10 @@
  * patients and SEP numbers. Documents come from templates and are stored
  * unread, so Analisis in the app reads them with the LLM. Runs on every
  * deploy: it skips when the same claims are already seeded, unless --force.
- * It replaces only claims whose SEP number starts with 9900R (with their
- * findings and decisions) and their patients, and removes the KLM-BPJS-* claims
- * imported from data/integra-claim-import-bpjs.json even when it skips.
+ * It replaces only claims whose SEP number starts with SEP-9900R, or the older
+ * 9900R and KLM-DEMO- prefixes (with their findings and decisions) and their
+ * patients, and removes the KLM-BPJS-* claims imported from
+ * data/integra-claim-import-bpjs.json even when it skips.
  *
  *   npm run seed:demo                      # 5,000 claims
  *   npm run seed:demo -- --count=800       # custom size
@@ -44,7 +45,7 @@ import { upsertEvidenceRules } from './synthetic/upsert-evidence-rules';
 const API_ENV_FILE_PATH = join(__dirname, '../.env');
 const DEFAULT_CLAIM_COUNT = 5000;
 const MAX_CLAIM_COUNT = 5000;
-const LEGACY_DEMO_CLAIM_NO_PREFIX = 'KLM-DEMO-';
+const LEGACY_DEMO_CLAIM_NO_PREFIXES = ['KLM-DEMO-', '9900R'];
 const IMPORTED_CLAIM_NO_PREFIX = 'KLM-BPJS-';
 const INSERT_BATCH_SIZE = 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -184,7 +185,7 @@ async function main(): Promise<void> {
     await removeImportedClaims(prisma, logger);
 
     const demoClaimFilter = {
-      OR: [SAMPLE_CLAIM_NO_PREFIX, LEGACY_DEMO_CLAIM_NO_PREFIX].map(
+      OR: [SAMPLE_CLAIM_NO_PREFIX, ...LEGACY_DEMO_CLAIM_NO_PREFIXES].map(
         (prefix) => ({ claimNo: { startsWith: prefix } }),
       ),
     };

@@ -151,7 +151,7 @@ AI analysis costs money. Nothing is analyzed until a verifier chooses it: click 
 | `npm run prisma:studio`   | Open Prisma Studio                                                          |
 | `npm run seed`            | Demo accounts plus 300 raw demo claims (no LLM)                             |
 | `npm run seed:users`      | Demo verifier and supervisor accounts with TOTP QR codes                    |
-| `npm run seed:demo`       | Seed the 5,000 BPJS-based demo claims (`9900R*`), skipped when present      |
+| `npm run seed:demo`       | Seed the 5,000 BPJS-based demo claims (`SEP-9900R*`), skipped when present  |
 | `npm run seed:rules`      | Load the Uji Ada evidence rules only (no claims, no LLM)                    |
 | `npm run seed:tariffs`    | Load the Permenkes 3/2023 inpatient INA-CBG tariffs (idempotent)            |
 | `npm run seed:fixture`    | Load the UC-1 contract claim                                                |
