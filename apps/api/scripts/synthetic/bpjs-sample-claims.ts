@@ -165,6 +165,8 @@ const GENERAL_STATES = [
   'tampak sakit ringan',
   'kesadaran compos mentis',
   'tampak lemas',
+  'tampak gelisah ringan',
+  'kooperatif dan sadar penuh',
 ];
 const DAILY_PROGRESS = [
   'keluhan berkurang',
@@ -172,7 +174,59 @@ const DAILY_PROGRESS = [
   'nafsu makan membaik',
   'pasien dapat tidur',
   'mobilisasi bertahap',
+  'pasien bisa duduk sendiri',
+  'asupan oral cukup',
+  'keluarga mendampingi',
+  'pasien minta segera pulang',
+  'buang air kecil lancar',
 ];
+const HISTORY_NOTES = [
+  'Riwayat penyakit serupa disangkal.',
+  'Riwayat alergi obat disangkal.',
+  'Riwayat diabetes melitus disangkal.',
+  'Riwayat rawat inap setahun terakhir disangkal.',
+  'Pasien bekerja sebagai pedagang.',
+  'Pasien bekerja sebagai buruh pabrik.',
+  'Pasien seorang ibu rumah tangga.',
+  'Pasien pelajar sekolah menengah.',
+  'Pasien pensiunan pegawai negeri.',
+  'Pasien tinggal bersama keluarga inti.',
+  'Ada anggota keluarga dengan keluhan serupa.',
+  'Pasien merokok sekitar setengah bungkus sehari.',
+  'Pasien sudah minum obat warung tanpa perbaikan.',
+  'Pasien sempat berobat ke bidan desa.',
+  'Pasien kontrol rutin di puskesmas.',
+];
+const PHYSICAL_NOTES = [
+  'Konjungtiva tidak anemis, sklera tidak ikterik.',
+  'Bunyi jantung I dan II reguler.',
+  'Abdomen supel, bising usus normal.',
+  'Turgor kulit baik.',
+  'Kelenjar getah bening leher tidak teraba.',
+  'Pupil isokor, refleks cahaya positif.',
+  'Lidah tidak kotor.',
+  'Hepar dan lien tidak teraba.',
+  'Ekstremitas tidak ada kelainan.',
+  'Berat badan sekitar 55 kg.',
+  'Berat badan sekitar 62 kg.',
+  'Berat badan sekitar 70 kg.',
+];
+const DISCHARGE_ADVICE = [
+  'Edukasi minum obat teratur.',
+  'Kontrol ulang ke poliklinik satu minggu lagi.',
+  'Kontrol ulang ke puskesmas tiga hari lagi.',
+  'Edukasi tanda bahaya dan kembali bila memburuk.',
+  'Edukasi pola makan dan istirahat cukup.',
+  'Surat rujuk balik diberikan.',
+];
+
+function pickSome<T>(random: Random, items: readonly T[], count: number): T[] {
+  const pool = [...items];
+  return Array.from(
+    { length: Math.min(count, pool.length) },
+    () => pool.splice(Math.floor(random.next() * pool.length), 1)[0],
+  );
+}
 
 function jakartaTime(day: Date, hour: number, minute = 0): Date {
   return new Date(
@@ -281,24 +335,25 @@ function addVitals(builder: DocumentBuilder, vitals: Vitals): void {
 
 interface EvidenceItem {
   kind: 'finding' | 'medication' | 'procedure' | 'vital';
-  write: (builder: DocumentBuilder, vitals: Vitals) => void;
+  write: (builder: DocumentBuilder, vitals: Vitals, random: Random) => void;
 }
 
-const finding = (text: string, name: string): EvidenceItem => ({
+const finding = (texts: readonly string[], name: string): EvidenceItem => ({
   kind: 'finding',
-  write: (builder) => builder.finding(text, name),
+  write: (builder, _, random) => builder.finding(random.pick(texts), name),
 });
 const medication = (
-  text: string,
+  texts: readonly string[],
   name: string,
   dose: string,
 ): EvidenceItem => ({
   kind: 'medication',
-  write: (builder) => builder.medication(text, name, dose),
+  write: (builder, _, random) =>
+    builder.medication(random.pick(texts), name, dose),
 });
-const procedure = (text: string, name: string): EvidenceItem => ({
+const procedure = (texts: readonly string[], name: string): EvidenceItem => ({
   kind: 'procedure',
-  write: (builder) => builder.procedure(text, name),
+  write: (builder, _, random) => builder.procedure(random.pick(texts), name),
 });
 const vitalChange = (change: Partial<Vitals>): EvidenceItem => ({
   kind: 'vital',
@@ -316,10 +371,23 @@ function evidenceFor(
   ) {
     return [
       procedure(
-        'Dilakukan resusitasi cairan kristaloid 20 ml/kgBB dalam 30 menit.',
+        [
+          'Dilakukan resusitasi cairan kristaloid 20 ml/kgBB dalam 30 menit.',
+          'Resusitasi cairan kristaloid diberikan cepat, dosis 20 ml/kgBB.',
+          'Diberikan resusitasi cairan kristaloid RL 20 ml/kgBB, dievaluasi tiap 30 menit.',
+          'Resusitasi cairan kristaloid 20 ml/kgBB dimulai di IGD.',
+        ],
         'resusitasi cairan',
       ),
-      finding('Akral dingin dan nadi lemah.', 'akral dingin'),
+      finding(
+        [
+          'Akral dingin dan nadi lemah.',
+          'Teraba akral dingin, nadi lemah dan cepat.',
+          'Ujung jari akral dingin, nadi lemah.',
+          'Pasien gelisah, akral dingin, nadi lemah.',
+        ],
+        'akral dingin',
+      ),
     ];
   }
   if (
@@ -329,45 +397,143 @@ function evidenceFor(
   ) {
     return [
       medication(
-        'Terapi oksigen nasal kanul 4 liter/menit.',
+        [
+          'Terapi oksigen nasal kanul 4 liter/menit.',
+          'Oksigen via nasal kanul 4 liter/menit.',
+          'Diberikan oksigen 4 liter/menit lewat kanul hidung.',
+        ],
         'oksigen',
         '4 liter/menit',
       ),
-      finding('Sesak napas berat saat istirahat.', 'sesak napas'),
+      finding(
+        [
+          'Sesak napas berat saat istirahat.',
+          'Pasien sesak napas walau berbaring.',
+          'Sesak napas memberat sejak semalam, napas cuping hidung.',
+          'Tampak sesak napas dengan retraksi dinding dada.',
+        ],
+        'sesak napas',
+      ),
       vitalChange({ saturation: 86 }),
     ];
   }
   if (secondaryCode.startsWith('M54')) {
     return [
-      finding('Nyeri punggung bawah menjalar ke tungkai.', 'nyeri punggung'),
-      finding('Skala nyeri NRS 6/10.', 'skala nyeri'),
-      medication('Ketorolac 30 mg intravena.', 'ketorolac', '30 mg'),
+      finding(
+        [
+          'Nyeri punggung bawah menjalar ke tungkai.',
+          'Mengeluh nyeri punggung bawah setelah mengangkat beban.',
+          'Nyeri punggung bawah kambuh, memberat bila membungkuk.',
+        ],
+        'nyeri punggung',
+      ),
+      finding(
+        [
+          'Skala nyeri NRS 6/10.',
+          'Skala nyeri NRS 7/10.',
+          'Skala nyeri NRS 5/10 saat bergerak.',
+        ],
+        'skala nyeri',
+      ),
+      medication(
+        [
+          'Ketorolac 30 mg intravena.',
+          'Injeksi ketorolac 30 mg intravena bila nyeri.',
+          'Ketorolac 30 mg intravena tiap 8 jam.',
+        ],
+        'ketorolac',
+        '30 mg',
+      ),
     ];
   }
   if (secondaryCode.startsWith('I11.0')) {
     return [
       vitalChange({ systolic: 168, diastolic: 102 }),
-      finding('Sesak napas saat aktivitas ringan.', 'sesak napas'),
-      finding('Ronki basah di kedua basal paru.', 'ronki'),
+      finding(
+        [
+          'Mudah lelah dan edema tungkai saat aktivitas ringan.',
+          'Edema tungkai bilateral, pasien cepat lelah.',
+          'Kaki bengkak, edema tungkai pitting.',
+        ],
+        'edema tungkai',
+      ),
+      finding(
+        [
+          'Ronki basah di kedua basal paru.',
+          'Auskultasi ronki basah halus di basal paru kanan dan kiri.',
+          'Terdengar ronki di basal kedua lapang paru.',
+        ],
+        'ronki',
+      ),
       procedure(
-        'Foto toraks menunjukkan kardiomegali.',
+        [
+          'Foto toraks menunjukkan kardiomegali.',
+          'Foto toraks: kardiomegali.',
+          'Hasil foto toraks kardiomegali dengan kongesti ringan.',
+        ],
         'foto toraks kardiomegali',
       ),
-      medication('Furosemid 40 mg intravena.', 'furosemid', '40 mg'),
+      medication(
+        [
+          'Furosemid 40 mg intravena.',
+          'Injeksi furosemid 40 mg intravena pagi.',
+          'Furosemid 40 mg intravena, pantau diuresis.',
+        ],
+        'furosemid',
+        '40 mg',
+      ),
     ];
   }
   if (secondaryCode.startsWith('I11')) {
     return [
       vitalChange({ systolic: 158, diastolic: 96 }),
-      medication('Amlodipin 10 mg per oral.', 'amlodipin', '10 mg'),
+      medication(
+        [
+          'Amlodipin 10 mg per oral.',
+          'Amlodipin 10 mg per oral sekali sehari.',
+          'Lanjut amlodipin 10 mg per oral tiap pagi.',
+        ],
+        'amlodipin',
+        '10 mg',
+      ),
     ];
   }
   if (secondaryCode.startsWith('A01')) {
     return [
-      finding('Demam naik bertahap sejak 7 hari.', 'demam'),
-      finding('Mual dan nyeri perut.', 'mual'),
-      procedure('Pemeriksaan Widal serial positif.', 'pemeriksaan widal'),
-      medication('Seftriakson 2 g intravena.', 'seftriakson', '2 g'),
+      finding(
+        [
+          'Demam naik bertahap sejak 7 hari.',
+          'Demam terutama sore dan malam, sudah 6 hari.',
+          'Demam hari ke-7, makin tinggi tiap sore.',
+        ],
+        'demam',
+      ),
+      vitalChange({ temperature: 38.6 }),
+      finding(
+        [
+          'Mual dan nyeri perut.',
+          'Mual dan nyeri perut di ulu hati.',
+          'Mual, nafsu makan turun.',
+        ],
+        'mual',
+      ),
+      procedure(
+        [
+          'Pemeriksaan Widal serial positif.',
+          'Pemeriksaan Widal serial: titer meningkat.',
+          'Hasil pemeriksaan Widal serial positif bermakna.',
+        ],
+        'pemeriksaan widal',
+      ),
+      medication(
+        [
+          'Seftriakson 2 g intravena.',
+          'Injeksi seftriakson 2 g intravena sekali sehari.',
+          'Seftriakson 2 g intravena selama 5 hari.',
+        ],
+        'seftriakson',
+        '2 g',
+      ),
     ];
   }
   return null;
@@ -394,6 +560,7 @@ function buildDocuments(
   dischargedAt: Date,
   plan: ClaimPlan,
   random: Random,
+  narrative: Random,
 ): SampleDocument[] {
   const vitals = baseVitals(random);
   const writtenEvidence = plan.evidence.flatMap(({ items, mode }) => {
@@ -409,7 +576,7 @@ function buildDocuments(
   for (const item of writtenEvidence.filter(
     (evidence) => evidence.kind === 'vital',
   )) {
-    item.write(new DocumentBuilder(), vitals);
+    item.write(new DocumentBuilder(), vitals, narrative);
   }
 
   const exam = new DocumentBuilder()
@@ -417,6 +584,12 @@ function buildDocuments(
       `Pasien ${random.pick(ARRIVALS)} dengan keluhan terkait ${visit.primary.name.toLowerCase()} sejak ${random.pick(COMPLAINT_DAYS)}.`,
     )
     .sentence(`Keadaan umum ${random.pick(GENERAL_STATES)}.`);
+  for (const note of pickSome(narrative, HISTORY_NOTES, narrative.int(1, 3))) {
+    exam.sentence(note);
+  }
+  for (const note of pickSome(narrative, PHYSICAL_NOTES, narrative.int(1, 3))) {
+    exam.sentence(note);
+  }
   if (plan.consistency === 'CODING_LABEL') {
     exam.sentence(
       `Keluhan sesuai ${visit.primary.name} (${visit.primary.icd10Code}).`,
@@ -432,7 +605,7 @@ function buildDocuments(
   for (const item of writtenEvidence.filter(
     (evidence) => evidence.kind === 'finding',
   )) {
-    item.write(exam, vitals);
+    item.write(exam, vitals, narrative);
   }
   addVitals(exam, vitals);
 
@@ -447,7 +620,7 @@ function buildDocuments(
   const medications = writtenEvidence.filter(
     (evidence) => evidence.kind === 'medication',
   );
-  for (const item of medications) item.write(prescription, vitals);
+  for (const item of medications) item.write(prescription, vitals, narrative);
   if (medications.length === 0) {
     prescription.medication(
       'Parasetamol 500 mg tiga kali sehari.',
@@ -467,7 +640,7 @@ function buildDocuments(
   );
   if (procedures.length > 0 || visit.procedure) {
     const procedureNote = new DocumentBuilder().sentence('Catatan tindakan:');
-    for (const item of procedures) item.write(procedureNote, vitals);
+    for (const item of procedures) item.write(procedureNote, vitals, narrative);
     if (visit.procedure) {
       procedureNote.procedure(
         `Dilakukan ${visit.procedure.name.toLowerCase()}.`,
@@ -488,7 +661,7 @@ function buildDocuments(
   const dailyNoteCount = Math.min(Math.max(lengthOfStay - 1, 0), 3);
   for (let careDay = 1; careDay <= dailyNoteCount; careDay += 1) {
     const daily = new DocumentBuilder().sentence(
-      `Hari rawat ke-${careDay + 1}: ${random.pick(DAILY_PROGRESS)}.`,
+      `Hari rawat ke-${careDay + 1}: ${random.pick(DAILY_PROGRESS)}, ${narrative.pick(DAILY_PROGRESS)}.`,
     );
     if (plan.consistency === 'CONTRADICTION' && careDay === 1) {
       daily.finding('Pasien tidak sesak napas.', 'sesak napas', false);
@@ -519,6 +692,13 @@ function buildDocuments(
   resume.sentence(
     `Kondisi saat pulang ${random.pick(['membaik', 'stabil', 'perbaikan klinis'])}.`,
   );
+  for (const advice of pickSome(
+    narrative,
+    DISCHARGE_ADVICE,
+    narrative.int(1, 2),
+  )) {
+    resume.sentence(advice);
+  }
   const resumeTime =
     visit.careType === 'OUTPATIENT'
       ? new Date(examTime.getTime() + 2 * HOUR_MS)
@@ -536,6 +716,7 @@ export function generateBpjsSampleClaims(
   seed: number,
 ): { claims: SampleClaim[]; facilities: SampleFacility[] } {
   const random = createRandom(seed);
+  const narrative = createRandom(seed + 1);
   const visits = readVisits().slice(0, claimCount);
   const facilityByKey = new Map<string, SampleFacility>();
   const facilityOf = (visit: BpjsVisit) => {
@@ -640,7 +821,14 @@ export function generateBpjsSampleClaims(
           !seenCodes.has(icd10Code) && seenCodes.add(icd10Code),
       ),
       procedures: visit.procedure ? [visit.procedure] : [],
-      documents: buildDocuments(visit, admittedAt, dischargedAt, plan, random),
+      documents: buildDocuments(
+        visit,
+        admittedAt,
+        dischargedAt,
+        plan,
+        random,
+        narrative,
+      ),
     };
   });
 
