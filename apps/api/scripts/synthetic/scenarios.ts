@@ -384,6 +384,31 @@ const SHOCK_GUIDELINE_REF =
   'PNPK Tata Laksana Infeksi Dengue pada Dewasa (KMK HK.01.07/MENKES/9845/2020) Bab III';
 const PNEUMONIA_GUIDELINE_REF =
   'PNPK Tata Laksana Pneumonia pada Dewasa (KMK HK.01.07/MENKES/1168/2025)';
+const PAIN_GUIDELINE_REF =
+  'PNPK Tata Laksana Nyeri (KMK HK.01.07/MENKES/481/2019)';
+const PAIN_RULE_SCOPE = { disease: 'Nyeri', primaryIcd10Prefixes: [] };
+const HYPERTENSION_GUIDELINE_REF =
+  'PNPK Tata Laksana Hipertensi Dewasa (KMK HK.01.07/MENKES/303/2026)';
+const HEART_FAILURE_GUIDELINE_REF =
+  'PNPK Tata Laksana Gagal Jantung (KMK HK.01.07/MENKES/4801/2021)';
+const HYPERTENSIVE_HEART_RULE_SCOPE = {
+  disease: 'Penyakit jantung hipertensi',
+  primaryIcd10Prefixes: [],
+};
+const hypertensionRule = (icd10Code: string): EvidenceRule => ({
+  icd10Code,
+  ...HYPERTENSIVE_HEART_RULE_SCOPE,
+  evidenceType: 'VITAL_SIGN',
+  expected: 'hipertensi',
+  guidelineRef: `${HYPERTENSION_GUIDELINE_REF} hlm. 9: TD sistolik ≥ 140 dan/atau diastolik ≥ 90 mmHg`,
+});
+const antihypertensiveRule = (icd10Code: string): EvidenceRule => ({
+  icd10Code,
+  ...HYPERTENSIVE_HEART_RULE_SCOPE,
+  evidenceType: 'MEDICATION',
+  expected: 'obat antihipertensi',
+  guidelineRef: `${HYPERTENSION_GUIDELINE_REF} hlm. 35-36 Tabel 19: obat antihipertensi oral, termasuk diuretik loop`,
+});
 const INTENSIVE_CARE_GUIDELINE_REF =
   'PNPK Tata Laksana Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)';
 // R57.0 (cardiogenic) is left out: fluid resuscitation is not its expected care.
@@ -436,4 +461,50 @@ export const EVIDENCE_RULES: readonly EvidenceRule[] = [
     expected: 'desaturasi',
     guidelineRef: `${INTENSIVE_CARE_GUIDELINE_REF} hlm. 72: hipoksemia bila PaO2 < 60 mmHg atau SaO2 < 90%`,
   },
+  {
+    icd10Code: 'M54',
+    ...PAIN_RULE_SCOPE,
+    evidenceType: 'FINDING',
+    expected: 'nyeri punggung',
+    guidelineRef: `${PAIN_GUIDELINE_REF} hlm. 28: anamnesis nyeri sebagai keluhan utama beserta lokasinya`,
+  },
+  {
+    icd10Code: 'M54',
+    ...PAIN_RULE_SCOPE,
+    evidenceType: 'VITAL_SIGN',
+    expected: 'skala nyeri',
+    guidelineRef: `${PAIN_GUIDELINE_REF} hlm. 6, 28, 30-31: penilaian nyeri sebagai tanda vital dengan skala NRS, VAS, atau VRS`,
+  },
+  {
+    icd10Code: 'M54',
+    ...PAIN_RULE_SCOPE,
+    evidenceType: 'MEDICATION',
+    expected: 'tata laksana nyeri',
+    guidelineRef: `${PAIN_GUIDELINE_REF} hlm. 40, 42, 110: analgesia, manipulasi tulang belakang, atau latihan`,
+  },
+  hypertensionRule('I11.0'),
+  {
+    icd10Code: 'I11.0',
+    ...HYPERTENSIVE_HEART_RULE_SCOPE,
+    evidenceType: 'FINDING',
+    expected: 'gejala gagal jantung',
+    guidelineRef: `${HEART_FAILURE_GUIDELINE_REF} hlm. 11 Tabel 3: sesak napas, kelelahan, atau edema tungkai`,
+  },
+  {
+    icd10Code: 'I11.0',
+    ...HYPERTENSIVE_HEART_RULE_SCOPE,
+    evidenceType: 'FINDING',
+    expected: 'tanda gagal jantung',
+    guidelineRef: `${HEART_FAILURE_GUIDELINE_REF} hlm. 11 Tabel 3: takikardia, takipnea, ronki, efusi pleura, peningkatan JVP, edema perifer, atau hepatomegali`,
+  },
+  {
+    icd10Code: 'I11.0',
+    ...HYPERTENSIVE_HEART_RULE_SCOPE,
+    evidenceType: 'PROCEDURE',
+    expected: 'bukti objektif gagal jantung',
+    guidelineRef: `${HEART_FAILURE_GUIDELINE_REF} hlm. 11 Tabel 3: kardiomegali, suara jantung tiga, murmur, ekokardiografi abnormal, atau peptida natriuretik naik`,
+  },
+  antihypertensiveRule('I11.0'),
+  hypertensionRule('I11.9'),
+  antihypertensiveRule('I11.9'),
 ];

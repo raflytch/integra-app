@@ -174,7 +174,7 @@ export function ExistenceOverview({ claim }: { claim: ClaimDetail }) {
             ),
           basis: [
             'Permenkes 26/2021 (Pedoman INA-CBG)',
-            'PNPK sesuai penyakit utama: Dengue untuk syok, Pneumonia untuk gagal napas',
+            'PNPK sesuai penyakit: Dengue untuk syok, Pneumonia untuk gagal napas, Nyeri untuk dorsalgia, Hipertensi dan Gagal Jantung untuk I11',
           ],
         },
         {
@@ -182,11 +182,14 @@ export function ExistenceOverview({ claim }: { claim: ClaimDetail }) {
           result:
             verification.requiredEvidenceCount === 0
               ? 'Tidak ada bukti wajib untuk diagnosis klaim ini.'
-              : `Tanda syok: TD sistolik ≤ 90 atau tekanan nadi ≤ 20 mmHg. Desaturasi: SpO2 < 90%.`,
+              : `Tanda syok: TD sistolik ≤ 90 atau tekanan nadi ≤ 20 mmHg. Desaturasi: SpO2 < 90%. Hipertensi: TD ≥ 140/90 mmHg.`,
           basis: [
             'PNPK Infeksi Dengue Dewasa (KMK HK.01.07/MENKES/9845/2020)',
             'PNPK Pneumonia Dewasa (KMK HK.01.07/MENKES/1168/2025)',
             'PNPK Anestesiologi dan Terapi Intensif (KMK HK.01.07/MENKES/1541/2022)',
+            'PNPK Tata Laksana Nyeri (KMK HK.01.07/MENKES/481/2019)',
+            'PNPK Hipertensi Dewasa (KMK HK.01.07/MENKES/303/2026)',
+            'PNPK Gagal Jantung (KMK HK.01.07/MENKES/4801/2021)',
           ],
         },
         {

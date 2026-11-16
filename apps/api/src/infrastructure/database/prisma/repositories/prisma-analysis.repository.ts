@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AnalysisRepository } from '../../../../domain/analysis/analysis.repository';
+import { toIcd10Category } from '../../../../domain/analysis/claim-evidence';
 import type {
   ClaimEvidence,
   DocumentToExtract,
@@ -105,7 +106,11 @@ export class PrismaAnalysisRepository extends AnalysisRepository {
 
   findEvidenceRules(icd10Codes: string[]): Promise<EvidenceRule[]> {
     return this.prisma.evidenceRule.findMany({
-      where: { icd10Code: { in: icd10Codes } },
+      where: {
+        icd10Code: {
+          in: [...icd10Codes, ...icd10Codes.map(toIcd10Category)],
+        },
+      },
       select: {
         icd10Code: true,
         disease: true,

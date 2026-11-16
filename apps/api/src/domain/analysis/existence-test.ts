@@ -144,7 +144,9 @@ function evidencePresenceChecker(
     const signGroup = EVIDENCE_SIGN_GROUPS[expectedEvidence];
     const terms = signGroup?.terms ?? [expectedEvidence];
     const searchedTexts = signGroup
-      ? [...evidenceTexts.FINDING, ...evidenceTexts.VITAL_SIGN]
+      ? signGroup.evidenceTypes.flatMap(
+          (evidenceType) => evidenceTexts[evidenceType],
+        )
       : evidenceTexts[rule.evidenceType];
     if (
       searchedTexts.some((evidenceText) =>
@@ -243,7 +245,9 @@ export function assessSecondaryDiagnoses(
     .flatMap((diagnosis) => {
       const rules = evidenceRules.filter(
         (rule) =>
-          rule.icd10Code === diagnosis.icd10Code && appliesToPrimary(rule),
+          (rule.icd10Code === diagnosis.icd10Code ||
+            diagnosis.icd10Code.startsWith(`${rule.icd10Code}.`)) &&
+          appliesToPrimary(rule),
       );
       if (rules.length === 0) return [];
       const presentRules = rules.filter(isEvidencePresent);

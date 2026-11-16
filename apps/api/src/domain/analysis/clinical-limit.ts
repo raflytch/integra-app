@@ -1,3 +1,4 @@
+import type { EvidenceType } from '../claims/claim-detail';
 import type { ClaimEvidenceDocument } from './claim-evidence';
 
 export interface ClinicalLimit {
@@ -15,6 +16,7 @@ export interface VitalMeasurement {
 }
 
 export interface EvidenceSignGroup {
+  evidenceTypes: readonly EvidenceType[];
   terms: readonly string[];
   limits: readonly ClinicalLimit[];
 }
@@ -64,6 +66,21 @@ const DESATURATION: ClinicalLimit = {
   isMet: (saturation) => saturation < 90,
 };
 
+// KMK HK.01.07/MENKES/303/2026 PNPK Hipertensi Dewasa hlm. 9: hipertensi = sistolik ≥ 140 mmHg dan/atau diastolik ≥ 90 mmHg.
+const SYSTOLIC_HYPERTENSION: ClinicalLimit = {
+  vitalSignNames: BLOOD_PRESSURE_NAMES,
+  description: 'TD sistolik ≥ 140 mmHg',
+  measure: (value) => bloodPressure(value)?.systolic ?? null,
+  isMet: (systolic) => systolic >= 140,
+};
+
+const DIASTOLIC_HYPERTENSION: ClinicalLimit = {
+  vitalSignNames: BLOOD_PRESSURE_NAMES,
+  description: 'TD diastolik ≥ 90 mmHg',
+  measure: (value) => bloodPressure(value)?.diastolic ?? null,
+  isMet: (diastolic) => diastolic >= 90,
+};
+
 export const CLINICAL_LIMITS: Readonly<Record<string, ClinicalLimit>> = {
   hipotensi: HYPOTENSION,
   desaturasi: DESATURATION,
@@ -73,6 +90,7 @@ export const CLINICAL_LIMITS: Readonly<Record<string, ClinicalLimit>> = {
 export const EVIDENCE_SIGN_GROUPS: Readonly<Record<string, EvidenceSignGroup>> =
   {
     'tanda syok': {
+      evidenceTypes: ['FINDING', 'VITAL_SIGN'],
       terms: [
         'akral dingin',
         'takikardi',
@@ -82,6 +100,150 @@ export const EVIDENCE_SIGN_GROUPS: Readonly<Record<string, EvidenceSignGroup>> =
         'hipotensi',
       ],
       limits: [HYPOTENSION, NARROW_PULSE_PRESSURE],
+    },
+    // KMK HK.01.07/MENKES/481/2019 PNPK Tata Laksana Nyeri hlm. 28: anamnesis nyeri sebagai keluhan utama beserta lokasinya.
+    'nyeri punggung': {
+      evidenceTypes: ['FINDING'],
+      terms: [
+        'nyeri punggung',
+        'nyeri pinggang',
+        'nyeri tulang belakang',
+        'low back pain',
+        'back pain',
+        'dorsalgia',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/481/2019 PNPK Tata Laksana Nyeri hlm. 6, 28, 30-31: intensitas nyeri dinilai dengan skala (NRS, VAS, VRS).
+    'skala nyeri': {
+      evidenceTypes: ['FINDING', 'VITAL_SIGN'],
+      terms: [
+        'skala nyeri',
+        'numeric rating',
+        'nrs',
+        'visual analog',
+        'verbal rating',
+        'vrs',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/481/2019 PNPK Tata Laksana Nyeri hlm. 40, 42, 110: analgesia, manipulasi tulang belakang, atau latihan.
+    'tata laksana nyeri': {
+      evidenceTypes: ['MEDICATION', 'PROCEDURE'],
+      terms: [
+        'parasetamol',
+        'paracetamol',
+        'asetaminofen',
+        'metamizol',
+        'ibuprofen',
+        'ketoprofen',
+        'piroxicam',
+        'meloxicam',
+        'ketorolac',
+        'diclofenac',
+        'parecoxib',
+        'celecoxib',
+        'kodein',
+        'codein',
+        'tramadol',
+        'morfin',
+        'fentanyl',
+        'petidin',
+        'pethidin',
+        'hidromorfon',
+        'oksikodon',
+        'manipulasi',
+        'latihan',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/303/2026 PNPK Hipertensi Dewasa hlm. 9: hipertensi tertulis atau terukur.
+    hipertensi: {
+      evidenceTypes: ['FINDING', 'VITAL_SIGN'],
+      terms: ['hipertensi'],
+      limits: [SYSTOLIC_HYPERTENSION, DIASTOLIC_HYPERTENSION],
+    },
+    // KMK HK.01.07/MENKES/4801/2021 PNPK Gagal Jantung hlm. 11 Tabel 3: gejala khas gagal jantung.
+    'gejala gagal jantung': {
+      evidenceTypes: ['FINDING'],
+      terms: ['sesak', 'kelelahan', 'cepat lelah', 'edema tungkai'],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/4801/2021 PNPK Gagal Jantung hlm. 11 Tabel 3: tanda khas gagal jantung.
+    'tanda gagal jantung': {
+      evidenceTypes: ['FINDING', 'VITAL_SIGN'],
+      terms: [
+        'takikardi',
+        'takipne',
+        'ronki',
+        'efusi pleura',
+        'vena jugularis',
+        'jvp',
+        'edema',
+        'hepatomegali',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/4801/2021 PNPK Gagal Jantung hlm. 11 Tabel 3: bukti objektif gangguan struktur atau fungsi jantung.
+    'bukti objektif gagal jantung': {
+      evidenceTypes: ['FINDING', 'PROCEDURE'],
+      terms: [
+        'kardiomegali',
+        'suara jantung tiga',
+        'gallop',
+        'murmur',
+        'ekokardiografi',
+        'fraksi ejeksi',
+        'bnp',
+      ],
+      limits: [],
+    },
+    // KMK HK.01.07/MENKES/303/2026 PNPK Hipertensi Dewasa hlm. 35-36 Tabel 19: obat antihipertensi oral.
+    'obat antihipertensi': {
+      evidenceTypes: ['MEDICATION'],
+      terms: [
+        'hidroklorotiazid',
+        'hydrochlorothiazide',
+        'indapamid',
+        'captopril',
+        'kaptopril',
+        'enalapril',
+        'lisinopril',
+        'perindopril',
+        'ramipril',
+        'imidapril',
+        'sartan',
+        'amlodipin',
+        'felodipin',
+        'nifedipin',
+        'lercanidipin',
+        'diltiazem',
+        'verapamil',
+        'furosemid',
+        'torsemid',
+        'amilorid',
+        'triamteren',
+        'eplerenon',
+        'spironolakton',
+        'atenolol',
+        'bisoprolol',
+        'metoprolol',
+        'nebivolol',
+        'propranolol',
+        'propanolol',
+        'carvedilol',
+        'karvedilol',
+        'terazosin',
+        'doksazosin',
+        'doxazosin',
+        'klonidin',
+        'clonidin',
+        'metildopa',
+        'methyldopa',
+        'hidralazin',
+        'hydralazin',
+      ],
+      limits: [],
     },
   };
 
