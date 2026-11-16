@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { IconType } from 'react-icons';
-import { LuFileSearch, LuGavel, LuQuote } from 'react-icons/lu';
+import { LuFileSearch, LuQuote, LuUserCheck } from 'react-icons/lu';
 import Image from 'next/image';
 
 const PRODUCT_PRINCIPLES: {
@@ -22,10 +22,10 @@ const PRODUCT_PRINCIPLES: {
       'Setiap tanda menautkan rekam medis yang bisa dicek verifikator.',
   },
   {
-    icon: LuGavel,
+    icon: LuUserCheck,
     title: 'Manusia yang memutuskan',
     description:
-      'Label sistem selalu perlu klarifikasi, tidak pernah tuduhan fraud.',
+      'Label sistem hanya meminta klarifikasi, bukan tuduhan fraud. Keputusan akhir tetap di tangan verifikator.',
     highlight: true,
   },
 ];
@@ -46,22 +46,16 @@ function BrandPanel() {
             key={principle.title}
             className={`flex items-center gap-3 rounded-xl border px-4 py-3 shadow-xs ${
               principle.highlight
-                ? 'border-primary/30 bg-primary-wash'
+                ? 'border-transparent [background:linear-gradient(var(--color-surface),var(--color-surface))_padding-box,linear-gradient(to_right,var(--sidebar),var(--sidebar-bottom))_border-box]'
                 : 'border-hairline bg-surface'
             }`}
           >
             <principle.icon
-              className={`size-4 shrink-0 ${
-                principle.highlight ? 'text-primary-hover' : 'text-ink'
-              }`}
+              className="size-4 shrink-0 text-ink"
               aria-hidden="true"
             />
             <span className="flex flex-col gap-0.5">
-              <span
-                className={`text-small font-medium ${
-                  principle.highlight ? 'text-primary-hover' : 'text-ink'
-                }`}
-              >
+              <span className="text-small font-medium text-ink">
                 {principle.title}
               </span>
               <span className="text-small text-ink-secondary">
