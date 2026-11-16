@@ -18,7 +18,6 @@ import {
   DecisionActionPill,
   IntegraAiPill,
   Pill,
-  ReadByRulesPill,
 } from '@/components/claim-pills';
 import { EVIDENCE_STATUS_LABELS, TEST_TYPE_DETAILS } from '@/lib/claim-labels';
 import { formatDateTime, formatPercent } from '@/lib/format';
@@ -47,7 +46,7 @@ function describePendingAnalysis(claim: ClaimDetail): {
 } | null {
   const documentCount = claim.documents.length;
   const extractedDocumentCount = claim.documents.filter(
-    (document) => document.isExtracted || document.isReadByRules,
+    (document) => document.isExtracted,
   ).length;
 
   if (documentCount === 0 || extractedDocumentCount < documentCount) {
@@ -178,10 +177,7 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
         ) : (
           <Pill tone="outline">Belum dianalisis AI</Pill>
         )}
-        {claim.documents.some((document) => document.isReadByRules) && (
-          <ReadByRulesPill />
-        )}
-        {!claim.analyzedAt && (
+        {(!claim.analyzedAt || unreadDocumentCount > 0) && (
           <Button
             variant="outline"
             size="sm"

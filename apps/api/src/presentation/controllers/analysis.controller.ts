@@ -1,7 +1,5 @@
 import {
-  Body,
   Controller,
-  Get,
   Logger,
   Param,
   ParseUUIDPipe,
@@ -13,36 +11,13 @@ import {
   AnalyzeClaimUseCase,
   type AnalysisStep,
 } from '../../application/analysis/analyze-claim.use-case';
-import {
-  BulkAnalysisRunner,
-  type BulkAnalysisProgress,
-} from '../../application/analysis/bulk-analysis';
 import { DomainError } from '../../domain/shared/domain-error';
-import { StartBulkAnalysisDto } from '../dtos/start-bulk-analysis.dto';
 
 @Controller('analysis')
 export class AnalysisController {
   private readonly logger = new Logger(AnalysisController.name);
 
-  constructor(
-    private readonly analyzeClaim: AnalyzeClaimUseCase,
-    private readonly bulkAnalysis: BulkAnalysisRunner,
-  ) {}
-
-  @Post('bulk')
-  startBulk(@Body() body: StartBulkAnalysisDto): BulkAnalysisProgress {
-    return this.bulkAnalysis.start(body.claimIds, body.confirmWithAi);
-  }
-
-  @Get('bulk')
-  findBulk(): { progress: BulkAnalysisProgress | null } {
-    return { progress: this.bulkAnalysis.current() };
-  }
-
-  @Post('bulk/stop')
-  stopBulk(): { progress: BulkAnalysisProgress | null } {
-    return { progress: this.bulkAnalysis.stop() };
-  }
+  constructor(private readonly analyzeClaim: AnalyzeClaimUseCase) {}
 
   /**
    * The web app calls this once per claim the verifier selected, so AI cost

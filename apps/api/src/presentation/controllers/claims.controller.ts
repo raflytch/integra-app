@@ -43,13 +43,6 @@ export class ClaimsController {
     return presentClaimQueuePage(await this.listClaimQueue.execute(query));
   }
 
-  @Get('ids')
-  async listIds(
-    @Query() query: ListClaimsQuery,
-  ): Promise<{ claimIds: string[] }> {
-    return { claimIds: await this.listClaimQueue.findClaimIds(query) };
-  }
-
   /** Declared before `:claimId` so "statistics" is never parsed as an id. */
   @Get('statistics')
   findStatistics(): Promise<ClaimStatistics> {

@@ -25,7 +25,6 @@ export interface ClaimQueueItem {
   documentCount: number;
   /** Documents already read by the AI; the claim is analyzed when it equals `documentCount`. */
   extractedDocumentCount: number;
-  ruleReadDocumentCount: number;
   hasSimilarPattern: boolean;
 }
 
