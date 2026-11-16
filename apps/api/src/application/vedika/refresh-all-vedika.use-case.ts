@@ -6,8 +6,7 @@ export class RefreshAllVedikaUseCase {
 
   async execute(): Promise<VedikaBulkRefreshResult> {
     const syncedAt = new Date();
-    const refreshedClaimCount =
-      await this.vedikaRepository.syncAllClaims(syncedAt);
-    return { refreshedClaimCount, syncedAt };
+    const result = await this.vedikaRepository.syncAllClaims(syncedAt);
+    return { ...result, syncedAt };
   }
 }

@@ -221,6 +221,7 @@ model Claim {
   relatedFindings   Finding[]          @relation("FindingRelatedClaim")
   decisions         Decision[]
   vedikaAttachments VedikaAttachment[]
+  vedikaResponse    VedikaResponse?
 
   /// Verification queue: WHERE status = ? ORDER BY priority_score DESC.
   @@index([status, priorityScore(sort: Desc)])
@@ -416,4 +417,16 @@ model VedikaAttachment {
   @@index([claimId, createdAt(sort: Desc)])
   @@index([uploadedById])
   @@map("vedika_attachments")
+}
+
+/// Snapshot of the simulated VEDIKA response returned for an approved claim.
+model VedikaResponse {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  claimId   String   @unique @map("claim_id") @db.Uuid
+  syncedAt  DateTime @map("synced_at") @db.Timestamptz(3)
+  response  Json     @db.JsonB
+
+  claim Claim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  @@map("vedika_responses")
 }

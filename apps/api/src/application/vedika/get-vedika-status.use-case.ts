@@ -16,10 +16,11 @@ export class GetVedikaStatusUseCase {
     const claim = await this.claimRepository.findDetailById(claimId);
     if (!claim) throw new ClaimNotFoundError(claimId);
 
-    const [attachments, syncedAt] = await Promise.all([
+    const [attachments, syncedAt, savedReply] = await Promise.all([
       this.vedikaRepository.listAttachments(claimId),
       this.vedikaRepository.findClaimSyncedAt(claimId),
+      this.vedikaRepository.findClaimResponse(claimId),
     ]);
-    return buildVedikaStatus(claim, attachments, syncedAt);
+    return buildVedikaStatus(claim, attachments, syncedAt, savedReply);
   }
 }

@@ -193,8 +193,8 @@ export function VedikaClaimTable() {
         >
           <LuCircleCheck aria-hidden="true" className="size-4 shrink-0" />
           {bulkRefreshResult.refreshedClaimCount > 0
-            ? `${bulkRefreshResult.refreshedClaimCount.toLocaleString('id-ID')} klaim terkirim terverifikasi pada ${formatDateTime(bulkRefreshResult.syncedAt)}.`
-            : 'Belum ada klaim terkirim untuk diverifikasi.'}
+            ? `${bulkRefreshResult.refreshedClaimCount.toLocaleString('id-ID')} data SEP diperbarui; ${bulkRefreshResult.verifiedClaimCount.toLocaleString('id-ID')} klaim terverifikasi pada ${formatDateTime(bulkRefreshResult.syncedAt)}.`
+            : 'Belum ada data klaim untuk diperbarui.'}
         </p>
       )}
       {refreshAllMutation.isError && (

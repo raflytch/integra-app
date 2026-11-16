@@ -62,27 +62,27 @@ export function VedikaReplyDetails({ reply }: { reply: VedikaReply }) {
     <div className="flex flex-col gap-3">
       <Alert role="status" className="border-success/30 bg-success/10">
         <LuCircleCheck aria-hidden="true" className="text-success-ink" />
-        <AlertTitle className="text-success-ink">
-          Data VEDIKA lengkap
-        </AlertTitle>
+        <AlertTitle className="text-success-ink">Data VEDIKA tersedia</AlertTitle>
         <AlertDescription className="text-ink-secondary">
           Diperbarui {formatDateTime(reply.syncedAt)}.
         </AlertDescription>
       </Alert>
-      <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
-        {reply.checks.map((check) => (
-          <li
-            key={check.label}
-            className="flex items-center gap-2 px-3 py-2 text-small text-ink"
-          >
-            <LuCircleCheck
-              aria-hidden="true"
-              className="size-4 shrink-0 text-success-ink"
-            />
-            {check.label}
-          </li>
-        ))}
-      </ul>
+      {reply.checks.length > 0 && (
+        <ul className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline">
+          {reply.checks.map((check) => (
+            <li
+              key={check.label}
+              className="flex items-center gap-2 px-3 py-2 text-small text-ink"
+            >
+              <LuCircleCheck
+                aria-hidden="true"
+                className="size-4 shrink-0 text-success-ink"
+              />
+              {check.label}
+            </li>
+          ))}
+        </ul>
+      )}
       <dl className="flex flex-col divide-y divide-hairline rounded-lg border border-hairline text-small">
         {sepRows.map((row) => (
           <div key={row.label} className="flex gap-3 px-3 py-2">
