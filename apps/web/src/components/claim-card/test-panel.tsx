@@ -4,6 +4,7 @@ import type { IconType } from 'react-icons';
 import {
   LuChevronDown,
   LuCircleCheck,
+  LuCircleDashed,
   LuCopy,
   LuFileSearch,
   LuFlag,
@@ -157,11 +158,13 @@ function FindingItem({
 export function TestPanelShell({
   testType,
   findingCount,
+  isUnassessed = false,
   overview,
   children,
 }: {
   testType: TestType;
   findingCount: number;
+  isUnassessed?: boolean;
   overview?: ReactNode;
   children: ReactNode;
 }) {
@@ -225,12 +228,19 @@ export function TestPanelShell({
             aria-hidden="true"
             className="flex flex-1 items-center justify-end gap-4 self-stretch"
           >
-            <Pill
-              tone={hasFindings ? 'warning' : 'success'}
-              icon={hasFindings ? LuFlag : LuCircleCheck}
-            >
-              {hasFindings ? `${findingCount} tanda` : 'Tidak ada tanda'}
-            </Pill>
+            {hasFindings ? (
+              <Pill tone="warning" icon={LuFlag}>
+                {findingCount} tanda
+              </Pill>
+            ) : isUnassessed ? (
+              <Pill tone="outline" icon={LuCircleDashed}>
+                Belum bisa dinilai
+              </Pill>
+            ) : (
+              <Pill tone="success" icon={LuCircleCheck}>
+                Tidak ada tanda
+              </Pill>
+            )}
             <LuChevronDown className="size-4 shrink-0 text-ink-secondary motion-safe:transition-transform group-data-[state=open]:rotate-180" />
           </CollapsibleTrigger>
         </div>

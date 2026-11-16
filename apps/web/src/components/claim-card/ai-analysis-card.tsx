@@ -34,6 +34,7 @@ interface TestSummary {
   testType: TestType;
   icon: IconType;
   isFlagged: boolean;
+  isUnassessed: boolean;
   isSupporting: boolean;
   sentence: ReactNode;
 }
@@ -79,12 +80,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
   );
   const consistencyCount = findingsOf('CONSISTENCY').length;
   const existenceCount = findingsOf('EXISTENCE').length;
-  const primaryName =
-    claim.diagnoses.find((diagnosis) => diagnosis.isPrimary)?.name ??
-    'penyakit ini';
-  const secondaryCount = claim.diagnoses.filter(
-    (diagnosis) => !diagnosis.isPrimary,
-  ).length;
+  const unassessedCount = claim.verification?.unassessedDiagnoses.length ?? 0;
   const coverage = findSimilarityCoverage(claim);
   const highestSimilarity = Math.max(
     0,
@@ -96,6 +92,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
       testType: 'SIMILARITY',
       icon: LuCopy,
       isFlagged: isEscalated,
+      isUnassessed: false,
       isSupporting: false,
       sentence: isEscalated ? (
         <>
@@ -118,6 +115,7 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
       testType: 'EXISTENCE',
       icon: LuFileSearch,
       isFlagged: flaggedStatuses.length > 0 || existenceCount > 0,
+      isUnassessed: unassessedCount > 0,
       isSupporting: isEscalated,
       sentence:
         flaggedStatuses.length > 0
@@ -129,16 +127,17 @@ function summarizeTests(claim: ClaimDetail): TestSummary[] {
               .join(' · ')
           : existenceCount > 0
             ? `${existenceCount} diagnosis sekunder belum didukung bukti. Klik Analisis ulang untuk melihat statusnya per diagnosis.`
-            : diagnosisStatuses.length > 0
-              ? 'Semua diagnosis sekunder didukung bukti klinis.'
-              : secondaryCount > 0
-                ? `Belum ada aturan PNPK untuk diagnosis sekunder pada ${primaryName}.`
+            : unassessedCount > 0
+              ? `Belum ada aturan PNPK untuk ${claim.verification?.unassessedDiagnoses.join(', ')}.`
+              : diagnosisStatuses.length > 0
+                ? 'Semua diagnosis sekunder didukung bukti klinis.'
                 : 'Tidak ada diagnosis sekunder.',
     },
     {
       testType: 'CONSISTENCY',
       icon: LuGitCompareArrows,
       isFlagged: consistencyCount > 0,
+      isUnassessed: false,
       isSupporting: isEscalated,
       sentence:
         consistencyCount > 0
@@ -260,6 +259,8 @@ export function AiAnalysisCard({ claim }: { claim: ClaimDetail }) {
                     <Pill tone="warning" icon={LuFlag}>
                       Ditandai
                     </Pill>
+                  ) : testSummary.isUnassessed ? (
+                    <Pill tone="outline">Belum bisa dinilai</Pill>
                   ) : (
                     <Pill tone="success" icon={LuCircleCheck}>
                       Sesuai
