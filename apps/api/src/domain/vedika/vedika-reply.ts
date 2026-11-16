@@ -70,8 +70,14 @@ export interface VedikaStatus {
   reply: VedikaReply | null;
 }
 
-type SimulatedClaim = Pick<ClaimDetail, 'claimNo' | 'admittedAt' | 'careType'> & {
-  patient: Pick<ClaimDetail['patient'], 'medicalRecordNo' | 'name' | 'gender' | 'birthDate'>;
+type SimulatedClaim = Pick<
+  ClaimDetail,
+  'claimNo' | 'admittedAt' | 'careType'
+> & {
+  patient: Pick<
+    ClaimDetail['patient'],
+    'medicalRecordNo' | 'name' | 'gender' | 'birthDate'
+  >;
   facility: Pick<ClaimDetail['facility'], 'name'>;
   diagnoses: Array<
     Pick<ClaimDetail['diagnoses'][number], 'icd10Code' | 'name' | 'isPrimary'>

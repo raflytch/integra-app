@@ -62,7 +62,9 @@ export function VedikaReplyDetails({ reply }: { reply: VedikaReply }) {
     <div className="flex flex-col gap-3">
       <Alert role="status" className="border-success/30 bg-success/10">
         <LuCircleCheck aria-hidden="true" className="text-success-ink" />
-        <AlertTitle className="text-success-ink">Data VEDIKA tersedia</AlertTitle>
+        <AlertTitle className="text-success-ink">
+          Data VEDIKA tersedia
+        </AlertTitle>
         <AlertDescription className="text-ink-secondary">
           Diperbarui {formatDateTime(reply.syncedAt)}.
         </AlertDescription>
